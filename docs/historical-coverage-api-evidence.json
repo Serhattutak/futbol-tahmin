@@ -1,0 +1,37 @@
+{
+  "retrievedAt": "2026-09-17T16:53:05.416Z",
+  "maxRequests": 2,
+  "purpose": "Verify historical access for an already identified insufficient-history fixture",
+  "requests": [
+    {
+      "params": {
+        "team": 535,
+        "season": 2026,
+        "status": "FT-AET-PEN",
+        "from": "2026-01-01",
+        "to": "2026-09-17"
+      },
+      "httpStatus": 200,
+      "errors": {
+        "plan": "Free plans do not have access to this season, try from 2022 to 2024."
+      },
+      "count": 0,
+      "matches": []
+    },
+    {
+      "params": {
+        "team": 535,
+        "season": 2025,
+        "status": "FT-AET-PEN",
+        "from": "2025-01-01",
+        "to": "2026-09-17"
+      },
+      "httpStatus": 200,
+      "errors": {
+        "plan": "Free plans do not have access to this season, try from 2022 to 2024."
+      },
+      "count": 0,
+      "matches": []
+    }
+  ]
+}

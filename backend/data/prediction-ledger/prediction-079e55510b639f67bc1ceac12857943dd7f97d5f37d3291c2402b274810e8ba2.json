@@ -1,0 +1,121 @@
+{
+  "type": "prediction",
+  "ledgerId": "079e55510b639f67bc1ceac12857943dd7f97d5f37d3291c2402b274810e8ba2",
+  "snapshot": {
+    "schemaVersion": 1,
+    "ledgerId": "079e55510b639f67bc1ceac12857943dd7f97d5f37d3291c2402b274810e8ba2",
+    "fixtureId": "1570386",
+    "canonicalFixtureId": "2026-09-17T17:00:team:realbetis:team:getafe:laliga",
+    "providerFixtureIds": {
+      "api-football": "1570386"
+    },
+    "fixtureDate": "2026-09-17",
+    "kickoffTime": "2026-09-17T17:00:00.000Z",
+    "league": "La Liga",
+    "homeTeam": {
+      "id": "team:realbetis",
+      "name": "Real Betis",
+      "logo": "https://media.api-sports.io/football/teams/543.png"
+    },
+    "awayTeam": {
+      "id": "team:getafe",
+      "name": "Getafe",
+      "logo": "https://media.api-sports.io/football/teams/546.png"
+    },
+    "predictionCreatedAt": "2026-09-17T12:15:24.400Z",
+    "minutesBeforeKickoff": 284.5933333333333,
+    "requestedModel": "MODEL_4_0",
+    "usedModel": "MODEL_4_0",
+    "modelVersion": "MODEL_4_0",
+    "artifactFingerprint": null,
+    "statisticsVersion": "historical-v1-previous-day",
+    "inputFingerprint": "9b144029564c7ffca7bbebd9de67b3e901574cd740ea31a869bbebd3923b6ab3",
+    "dataQuality": {
+      "score": 80,
+      "level": "high",
+      "availableSignals": 8,
+      "totalSignals": 12,
+      "missing": [
+        "H2H",
+        "Standings",
+        "TakÄ±m istatistikleri",
+        "API xG"
+      ],
+      "homeSample": 10,
+      "awaySample": 10,
+      "missingFields": [
+        "h2h"
+      ],
+      "sources": [
+        "openfootball"
+      ]
+    },
+    "statisticsQuality": {
+      "score": 98,
+      "homeSample": 10,
+      "awaySample": 10,
+      "missingFields": [
+        "h2h"
+      ],
+      "sources": [
+        "openfootball"
+      ]
+    },
+    "providers": [
+      "api-football",
+      "openfootball"
+    ],
+    "historicalSampleHome": 10,
+    "historicalSampleAway": 10,
+    "homeProbability": 0.740750581236013,
+    "drawProbability": 0.21770861457292467,
+    "awayProbability": 0.0415408041910625,
+    "rawHomeProbability": null,
+    "rawDrawProbability": null,
+    "rawAwayProbability": null,
+    "calibratedHomeProbability": null,
+    "calibratedDrawProbability": null,
+    "calibratedAwayProbability": null,
+    "over15": 0.538371232198296,
+    "under15": 0.46162876780170403,
+    "over25": 0.28601605558095483,
+    "under25": 0.7139839444190452,
+    "over35": 0.12335661654151113,
+    "under35": 0.8766433834584889,
+    "bttsYes": 0.19006749454255767,
+    "bttsNo": 0.8099325054574423,
+    "doubleChance1X": 0.9584591958089377,
+    "doubleChanceX2": 0.25924941876398716,
+    "doubleChance12": 0.7822913854270755,
+    "dnbHome": 0.9468985534483622,
+    "dnbAway": 0.05310144655163775,
+    "expectedHomeGoals": 1.63,
+    "expectedAwayGoals": 0.2,
+    "predictedScore": {
+      "home": 1,
+      "away": 0,
+      "probability": 26.18
+    },
+    "strongestPrediction": "1X",
+    "strongestPredictionProbability": 0.9584999999999999,
+    "modelConfidence": 87,
+    "fallbackUsed": false,
+    "fallbackReason": null,
+    "resultStatus": null,
+    "actualHomeGoals": null,
+    "actualAwayGoals": null,
+    "actual1X2": null,
+    "actualOver15": null,
+    "actualOver25": null,
+    "actualOver35": null,
+    "actualBTTS": null,
+    "settledAt": null,
+    "predictionCorrect1X2": null,
+    "brier1X2": null,
+    "logLoss1X2": null,
+    "predictionCorrectOver15": null,
+    "predictionCorrectOver25": null,
+    "predictionCorrectOver35": null,
+    "predictionCorrectBTTS": null
+  }
+}

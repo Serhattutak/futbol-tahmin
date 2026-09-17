@@ -1,0 +1,24 @@
+{
+  "verifiedAt": "2026-09-17T21:49:11.644Z",
+  "tests": {
+    "total": 176,
+    "pass": 176,
+    "fail": 0
+  },
+  "build": "PASS",
+  "syntax": "PASS: 8 files",
+  "changedFilesLint": "PASS: no warnings",
+  "fullLint": "Exit 0 with existing unrelated warnings (including generated browser files)",
+  "protectedFilesChecked": 28,
+  "protectedChanges": [],
+  "benchmarkFilesUnchanged": 18,
+  "benchmarkFixtures": 1686,
+  "artifactSha256": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+  "artifactCodeHashValid": true,
+  "ledgerFiles": 2,
+  "ledgerUnchanged": true,
+  "ledgerWrites": 0,
+  "providerNetworkCalls": 0,
+  "realSourceRowsVerified": 4938,
+  "sourceFileSha256": "289bcba797dd5848914b259eca207c2fb682167b229e0381b7242d557a81929a"
+}

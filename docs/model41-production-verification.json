@@ -1,0 +1,115 @@
+{
+  "fixture": {
+    "canonicalFixtureId": "2026-09-16T17:00:team:atleticomadrid:team:osasuna:laliga",
+    "providerFixtureIds": {
+      "api-football": "1570384"
+    },
+    "sourceProviders": [
+      "api-football",
+      "openfootball"
+    ],
+    "id": "1570384",
+    "date": "2026-09-16T17:00:00.000Z",
+    "league": "La Liga",
+    "country": "Spain",
+    "home": {
+      "id": "team:atleticomadrid",
+      "name": "Atletico Madrid",
+      "logo": "https://media.api-sports.io/football/teams/530.png"
+    },
+    "away": {
+      "id": "team:osasuna",
+      "name": "Osasuna",
+      "logo": "https://media.api-sports.io/football/teams/727.png"
+    }
+  },
+  "models": {
+    "MODEL_4_0": {
+      "probabilities": {
+        "home": 0.6263685759380856,
+        "draw": 0.18819448429669292,
+        "away": 0.18543693976522144,
+        "over15": 0.853907380100244,
+        "over25": 0.690720881427396,
+        "over35": 0.4623333222684588,
+        "bttsYes": 0.6338875809722121
+      },
+      "confidence": 83,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    },
+    "MODEL_4_1": {
+      "probabilities": {
+        "home": 0.51330622086104,
+        "draw": 0.2659365790967769,
+        "away": 0.22075720004218305,
+        "over15": 0.7847799285944004,
+        "over25": 0.5531246276666748,
+        "over35": 0.3294954135882191,
+        "bttsYes": 0.5681765992050349
+      },
+      "rawProbabilities": {
+        "home": 0.5598127623655964,
+        "draw": 0.24564360795129428,
+        "away": 0.19454362968310954,
+        "over15": 0.7847799285944004,
+        "over25": 0.5531246276666748,
+        "over35": 0.3294954135882191,
+        "bttsYes": 0.5681765992050349,
+        "homeOver05": 0.8202438998292014,
+        "homeOver15": 0.5117546873038832,
+        "awayOver05": 0.6926922581482724,
+        "awayOver15": 0.33009812738255817
+      },
+      "confidence": 75,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    }
+  },
+  "secondCache": {
+    "statisticsVersion": "historical-v1-previous-day",
+    "artifactVersion": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+    "inputVersion": "5b65a8b802e3ca55f3534d53e8fe00bbe87fba96d7651d137904b85ea93c7bc1",
+    "expiresAt": 1789645449507,
+    "inputHit": true,
+    "model40Hit": true,
+    "model41Hit": true
+  },
+  "historicalMetricsBefore": {
+    "loads": 0,
+    "hits": 2
+  },
+  "historicalMetricsAfter": {
+    "loads": 0,
+    "hits": 2
+  },
+  "productionMetrics": {
+    "collections": 1,
+    "inputHits": 1,
+    "model40Runs": 1,
+    "model41Runs": 1,
+    "modelHits": 2
+  }
+}

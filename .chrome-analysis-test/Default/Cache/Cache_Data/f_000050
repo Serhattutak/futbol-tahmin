@@ -1,0 +1,330 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/BacktestView.jsx");const useEffect = __vite__cjsImport0_react["useEffect"]; const useState = __vite__cjsImport0_react["useState"];const _jsxDEV = __vite__cjsImport3_react_jsxDevRuntime["jsxDEV"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=bcbb4175";
+import { readFrontendJson } from "/src/frontendApi.js";
+import "/src/BacktestView.css";
+var _jsxFileName = "C:/Users/user/futbol-tahmin/src/BacktestView.jsx";
+import __vite__cjsImport3_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=bcbb4175";
+var _s = $RefreshSig$();
+const number = (value) => Number.isFinite(value) ? value.toFixed(4) : "—";
+const percent = (value) => Number.isFinite(value) ? `${(value * 100).toFixed(2)}%` : "—";
+export default function BacktestView({ apiBase }) {
+	_s();
+	const [report, setReport] = useState(null);
+	const [error, setError] = useState("");
+	useEffect(() => {
+		let active = true;
+		readFrontendJson(`${apiBase}/api/backtest`).then((data) => {
+			if (active) setReport(data.report);
+		}).catch(() => {
+			if (active) setError("Henüz okunabilir bir backtest raporu yok.");
+		});
+		return () => {
+			active = false;
+		};
+	}, [apiBase]);
+	if (!report) return /* @__PURE__ */ _jsxDEV("section", {
+		className: "detail-section",
+		children: [/* @__PURE__ */ _jsxDEV("h2", { children: "Kronolojik Backtest" }, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 15,
+			columnNumber: 59
+		}, this), /* @__PURE__ */ _jsxDEV("p", { children: error || "Rapor yükleniyor…" }, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 15,
+			columnNumber: 87
+		}, this)]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 15,
+		columnNumber: 23
+	}, this);
+	const baseline = report.baseline.markets;
+	const stats = report.stats.markets;
+	return /* @__PURE__ */ _jsxDEV("section", {
+		className: "detail-section backtest-report",
+		children: [
+			/* @__PURE__ */ _jsxDEV("h2", { children: "Backtest · Baseline / Model 4.0 + Stats" }, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 17,
+				columnNumber: 62
+			}, this),
+			/* @__PURE__ */ _jsxDEV("p", { children: [
+				report.evaluated,
+				" gerçek maç · ",
+				report.evaluation.actualFrom?.slice(0, 10),
+				" — ",
+				report.evaluation.actualTo?.slice(0, 10)
+			] }, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 18,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("p", {
+				className: "muted-note",
+				children: "Aynı maçlar, yalnızca önceki günlerin sonuçları. Ağırlık veya eşik optimizasyonu yapılmadı. Geçmiş oran, xG ve puan durumu olmadan sonuç verileriyle karşılaştırma."
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 19,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("div", {
+				style: { overflowX: "auto" },
+				children: /* @__PURE__ */ _jsxDEV("table", { children: [
+					/* @__PURE__ */ _jsxDEV("caption", { children: "1X2 Brier: 0–2; diğer pazarlar: 0–1. Brier, Log Loss ve ECE için düşük değer daha iyidir." }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 20,
+						columnNumber: 47
+					}, this),
+					/* @__PURE__ */ _jsxDEV("thead", { children: /* @__PURE__ */ _jsxDEV("tr", { children: [
+						/* @__PURE__ */ _jsxDEV("th", { children: "Pazar" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 18
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: "Maç" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 32
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: "Başarı B / S" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 44
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: "Brier B / S" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 65
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: "Log Loss B / S" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 85
+						}, this),
+						/* @__PURE__ */ _jsxDEV("th", { children: "ECE B / S" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 108
+						}, this)
+					] }, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 21,
+						columnNumber: 14
+					}, this) }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 21,
+						columnNumber: 7
+					}, this),
+					/* @__PURE__ */ _jsxDEV("tbody", { children: Object.keys(stats).map((m) => /* @__PURE__ */ _jsxDEV("tr", { children: [
+						/* @__PURE__ */ _jsxDEV("th", { children: m }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 55
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: stats[m].sampleSize }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 67
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							percent(baseline[m].hitRate),
+							" / ",
+							percent(stats[m].hitRate)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 97
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							number(baseline[m].brier),
+							" / ",
+							number(stats[m].brier)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 166
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							number(baseline[m].logLoss),
+							" / ",
+							number(stats[m].logLoss)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 229
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							number(baseline[m].ece),
+							" / ",
+							number(stats[m].ece)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 296
+						}, this)
+					] }, m, true, {
+						fileName: _jsxFileName,
+						lineNumber: 22,
+						columnNumber: 43
+					}, this)) }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 22,
+						columnNumber: 7
+					}, this)
+				] }, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 20,
+					columnNumber: 40
+				}, this)
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 20,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("h3", { children: "Güven eşikleri · 1X2" }, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 24,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("div", {
+				style: { overflowX: "auto" },
+				children: /* @__PURE__ */ _jsxDEV("table", { children: [/* @__PURE__ */ _jsxDEV("thead", { children: /* @__PURE__ */ _jsxDEV("tr", { children: [
+					/* @__PURE__ */ _jsxDEV("th", { children: "Eşik" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 24,
+						columnNumber: 87
+					}, this),
+					/* @__PURE__ */ _jsxDEV("th", { children: "Maç B / S" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 24,
+						columnNumber: 100
+					}, this),
+					/* @__PURE__ */ _jsxDEV("th", { children: "Başarı B / S" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 24,
+						columnNumber: 118
+					}, this),
+					/* @__PURE__ */ _jsxDEV("th", { children: "Brier B / S" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 24,
+						columnNumber: 139
+					}, this),
+					/* @__PURE__ */ _jsxDEV("th", { children: "Log Loss B / S" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 24,
+						columnNumber: 159
+					}, this)
+				] }, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 24,
+					columnNumber: 83
+				}, this) }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 24,
+					columnNumber: 76
+				}, this), /* @__PURE__ */ _jsxDEV("tbody", { children: Object.entries(report.stats.confidence).map(([threshold, markets]) => {
+					const s = markets["1X2"];
+					const b = report.baseline.confidence[threshold]["1X2"];
+					return /* @__PURE__ */ _jsxDEV("tr", { children: [
+						/* @__PURE__ */ _jsxDEV("th", { children: ["≥ ", threshold] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 25,
+							columnNumber: 189
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							b.sampleSize,
+							" / ",
+							s.sampleSize
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 25,
+							columnNumber: 211
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							percent(b.hitRate),
+							" / ",
+							percent(s.hitRate)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 25,
+							columnNumber: 251
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							number(b.brier),
+							" / ",
+							number(s.brier)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 25,
+							columnNumber: 303
+						}, this),
+						/* @__PURE__ */ _jsxDEV("td", { children: [
+							number(b.logLoss),
+							" / ",
+							number(s.logLoss)
+						] }, void 0, true, {
+							fileName: _jsxFileName,
+							lineNumber: 25,
+							columnNumber: 349
+						}, this)
+					] }, threshold, true, {
+						fileName: _jsxFileName,
+						lineNumber: 25,
+						columnNumber: 169
+					}, this);
+				}) }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 24,
+					columnNumber: 195
+				}, this)] }, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 24,
+					columnNumber: 69
+				}, this)
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 24,
+				columnNumber: 34
+			}, this),
+			/* @__PURE__ */ _jsxDEV("p", {
+				className: "muted-note",
+				children: "İkili pazarlarda başarı, %50 eşiğinde evet/hayır sınıflandırmasıdır; bahis kazanma oranı değildir. Az örnekli alt gruplar kesin sonuç sayılmaz."
+			}, void 0, false, {
+				fileName: _jsxFileName,
+				lineNumber: 27,
+				columnNumber: 5
+			}, this)
+		]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 17,
+		columnNumber: 10
+	}, this);
+}
+_s(BacktestView, "HHwBiEvLbfHczBZCSuSPwPzZ7LY=");
+_c = BacktestView;
+var _c;
+$RefreshReg$(_c, "BacktestView");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/BacktestView.jsx?t=1789586323577";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/user/futbol-tahmin/src/BacktestView.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/user/futbol-tahmin/src/BacktestView.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/user/futbol-tahmin/src/BacktestView.jsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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OlsiQmFja3Rlc3RWaWV3LmpzeCJdLCJ2ZXJzaW9uIjozLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VFZmZlY3QsIHVzZVN0YXRlIH0gZnJvbSBcInJlYWN0XCI7XG5pbXBvcnQgeyByZWFkRnJvbnRlbmRKc29uIH0gZnJvbSBcIi4vZnJvbnRlbmRBcGkuanNcIjtcbmltcG9ydCBcIi4vQmFja3Rlc3RWaWV3LmNzc1wiO1xuY29uc3QgbnVtYmVyID0gdmFsdWUgPT4gTnVtYmVyLmlzRmluaXRlKHZhbHVlKSA/IHZhbHVlLnRvRml4ZWQoNCkgOiBcIuKAlFwiO1xuY29uc3QgcGVyY2VudCA9IHZhbHVlID0+IE51bWJlci5pc0Zpbml0ZSh2YWx1ZSkgPyBgJHsodmFsdWUgKiAxMDApLnRvRml4ZWQoMil9JWAgOiBcIuKAlFwiO1xuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBCYWNrdGVzdFZpZXcoeyBhcGlCYXNlIH0pIHtcbiAgY29uc3QgW3JlcG9ydCwgc2V0UmVwb3J0XSA9IHVzZVN0YXRlKG51bGwpO1xuICBjb25zdCBbZXJyb3IsIHNldEVycm9yXSA9IHVzZVN0YXRlKFwiXCIpO1xuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIGxldCBhY3RpdmUgPSB0cnVlO1xuICAgIHJlYWRGcm9udGVuZEpzb24oYCR7YXBpQmFzZX0vYXBpL2JhY2t0ZXN0YCkudGhlbihkYXRhID0+IHsgaWYgKGFjdGl2ZSkgc2V0UmVwb3J0KGRhdGEucmVwb3J0KTsgfSkuY2F0Y2goKCkgPT4geyBpZiAoYWN0aXZlKSBzZXRFcnJvcihcIkhlbsO8eiBva3VuYWJpbGlyIGJpciBiYWNrdGVzdCByYXBvcnUgeW9rLlwiKTsgfSk7XG4gICAgcmV0dXJuICgpID0+IHsgYWN0aXZlID0gZmFsc2U7IH07XG4gIH0sIFthcGlCYXNlXSk7XG4gIGlmICghcmVwb3J0KSByZXR1cm4gPHNlY3Rpb24gY2xhc3NOYW1lPVwiZGV0YWlsLXNlY3Rpb25cIj48aDI+S3Jvbm9sb2ppayBCYWNrdGVzdDwvaDI+PHA+e2Vycm9yIHx8IFwiUmFwb3IgecO8a2xlbml5b3LigKZcIn08L3A+PC9zZWN0aW9uPjtcbiAgY29uc3QgYmFzZWxpbmUgPSByZXBvcnQuYmFzZWxpbmUubWFya2V0czsgY29uc3Qgc3RhdHMgPSByZXBvcnQuc3RhdHMubWFya2V0cztcbiAgcmV0dXJuIDxzZWN0aW9uIGNsYXNzTmFtZT1cImRldGFpbC1zZWN0aW9uIGJhY2t0ZXN0LXJlcG9ydFwiPjxoMj5CYWNrdGVzdCDCtyBCYXNlbGluZSAvIE1vZGVsIDQuMCArIFN0YXRzPC9oMj5cbiAgICA8cD57cmVwb3J0LmV2YWx1YXRlZH0gZ2Vyw6dlayBtYcOnIMK3IHtyZXBvcnQuZXZhbHVhdGlvbi5hY3R1YWxGcm9tPy5zbGljZSgwLCAxMCl9IOKAlCB7cmVwb3J0LmV2YWx1YXRpb24uYWN0dWFsVG8/LnNsaWNlKDAsIDEwKX08L3A+XG4gICAgPHAgY2xhc3NOYW1lPVwibXV0ZWQtbm90ZVwiPkF5bsSxIG1hw6dsYXIsIHlhbG7EsXpjYSDDtm5jZWtpIGfDvG5sZXJpbiBzb251w6dsYXLEsS4gQcSfxLFybMSxayB2ZXlhIGXFn2lrIG9wdGltaXphc3lvbnUgeWFwxLFsbWFkxLEuIEdlw6dtacWfIG9yYW4sIHhHIHZlIHB1YW4gZHVydW11IG9sbWFkYW4gc29udcOnIHZlcmlsZXJpeWxlIGthcsWfxLFsYcWfdMSxcm1hLjwvcD5cbiAgICA8ZGl2IHN0eWxlPXt7IG92ZXJmbG93WDogXCJhdXRvXCIgfX0+PHRhYmxlPjxjYXB0aW9uPjFYMiBCcmllcjogMOKAkzI7IGRpxJ9lciBwYXphcmxhcjogMOKAkzEuIEJyaWVyLCBMb2cgTG9zcyB2ZSBFQ0UgacOnaW4gZMO8xZ/DvGsgZGXEn2VyIGRhaGEgaXlpZGlyLjwvY2FwdGlvbj5cbiAgICAgIDx0aGVhZD48dHI+PHRoPlBhemFyPC90aD48dGg+TWHDpzwvdGg+PHRoPkJhxZ9hcsSxIEIgLyBTPC90aD48dGg+QnJpZXIgQiAvIFM8L3RoPjx0aD5Mb2cgTG9zcyBCIC8gUzwvdGg+PHRoPkVDRSBCIC8gUzwvdGg+PC90cj48L3RoZWFkPlxuICAgICAgPHRib2R5PntPYmplY3Qua2V5cyhzdGF0cykubWFwKG0gPT4gPHRyIGtleT17bX0+PHRoPnttfTwvdGg+PHRkPntzdGF0c1ttXS5zYW1wbGVTaXplfTwvdGQ+PHRkPntwZXJjZW50KGJhc2VsaW5lW21dLmhpdFJhdGUpfSAvIHtwZXJjZW50KHN0YXRzW21dLmhpdFJhdGUpfTwvdGQ+PHRkPntudW1iZXIoYmFzZWxpbmVbbV0uYnJpZXIpfSAvIHtudW1iZXIoc3RhdHNbbV0uYnJpZXIpfTwvdGQ+PHRkPntudW1iZXIoYmFzZWxpbmVbbV0ubG9nTG9zcyl9IC8ge251bWJlcihzdGF0c1ttXS5sb2dMb3NzKX08L3RkPjx0ZD57bnVtYmVyKGJhc2VsaW5lW21dLmVjZSl9IC8ge251bWJlcihzdGF0c1ttXS5lY2UpfTwvdGQ+PC90cj4pfTwvdGJvZHk+XG4gICAgPC90YWJsZT48L2Rpdj5cbiAgICA8aDM+R8O8dmVuIGXFn2lrbGVyaSDCtyAxWDI8L2gzPjxkaXYgc3R5bGU9e3sgb3ZlcmZsb3dYOiBcImF1dG9cIiB9fT48dGFibGU+PHRoZWFkPjx0cj48dGg+RcWfaWs8L3RoPjx0aD5NYcOnIEIgLyBTPC90aD48dGg+QmHFn2FyxLEgQiAvIFM8L3RoPjx0aD5CcmllciBCIC8gUzwvdGg+PHRoPkxvZyBMb3NzIEIgLyBTPC90aD48L3RyPjwvdGhlYWQ+PHRib2R5PlxuICAgICAge09iamVjdC5lbnRyaWVzKHJlcG9ydC5zdGF0cy5jb25maWRlbmNlKS5tYXAoKFt0aHJlc2hvbGQsIG1hcmtldHNdKSA9PiB7IGNvbnN0IHMgPSBtYXJrZXRzW1wiMVgyXCJdOyBjb25zdCBiID0gcmVwb3J0LmJhc2VsaW5lLmNvbmZpZGVuY2VbdGhyZXNob2xkXVtcIjFYMlwiXTsgcmV0dXJuIDx0ciBrZXk9e3RocmVzaG9sZH0+PHRoPuKJpSB7dGhyZXNob2xkfTwvdGg+PHRkPntiLnNhbXBsZVNpemV9IC8ge3Muc2FtcGxlU2l6ZX08L3RkPjx0ZD57cGVyY2VudChiLmhpdFJhdGUpfSAvIHtwZXJjZW50KHMuaGl0UmF0ZSl9PC90ZD48dGQ+e251bWJlcihiLmJyaWVyKX0gLyB7bnVtYmVyKHMuYnJpZXIpfTwvdGQ+PHRkPntudW1iZXIoYi5sb2dMb3NzKX0gLyB7bnVtYmVyKHMubG9nTG9zcyl9PC90ZD48L3RyPjsgfSl9XG4gICAgPC90Ym9keT48L3RhYmxlPjwvZGl2PlxuICAgIDxwIGNsYXNzTmFtZT1cIm11dGVkLW5vdGVcIj7EsGtpbGkgcGF6YXJsYXJkYSBiYcWfYXLEsSwgJTUwIGXFn2nEn2luZGUgZXZldC9oYXnEsXIgc8SxbsSxZmxhbmTEsXJtYXPEsWTEsXI7IGJhaGlzIGthemFubWEgb3JhbsSxIGRlxJ9pbGRpci4gQXogw7ZybmVrbGkgYWx0IGdydXBsYXIga2VzaW4gc29udcOnIHNhecSxbG1hei48L3A+XG4gIDwvc2VjdGlvbj47XG59XG4iXX0=

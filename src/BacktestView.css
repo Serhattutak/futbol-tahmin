@@ -1,0 +1,7 @@
+.backtest-report { min-width: 0; }
+.backtest-report table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.backtest-report caption { padding: 12px 0; text-align: left; color: var(--muted); }
+.backtest-report th, .backtest-report td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.backtest-report thead { color: var(--cyan); }
+.backtest-report tbody th { font-weight: 600; }
+.backtest-report p { line-height: 1.6; }

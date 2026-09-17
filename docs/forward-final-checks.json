@@ -1,0 +1,8 @@
+{
+  "artifactSha256": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+  "protectedFiles": 39,
+  "protectedFilesUnchanged": true,
+  "referenceBenchmarkMatches": 1686,
+  "frontendBrowserVerification": "unavailable: browser list empty",
+  "schedulerVerification": "15-minute configuration; accelerated timer, rejection, overlap and restart tests passed; live status endpoint verified; verification timer stopped after check"
+}

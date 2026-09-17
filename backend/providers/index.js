@@ -1,0 +1,8 @@
+const openFootball = require("./openFootball");
+const theSportsDb = require("./theSportsDb");
+
+const providers = [openFootball, theSportsDb];
+function mergeFixtures(fixtures) { const merged = new Map(); for (const fixture of fixtures) { const key = `${fixture.fixture.date.slice(0, 16)}:${String(fixture.teams.home.name).toLowerCase()}:${String(fixture.teams.away.name).toLowerCase()}`; const existing = merged.get(key); if (existing) existing.providers = [...new Set([...(existing.providers || []), fixture.provider])]; else merged.set(key, fixture); } return [...merged.values()]; }
+async function getFixtures(date) { for (const provider of providers) { if (!provider.enabled) continue; const fixtures = await provider.getFixtures(date); if (fixtures.length) return { fixtures: mergeFixtures(fixtures), provider: provider.name, providers: [provider.name] }; } return { fixtures: [], provider: null, providers: [] }; }
+async function getFixture(fixtureId) { for (const provider of providers) { if (!provider.enabled) continue; const fixture = await provider.getFixture(fixtureId); if (fixture) return fixture; } return null; }
+module.exports = { providers, getFixtures, getFixture, getTeamForm: async (teamId) => { for (const provider of providers) { const value = await provider.getTeamForm(teamId); if (Array.isArray(value) && value.length) return value; } return []; }, getH2H: async (homeId, awayId) => { for (const provider of providers) { const value = await provider.getH2H(homeId, awayId); if (value) return value; } return null; }, getStandings: async (leagueId, season) => { for (const provider of providers) { const value = await provider.getStandings(leagueId, season); if (value) return value; } return null; } };

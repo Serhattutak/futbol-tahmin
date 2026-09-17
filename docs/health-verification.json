@@ -1,0 +1,137 @@
+{
+  "status": "ok",
+  "server": "zeus-one-betting-backend",
+  "version": "4.0",
+  "cache": "active",
+  "upstreamBudget": {
+    "limit": 100,
+    "used": 1,
+    "remaining": 99
+  },
+  "archive": {
+    "totalPredictions": 2,
+    "completed": 0,
+    "verified": 0,
+    "conflict": 0,
+    "pending": 1,
+    "unavailable": 0
+  },
+  "readiness": {
+    "readyForBeta": false,
+    "performanceDataNotYetAvailable": true
+  },
+  "providers": [
+    {
+      "name": "sportmonks",
+      "configured": false,
+      "enabled": false,
+      "available": null,
+      "supportedCapabilities": [
+        "fixtures",
+        "fixture",
+        "result",
+        "teamForm",
+        "h2h",
+        "standings",
+        "statistics",
+        "odds",
+        "historicalResults",
+        "form",
+        "results"
+      ],
+      "lastSuccessfulRequest": null,
+      "lastRetrievedAt": null,
+      "errorCategory": null,
+      "quotaStatus": "unknown",
+      "cachedDataCount": 0,
+      "configurationStatus": "NOT_CONFIGURED"
+    },
+    {
+      "name": "api-football",
+      "configured": true,
+      "enabled": true,
+      "available": false,
+      "supportedCapabilities": [
+        "fixtures",
+        "fixture",
+        "teamForm",
+        "h2h",
+        "standings",
+        "odds",
+        "statistics",
+        "result",
+        "results",
+        "historicalResults",
+        "form",
+        "xg"
+      ],
+      "lastSuccessfulRequest": null,
+      "lastRetrievedAt": "2026-09-17T11:41:09.599Z",
+      "errorCategory": "timeout_network",
+      "quotaStatus": "unknown",
+      "cachedDataCount": 0,
+      "configurationStatus": "CONFIGURED"
+    },
+    {
+      "name": "football-data",
+      "configured": false,
+      "enabled": false,
+      "available": null,
+      "supportedCapabilities": [
+        "fixtures",
+        "fixture",
+        "result",
+        "teamForm",
+        "standings",
+        "historicalResults",
+        "form",
+        "results"
+      ],
+      "lastSuccessfulRequest": null,
+      "lastRetrievedAt": null,
+      "errorCategory": null,
+      "quotaStatus": "unknown",
+      "cachedDataCount": 0,
+      "configurationStatus": "NOT_CONFIGURED"
+    },
+    {
+      "name": "openfootball",
+      "configured": true,
+      "enabled": true,
+      "available": false,
+      "supportedCapabilities": [
+        "fixtures",
+        "fixture",
+        "teamForm",
+        "result",
+        "historicalResults",
+        "form",
+        "results"
+      ],
+      "lastSuccessfulRequest": null,
+      "lastRetrievedAt": "2026-09-17T11:41:09.689Z",
+      "errorCategory": "timeout_network",
+      "quotaStatus": "unknown",
+      "cachedDataCount": 0,
+      "configurationStatus": "CONFIGURED"
+    },
+    {
+      "name": "thesportsdb",
+      "configured": true,
+      "enabled": true,
+      "available": false,
+      "supportedCapabilities": [
+        "fixtures",
+        "fixture",
+        "result",
+        "results"
+      ],
+      "lastSuccessfulRequest": null,
+      "lastRetrievedAt": "2026-09-17T11:41:09.691Z",
+      "errorCategory": "timeout_network",
+      "quotaStatus": "unknown",
+      "cachedDataCount": 0,
+      "configurationStatus": "CONFIGURED"
+    }
+  ]
+}

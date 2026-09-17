@@ -1,0 +1,60 @@
+[
+  {
+    "fixtureId": "1570386",
+    "providerFixtureIds": {
+      "api-football": "1570386"
+    },
+    "canonicalFixtureId": "2026-09-17T17:00:team:realbetis:team:getafe:laliga",
+    "date": "2026-09-17T17:00:00.000Z",
+    "league": "La Liga",
+    "homeTeam": "Real Betis",
+    "awayTeam": "Getafe",
+    "home": "Real Betis",
+    "away": "Getafe",
+    "market": "1X",
+    "prediction": "1X",
+    "probability": 95.85,
+    "modelProbability": 95.85,
+    "confidence": 83,
+    "dataQuality": 75,
+    "predictionScore": 86.32,
+    "bookmakerOdds": null,
+    "fairOdds": 1.043,
+    "value": null,
+    "modelVersion": "4.0",
+    "predictedScoreHome": 1,
+    "predictedScoreAway": 0,
+    "status": "pending",
+    "result": null,
+    "createdAt": "2026-09-16T07:53:19.027Z"
+  },
+  {
+    "fixtureId": "1570384",
+    "providerFixtureIds": {
+      "api-football": "1570384"
+    },
+    "canonicalFixtureId": "2026-09-16T17:00:team:atleticomadrid:team:osasuna:laliga",
+    "date": "2026-09-16T17:00:00.000Z",
+    "league": "La Liga",
+    "homeTeam": "Atletico Madrid",
+    "awayTeam": "Osasuna",
+    "home": "Atletico Madrid",
+    "away": "Osasuna",
+    "market": "Üst 1.5",
+    "prediction": "Üst 1.5",
+    "probability": 85.39,
+    "modelProbability": 85.39,
+    "confidence": 83,
+    "dataQuality": 80,
+    "predictionScore": 83.22,
+    "bookmakerOdds": null,
+    "fairOdds": 1.171,
+    "value": null,
+    "modelVersion": "4.0",
+    "predictedScoreHome": 2,
+    "predictedScoreAway": 1,
+    "status": "pending",
+    "result": null,
+    "createdAt": "2026-09-16T14:21:52.207Z"
+  }
+]

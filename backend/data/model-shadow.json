@@ -1,0 +1,333 @@
+[
+  {
+    "key": "1570384:historical-v1-previous-day:8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82:ready:c82f5fb25d12e1de78b7e96234bb9ac34f2668a3a2c7b72eba86cf141d8a89f7",
+    "fixtureId": "1570384",
+    "kickoff": "2026-09-16T17:00:00.000Z",
+    "createdAt": "2026-09-17T07:13:13.437Z",
+    "statisticsVersion": "historical-v1-previous-day",
+    "artifactVersion": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+    "fallbackReason": null,
+    "model40": {
+      "modelVersion": "MODEL_4_0",
+      "probabilities": {
+        "home": 0.6263685759380856,
+        "draw": 0.18819448429669292,
+        "away": 0.18543693976522144,
+        "over15": 0.853907380100244,
+        "over25": 0.690720881427396,
+        "over35": 0.4623333222684588,
+        "bttsYes": 0.6338875809722121
+      },
+      "rawProbabilities": null,
+      "confidence": 83,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    },
+    "model41": {
+      "modelVersion": "MODEL_4_1",
+      "probabilities": {
+        "home": 0.51330622086104,
+        "draw": 0.2659365790967769,
+        "away": 0.22075720004218305,
+        "over15": 0.7847799285944004,
+        "over25": 0.5531246276666748,
+        "over35": 0.3294954135882191,
+        "bttsYes": 0.5681765992050349
+      },
+      "rawProbabilities": {
+        "home": 0.5598127623655964,
+        "draw": 0.24564360795129428,
+        "away": 0.19454362968310954,
+        "over15": 0.7847799285944004,
+        "over25": 0.5531246276666748,
+        "over35": 0.3294954135882191,
+        "bttsYes": 0.5681765992050349,
+        "homeOver05": 0.8202438998292014,
+        "homeOver15": 0.5117546873038832,
+        "awayOver05": 0.6926922581482724,
+        "awayOver15": 0.33009812738255817
+      },
+      "confidence": 75,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    }
+  },
+  {
+    "key": "1570387:historical-v1-previous-day:8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82:INSUFFICIENT_HISTORY:e816ff792b64b72a6991194bc6e399b63572d385e1550aa0d8be21ef024e0a2d",
+    "fixtureId": "1570387",
+    "kickoff": "2026-09-16T17:00:00.000Z",
+    "createdAt": "2026-09-17T07:13:14.339Z",
+    "statisticsVersion": "historical-v1-previous-day",
+    "artifactVersion": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+    "fallbackReason": "INSUFFICIENT_HISTORY",
+    "model40": {
+      "modelVersion": "MODEL_4_0",
+      "probabilities": null,
+      "rawProbabilities": null,
+      "confidence": null,
+      "statisticsQuality": {
+        "score": 50,
+        "homeSample": 0,
+        "awaySample": 10,
+        "missingFields": [
+          "homeHistory",
+          "homeSplit",
+          "h2h",
+          "firstHalf"
+        ],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 0,
+        "away": 10
+      }
+    },
+    "model41": null
+  },
+  {
+    "key": "1511694:historical-v1-previous-day:8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82:INSUFFICIENT_HISTORY:0ce4a675636bae6b87c8ba740c130f05203fb03881bac0b949317c203644e5e1",
+    "fixtureId": "1511694",
+    "kickoff": "2026-09-15T21:00:00.000Z",
+    "createdAt": "2026-09-17T11:42:14.901Z",
+    "statisticsVersion": "historical-v1-previous-day",
+    "artifactVersion": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+    "fallbackReason": "INSUFFICIENT_HISTORY",
+    "model40": {
+      "modelVersion": "MODEL_4_0",
+      "probabilities": null,
+      "rawProbabilities": null,
+      "confidence": null,
+      "statisticsQuality": {
+        "score": 0,
+        "homeSample": 0,
+        "awaySample": 0,
+        "missingFields": [
+          "homeHistory",
+          "awayHistory",
+          "homeSplit",
+          "awaySplit",
+          "h2h",
+          "firstHalf"
+        ],
+        "sources": []
+      },
+      "historicalSampleSize": {
+        "home": 0,
+        "away": 0
+      }
+    },
+    "model41": null
+  },
+  {
+    "key": "of-premierleague-2026-09-14-leedsunitedfc-newcastleunitedfc:historical-v1-previous-day:8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82:INSUFFICIENT_HISTORY:abb268ed4a724ac961b4bb2a711c38ff95a46c2b7e77cb12da21733befae56e9",
+    "fixtureId": "of-premierleague-2026-09-14-leedsunitedfc-newcastleunitedfc",
+    "kickoff": "2026-09-14T20:00:00.000Z",
+    "createdAt": "2026-09-17T11:51:38.946Z",
+    "statisticsVersion": "historical-v1-previous-day",
+    "artifactVersion": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+    "fallbackReason": "INSUFFICIENT_HISTORY",
+    "model40": {
+      "modelVersion": "MODEL_4_0",
+      "probabilities": null,
+      "rawProbabilities": null,
+      "confidence": null,
+      "statisticsQuality": {
+        "score": 0,
+        "homeSample": 0,
+        "awaySample": 0,
+        "missingFields": [
+          "homeHistory",
+          "awayHistory",
+          "homeSplit",
+          "awaySplit",
+          "h2h",
+          "firstHalf"
+        ],
+        "sources": []
+      },
+      "historicalSampleSize": {
+        "home": 0,
+        "away": 0
+      }
+    },
+    "model41": null
+  },
+  {
+    "key": "1570384:historical-v1-previous-day:8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82:ready:5b65a8b802e3ca55f3534d53e8fe00bbe87fba96d7651d137904b85ea93c7bc1",
+    "fixtureId": "1570384",
+    "kickoff": "2026-09-16T17:00:00.000Z",
+    "createdAt": "2026-09-17T12:09:28.140Z",
+    "statisticsVersion": "historical-v1-previous-day",
+    "artifactVersion": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+    "fallbackReason": null,
+    "model40": {
+      "modelVersion": "MODEL_4_0",
+      "probabilities": {
+        "home": 0.6263685759380856,
+        "draw": 0.18819448429669292,
+        "away": 0.18543693976522144,
+        "over15": 0.853907380100244,
+        "over25": 0.690720881427396,
+        "over35": 0.4623333222684588,
+        "bttsYes": 0.6338875809722121
+      },
+      "rawProbabilities": null,
+      "confidence": 83,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    },
+    "model41": {
+      "modelVersion": "MODEL_4_1",
+      "probabilities": {
+        "home": 0.51330622086104,
+        "draw": 0.2659365790967769,
+        "away": 0.22075720004218305,
+        "over15": 0.7847799285944004,
+        "over25": 0.5531246276666748,
+        "over35": 0.3294954135882191,
+        "bttsYes": 0.5681765992050349
+      },
+      "rawProbabilities": {
+        "home": 0.5598127623655964,
+        "draw": 0.24564360795129428,
+        "away": 0.19454362968310954,
+        "over15": 0.7847799285944004,
+        "over25": 0.5531246276666748,
+        "over35": 0.3294954135882191,
+        "bttsYes": 0.5681765992050349,
+        "homeOver05": 0.8202438998292014,
+        "homeOver15": 0.5117546873038832,
+        "awayOver05": 0.6926922581482724,
+        "awayOver15": 0.33009812738255817
+      },
+      "confidence": 75,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    }
+  },
+  {
+    "key": "1570386:historical-v1-previous-day:8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82:ready:9b144029564c7ffca7bbebd9de67b3e901574cd740ea31a869bbebd3923b6ab3",
+    "fixtureId": "1570386",
+    "kickoff": "2026-09-17T17:00:00.000Z",
+    "createdAt": "2026-09-17T12:15:24.396Z",
+    "statisticsVersion": "historical-v1-previous-day",
+    "artifactVersion": "8a2be7d9c4fe131bbf6959c43be2b0245152478dec339d2f783ffb6bc2d72b82",
+    "fallbackReason": null,
+    "model40": {
+      "modelVersion": "MODEL_4_0",
+      "probabilities": {
+        "home": 0.740750581236013,
+        "draw": 0.21770861457292467,
+        "away": 0.0415408041910625,
+        "over15": 0.538371232198296,
+        "over25": 0.28601605558095483,
+        "over35": 0.12335661654151113,
+        "bttsYes": 0.19006749454255767
+      },
+      "rawProbabilities": null,
+      "confidence": 87,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [
+          "h2h"
+        ],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    },
+    "model41": {
+      "modelVersion": "MODEL_4_1",
+      "probabilities": {
+        "home": 0.6803452869997719,
+        "draw": 0.22171673875309303,
+        "away": 0.09793797424713505,
+        "over15": 0.7261543083383313,
+        "over25": 0.4732250434563835,
+        "over35": 0.2568118129293244,
+        "bttsYes": 0.47202026810738995
+      },
+      "rawProbabilities": {
+        "home": 0.7497714272273249,
+        "draw": 0.18407926829166954,
+        "away": 0.06614930448100549,
+        "over15": 0.7261543083383313,
+        "over25": 0.4732250434563835,
+        "over35": 0.2568118129293244,
+        "bttsYes": 0.47202026810738995,
+        "homeOver05": 0.8186906463398889,
+        "homeOver15": 0.5090957560816352,
+        "awayOver05": 0.5765551007790863,
+        "awayOver15": 0.2126753988403952
+      },
+      "confidence": 83,
+      "statisticsQuality": {
+        "score": 98,
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [
+          "h2h"
+        ],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      }
+    }
+  }
+]

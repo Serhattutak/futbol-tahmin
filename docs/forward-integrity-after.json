@@ -1,0 +1,248 @@
+[
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\baseline-lock.json",
+        "Before":  "2FF470EF3456B2E965CC4468FAEC58E74FDC86C97554BD51F5B914F3ADDEC026",
+        "After":  "2FF470EF3456B2E965CC4468FAEC58E74FDC86C97554BD51F5B914F3ADDEC026",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Bundesliga-2024-25.json",
+        "Before":  "45C49CB6CD038BEBD135BAF4097CD62C6AD00B32C30471D3D1ED5313BED8375A",
+        "After":  "45C49CB6CD038BEBD135BAF4097CD62C6AD00B32C30471D3D1ED5313BED8375A",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Bundesliga-2025-26.json",
+        "Before":  "D4EF5DB69F9C516F6AF821F9A182305045B7AFBEB1C91FADE3AF7D918FC28559",
+        "After":  "D4EF5DB69F9C516F6AF821F9A182305045B7AFBEB1C91FADE3AF7D918FC28559",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\La-Liga-2024-25.json",
+        "Before":  "A64FCFD12EE0E6DA4A283909B6B54D3BE86166DCD85F42A9037494D92312D883",
+        "After":  "A64FCFD12EE0E6DA4A283909B6B54D3BE86166DCD85F42A9037494D92312D883",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\La-Liga-2025-26.json",
+        "Before":  "417CEF63662336743E3BCDB76C426B649B31001EFF16CB153BD054E42A7316B4",
+        "After":  "417CEF63662336743E3BCDB76C426B649B31001EFF16CB153BD054E42A7316B4",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Ligue-1-2024-25.json",
+        "Before":  "80A92A1FFC8B045AB3963463B65F5E2DCE7F8E4E147BB3C9D0495D80D410F68B",
+        "After":  "80A92A1FFC8B045AB3963463B65F5E2DCE7F8E4E147BB3C9D0495D80D410F68B",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Ligue-1-2025-26.json",
+        "Before":  "17E1BF657431963401EA929850E67B2B5F83A4075E6EED825DF78EC8FA34E233",
+        "After":  "17E1BF657431963401EA929850E67B2B5F83A4075E6EED825DF78EC8FA34E233",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\model41-artifact.json",
+        "Before":  "8A2BE7D9C4FE131BBF6959C43BE2B0245152478DEC339D2F783FFB6BC2D72B82",
+        "After":  "8A2BE7D9C4FE131BBF6959C43BE2B0245152478DEC339D2F783FFB6BC2D72B82",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\model41-development-rows.json",
+        "Before":  "11D3218DB1ACF7F28422BC81D443AB2478E7C4A191DA4E56609D95831AF44581",
+        "After":  "11D3218DB1ACF7F28422BC81D443AB2478E7C4A191DA4E56609D95831AF44581",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\model41-development.json",
+        "Before":  "A04F8C6039394CDFC7865BCF8966DB06208DB4BDD1CD14AAF1BC601123FD4D67",
+        "After":  "A04F8C6039394CDFC7865BCF8966DB06208DB4BDD1CD14AAF1BC601123FD4D67",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\model41-report.json",
+        "Before":  "D9BA5F00A32A30D928BE8630B46A1903149F536508DEA5FDAFDEEA0856EBDC3A",
+        "After":  "D9BA5F00A32A30D928BE8630B46A1903149F536508DEA5FDAFDEEA0856EBDC3A",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\model41-test-predictions.json",
+        "Before":  "A08B408060FD14A0B812F153BBCD4099DFB8899B5C5E06D3863A1D699AC1F900",
+        "After":  "A08B408060FD14A0B812F153BBCD4099DFB8899B5C5E06D3863A1D699AC1F900",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\predictions.json",
+        "Before":  "5C51AA86893E07FE5864CCDF99AA7D255A88EE01DBA24920CA0AEEE904E63E28",
+        "After":  "5C51AA86893E07FE5864CCDF99AA7D255A88EE01DBA24920CA0AEEE904E63E28",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Premier-League-2024-25.json",
+        "Before":  "F02DAD1A0CE9EFDC96E37189AFE0871E25EEC129C58330B28B7A0CA9E31A67B6",
+        "After":  "F02DAD1A0CE9EFDC96E37189AFE0871E25EEC129C58330B28B7A0CA9E31A67B6",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Premier-League-2025-26.json",
+        "Before":  "87AFD4DBC844BC13D05CE28A477D357827D171CC156748704D05CFC08A011D9D",
+        "After":  "87AFD4DBC844BC13D05CE28A477D357827D171CC156748704D05CFC08A011D9D",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\report.json",
+        "Before":  "50529E7011D345353A27F8304CB13BA49D9FD1F07D77196C5FDD68E7847770F2",
+        "After":  "50529E7011D345353A27F8304CB13BA49D9FD1F07D77196C5FDD68E7847770F2",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Serie-A-2024-25.json",
+        "Before":  "FF39D76FA5D14551FFB0492C79310C144E07B90B9614CBA0F172CEB8CEB97B02",
+        "After":  "FF39D76FA5D14551FFB0492C79310C144E07B90B9614CBA0F172CEB8CEB97B02",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\data\\backtest\\Serie-A-2025-26.json",
+        "Before":  "189E6D9EA080AB877474497355BF835E2BCD5D689953EC32A2114F79ACF5876F",
+        "After":  "189E6D9EA080AB877474497355BF835E2BCD5D689953EC32A2114F79ACF5876F",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\apiFootballClient.js",
+        "Before":  "7EBD22821885F32C41F0E0FD0923BAE670AE903B42DC7E5F5CBF72E233F420E9",
+        "After":  "7EBD22821885F32C41F0E0FD0923BAE670AE903B42DC7E5F5CBF72E233F420E9",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\backtest.js",
+        "Before":  "FBDCF2C484BF1569810817DAA6419BC19ECA8D8FFF7286C1544CBA0152C5F00C",
+        "After":  "FBDCF2C484BF1569810817DAA6419BC19ECA8D8FFF7286C1544CBA0152C5F00C",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\benchmarkDataset.js",
+        "Before":  "0FBB830A6451872E94E7A6772DDF013DA5476DF631204F1BC43F7A4406537EF6",
+        "After":  "0FBB830A6451872E94E7A6772DDF013DA5476DF631204F1BC43F7A4406537EF6",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\benchmarkMetrics.js",
+        "Before":  "2C682D66F635902550ADDA87C66AB1FF42C5F9D5A0F4887D9BC5FA2912C80E10",
+        "After":  "2C682D66F635902550ADDA87C66AB1FF42C5F9D5A0F4887D9BC5FA2912C80E10",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\bookmakerOdds.js",
+        "Before":  "A1F8F97A24F3C103C17E2C9E5CE01DD39F15F5BF20CE3DDC2BCD243CED6ECE9C",
+        "After":  "A1F8F97A24F3C103C17E2C9E5CE01DD39F15F5BF20CE3DDC2BCD243CED6ECE9C",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\chronologicalBenchmark.js",
+        "Before":  "0C785B25FF110D8146DE6E6BEAEF1EE51B99FE5C5493E8AAF1CED6FA21B59A04",
+        "After":  "0C785B25FF110D8146DE6E6BEAEF1EE51B99FE5C5493E8AAF1CED6FA21B59A04",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\fixtureDiscovery.js",
+        "Before":  "713574524A6A7B8D0D3E932FBCA84713BB522B13BD1C953F784B157912869A62",
+        "After":  "713574524A6A7B8D0D3E932FBCA84713BB522B13BD1C953F784B157912869A62",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\fixtureNormalization.js",
+        "Before":  "E4BB730561983D111326DCBAD741675912F7326EA9BF8E2A4F90E6A43CED9426",
+        "After":  "E4BB730561983D111326DCBAD741675912F7326EA9BF8E2A4F90E6A43CED9426",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\forwardCapture.js",
+        "Before":  "C18FA94EC322D0FFA9BAAD96D1CC32CD29E6287B830A830823F6B3E7613908B9",
+        "After":  "DA50ACD144F09D111864768BA1650ED0FEE65DD4C1CD74DDC1A838E57F7638FB",
+        "Unchanged":  false
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\forwardCaptureConfig.js",
+        "Before":  "2018D8BE490927342C4F5890905113A301449A7943E90BD4F1B0099C9D2D23CF",
+        "After":  "84C628599D2FA90E60A9FE9147E19B23C8ED197F470B8F2F0761DE37568CC7F7",
+        "Unchanged":  false
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\forwardPerformance.js",
+        "Before":  "D8550C3AADC4B82C8348DF0663E696894E19A7BCEDD91B16208C51AD5ECEE728",
+        "After":  "D8550C3AADC4B82C8348DF0663E696894E19A7BCEDD91B16208C51AD5ECEE728",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\historicalArchive.js",
+        "Before":  "26A96D829D8FF2358B2C8E8C65DB670669369C4038CA32454D6DE1C48A709417",
+        "After":  "26A96D829D8FF2358B2C8E8C65DB670669369C4038CA32454D6DE1C48A709417",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\historicalForm.js",
+        "Before":  "2F941C3BDC71953A748BA38C732827A50131A4602190EB96B7FCBC99A53EECD2",
+        "After":  "2F941C3BDC71953A748BA38C732827A50131A4602190EB96B7FCBC99A53EECD2",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\model41.js",
+        "Before":  "C8C853F46FB66BD178968AD41D77333143A4F48DFD0DF503D748ECA73F1650F4",
+        "After":  "C8C853F46FB66BD178968AD41D77333143A4F48DFD0DF503D748ECA73F1650F4",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\model41Experiment.js",
+        "Before":  "33AD0948FD99DEDE82DE6448D770D223573B315A305F1307F553BB6292EBD853",
+        "After":  "33AD0948FD99DEDE82DE6448D770D223573B315A305F1307F553BB6292EBD853",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\modelValidation.js",
+        "Before":  "5EA7582EDA6EA57987E7CD88130FCB7684277F3B1C7C9FAA1A38E71C22A7E1C2",
+        "After":  "5EA7582EDA6EA57987E7CD88130FCB7684277F3B1C7C9FAA1A38E71C22A7E1C2",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\modelVersions.js",
+        "Before":  "E1A632A39BDAB67F675F3129B411ABA8E7A5DAA5E2C18E43A859B4802AC0288D",
+        "After":  "E1A632A39BDAB67F675F3129B411ABA8E7A5DAA5E2C18E43A859B4802AC0288D",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\multiProviderRegistry.js",
+        "Before":  "AD1339AACD2FE6436F5AE3B889AF6EC8C72BFC3126A4D780F048E4C711DCEBC4",
+        "After":  "AD1339AACD2FE6436F5AE3B889AF6EC8C72BFC3126A4D780F048E4C711DCEBC4",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\predictionLedger.js",
+        "Before":  "5B9DB2A1A9DD00141B1E60B7C671A8D0EE19E07B0769D76F0456E2EBBF068797",
+        "After":  "5B9DB2A1A9DD00141B1E60B7C671A8D0EE19E07B0769D76F0456E2EBBF068797",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\predictionModel.js",
+        "Before":  "1658E3FE709C1978730202B1333A4012A13CCF9392BB3CD46DBFA32661362EB7",
+        "After":  "1658E3FE709C1978730202B1333A4012A13CCF9392BB3CD46DBFA32661362EB7",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\productionAnalysis.js",
+        "Before":  "EBE79CB0E6A945EF36C05A5AA1B2C4F4D668E6F707EF20143C7AB06BE8E81571",
+        "After":  "EBE79CB0E6A945EF36C05A5AA1B2C4F4D668E6F707EF20143C7AB06BE8E81571",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\services\\teamStatistics.js",
+        "Before":  "F0EA3D113075FF8CBC15498CEB853B2BFD7BB3196B282421627B8875E067DE0D",
+        "After":  "F0EA3D113075FF8CBC15498CEB853B2BFD7BB3196B282421627B8875E067DE0D",
+        "Unchanged":  true
+    },
+    {
+        "Path":  "C:\\Users\\user\\futbol-tahmin\\backend\\.env",
+        "Before":  "592525D38CD8F9E1D63DF842DA456B9F58483BFD3FB67238C1FBD1AD3F9FE30E",
+        "After":  "592525D38CD8F9E1D63DF842DA456B9F58483BFD3FB67238C1FBD1AD3F9FE30E",
+        "Unchanged":  true
+    }
+]

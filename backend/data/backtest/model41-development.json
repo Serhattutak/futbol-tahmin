@@ -1,0 +1,2322 @@
+{
+  "counts": {
+    "train": 737,
+    "validation": 416,
+    "test": 533
+  },
+  "search": {
+    "space": {
+      "ridge": [
+        0.03,
+        0.1,
+        0.3
+      ],
+      "baseScale": [
+        0.75,
+        1,
+        1.25
+      ],
+      "iterations": 400,
+      "goalIterations": 300
+    },
+    "classifierFits": 9,
+    "goalFits": 3,
+    "ablationFits": 24,
+    "classSearch": [
+      {
+        "ridge": 0.03,
+        "baseScale": 0.75,
+        "objective": 1.6713543468198926,
+        "metrics": {
+          "accuracy": 0.4439461883408072,
+          "brier": 0.6277559209088499,
+          "logLoss": 1.0435984259110427,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.03,
+        "baseScale": 1,
+        "objective": 1.6755671097531448,
+        "metrics": {
+          "accuracy": 0.4484304932735426,
+          "brier": 0.6292642135543077,
+          "logLoss": 1.046302896198837,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.03,
+        "baseScale": 1.25,
+        "objective": 1.6817181335004996,
+        "metrics": {
+          "accuracy": 0.45739910313901344,
+          "brier": 0.6314922242800829,
+          "logLoss": 1.0502259092204167,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.1,
+        "baseScale": 0.75,
+        "objective": 1.6739469348255798,
+        "metrics": {
+          "accuracy": 0.47085201793721976,
+          "brier": 0.6293409223997988,
+          "logLoss": 1.044606012425781,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.1,
+        "baseScale": 1,
+        "objective": 1.6822926766144655,
+        "metrics": {
+          "accuracy": 0.484304932735426,
+          "brier": 0.6325761774940193,
+          "logLoss": 1.0497164991204462,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.1,
+        "baseScale": 1.25,
+        "objective": 1.6938772007320526,
+        "metrics": {
+          "accuracy": 0.484304932735426,
+          "brier": 0.6369639256501507,
+          "logLoss": 1.056913275081902,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.3,
+        "baseScale": 0.75,
+        "objective": 1.6814775751173028,
+        "metrics": {
+          "accuracy": 0.47533632286995514,
+          "brier": 0.6326935292829524,
+          "logLoss": 1.0487840458343503,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.3,
+        "baseScale": 1,
+        "objective": 1.694188978882329,
+        "metrics": {
+          "accuracy": 0.47533632286995514,
+          "brier": 0.637797678111394,
+          "logLoss": 1.0563913007709351,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      },
+      {
+        "ridge": 0.3,
+        "baseScale": 1.25,
+        "objective": 1.7118204792659433,
+        "metrics": {
+          "accuracy": 0.47533632286995514,
+          "brier": 0.6445455032412729,
+          "logLoss": 1.0672749760246703,
+          "over25Brier": 0.26521434550242495,
+          "bttsBrier": 0.25457451290053895
+        }
+      }
+    ],
+    "goalSearch": [
+      {
+        "ridge": 0.03,
+        "objective": 0.8503387698710385,
+        "metrics": {
+          "accuracy": 0.4798206278026906,
+          "brier": 0.6469985487425255,
+          "logLoss": 1.0703661055041345,
+          "over25Brier": 0.25039678848762964,
+          "bttsBrier": 0.25068575910635804
+        }
+      },
+      {
+        "ridge": 0.1,
+        "objective": 0.8489202773520516,
+        "metrics": {
+          "accuracy": 0.4798206278026906,
+          "brier": 0.6469985487425255,
+          "logLoss": 1.0703661055041345,
+          "over25Brier": 0.24996920922511479,
+          "bttsBrier": 0.250016742397755
+        }
+      },
+      {
+        "ridge": 0.3,
+        "objective": 0.8476278142812826,
+        "metrics": {
+          "accuracy": 0.4798206278026906,
+          "brier": 0.6469985487425255,
+          "logLoss": 1.0703661055041345,
+          "over25Brier": 0.24960586038864116,
+          "bttsBrier": 0.24909353378200083
+        }
+      }
+    ],
+    "incumbentGoalObjective": 0.8866535775322085,
+    "criterion": "1X2: LogLoss+Brier; goals: mean(LogLoss+Brier) across four markets; accuracy never selected"
+  },
+  "calibration": {
+    "fit": "January validation",
+    "selection": "February validation",
+    "raw": {
+      "12": {
+        "sampleSize": 193,
+        "correct": 144,
+        "incorrect": 49,
+        "hitRate": 0.7461139896373057,
+        "predictedProbabilityAverage": 0.7657833005389805,
+        "brier": 0.1912960899349547,
+        "logLoss": 0.5709049477464824,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "40-49",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "50-59",
+            "count": 1,
+            "averageProbability": 0.597154767742909,
+            "actualSuccessRate": 0,
+            "error": 0.597154767742909
+          },
+          {
+            "bucket": "60-69",
+            "count": 33,
+            "averageProbability": 0.663865000561805,
+            "actualSuccessRate": 0.8181818181818182,
+            "error": 0.15431681762001326
+          },
+          {
+            "bucket": "70-79",
+            "count": 95,
+            "averageProbability": 0.7561994973009745,
+            "actualSuccessRate": 0.6947368421052632,
+            "error": 0.06146265519571126
+          },
+          {
+            "bucket": "80-89",
+            "count": 63,
+            "averageProbability": 0.833998994079016,
+            "actualSuccessRate": 0.7936507936507936,
+            "error": 0.0403482004282224
+          },
+          {
+            "bucket": "90-100",
+            "count": 1,
+            "averageProbability": 0.9105883471701001,
+            "actualSuccessRate": 1,
+            "error": 0.08941165282989993
+          }
+        ],
+        "ece": 0.07336741073887992
+      },
+      "1X2": {
+        "sampleSize": 193,
+        "correct": 91,
+        "incorrect": 102,
+        "hitRate": 0.47150259067357514,
+        "predictedProbabilityAverage": 0.5266697444872447,
+        "brier": 0.6190245574361802,
+        "logLoss": 1.0365189766930687,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 27,
+            "averageProbability": 0.37549544011215025,
+            "actualSuccessRate": 0.25925925925925924,
+            "error": 0.116236180852891
+          },
+          {
+            "bucket": "40-49",
+            "count": 68,
+            "averageProbability": 0.4474534962020937,
+            "actualSuccessRate": 0.4117647058823529,
+            "error": 0.03568879031974076
+          },
+          {
+            "bucket": "50-59",
+            "count": 48,
+            "averageProbability": 0.553662993210981,
+            "actualSuccessRate": 0.4791666666666667,
+            "error": 0.07449632654431432
+          },
+          {
+            "bucket": "60-69",
+            "count": 31,
+            "averageProbability": 0.648556549404534,
+            "actualSuccessRate": 0.6129032258064516,
+            "error": 0.035653323598082376
+          },
+          {
+            "bucket": "70-79",
+            "count": 15,
+            "averageProbability": 0.7394410027117694,
+            "actualSuccessRate": 0.6666666666666666,
+            "error": 0.07277433604510275
+          },
+          {
+            "bucket": "80-89",
+            "count": 4,
+            "averageProbability": 0.8273385787308953,
+            "actualSuccessRate": 1,
+            "error": 0.17266142126910466
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.06232410391808823
+      },
+      "Home": {
+        "sampleSize": 193,
+        "correct": 122,
+        "incorrect": 71,
+        "hitRate": 0.6321243523316062,
+        "predictedProbabilityAverage": 0.44866932890207495,
+        "brier": 0.22120516206101976,
+        "logLoss": 0.6307119403910495,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 1,
+            "averageProbability": 0.0780510175977817,
+            "actualSuccessRate": 0,
+            "error": 0.0780510175977817
+          },
+          {
+            "bucket": "10-19",
+            "count": 14,
+            "averageProbability": 0.15142842155335365,
+            "actualSuccessRate": 0.14285714285714285,
+            "error": 0.008571278696210799
+          },
+          {
+            "bucket": "20-29",
+            "count": 22,
+            "averageProbability": 0.25432258419510645,
+            "actualSuccessRate": 0.22727272727272727,
+            "error": 0.027049856922379184
+          },
+          {
+            "bucket": "30-39",
+            "count": 41,
+            "averageProbability": 0.34743578957954796,
+            "actualSuccessRate": 0.36585365853658536,
+            "error": 0.018417868957037398
+          },
+          {
+            "bucket": "40-49",
+            "count": 43,
+            "averageProbability": 0.44644859684296784,
+            "actualSuccessRate": 0.4418604651162791,
+            "error": 0.00458813172668876
+          },
+          {
+            "bucket": "50-59",
+            "count": 35,
+            "averageProbability": 0.5578263983669398,
+            "actualSuccessRate": 0.4857142857142857,
+            "error": 0.0721121126526541
+          },
+          {
+            "bucket": "60-69",
+            "count": 22,
+            "averageProbability": 0.652308184906859,
+            "actualSuccessRate": 0.6363636363636364,
+            "error": 0.015944548543222692
+          },
+          {
+            "bucket": "70-79",
+            "count": 11,
+            "averageProbability": 0.7430744857942617,
+            "actualSuccessRate": 0.6363636363636364,
+            "error": 0.10671084943062537
+          },
+          {
+            "bucket": "80-89",
+            "count": 4,
+            "averageProbability": 0.8273385787308953,
+            "actualSuccessRate": 1,
+            "error": 0.17266142126910466
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.033599674107410965
+      },
+      "Draw": {
+        "sampleSize": 193,
+        "correct": 144,
+        "incorrect": 49,
+        "hitRate": 0.7461139896373057,
+        "predictedProbabilityAverage": 0.23421669946101992,
+        "brier": 0.19129608993495475,
+        "logLoss": 0.5709049477464824,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 1,
+            "averageProbability": 0.0894116528299001,
+            "actualSuccessRate": 0,
+            "error": 0.0894116528299001
+          },
+          {
+            "bucket": "10-19",
+            "count": 63,
+            "averageProbability": 0.16600100592098369,
+            "actualSuccessRate": 0.20634920634920634,
+            "error": 0.04034820042822265
+          },
+          {
+            "bucket": "20-29",
+            "count": 95,
+            "averageProbability": 0.2438005026990255,
+            "actualSuccessRate": 0.30526315789473685,
+            "error": 0.06146265519571134
+          },
+          {
+            "bucket": "30-39",
+            "count": 33,
+            "averageProbability": 0.33613499943819486,
+            "actualSuccessRate": 0.18181818181818182,
+            "error": 0.15431681762001304
+          },
+          {
+            "bucket": "40-49",
+            "count": 1,
+            "averageProbability": 0.40284523225709085,
+            "actualSuccessRate": 1,
+            "error": 0.5971547677429092
+          },
+          {
+            "bucket": "50-59",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "60-69",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "70-79",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.07336741073888002
+      },
+      "Away": {
+        "sampleSize": 193,
+        "correct": 134,
+        "incorrect": 59,
+        "hitRate": 0.694300518134715,
+        "predictedProbabilityAverage": 0.31711397163690563,
+        "brier": 0.20652330544020597,
+        "logLoss": 0.6031544805075467,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 10,
+            "averageProbability": 0.06824694947671184,
+            "actualSuccessRate": 0.3,
+            "error": 0.23175305052328815
+          },
+          {
+            "bucket": "10-19",
+            "count": 36,
+            "averageProbability": 0.15753726995966078,
+            "actualSuccessRate": 0.16666666666666666,
+            "error": 0.009129396707005882
+          },
+          {
+            "bucket": "20-29",
+            "count": 58,
+            "averageProbability": 0.2545780577268171,
+            "actualSuccessRate": 0.25862068965517243,
+            "error": 0.004042631928355356
+          },
+          {
+            "bucket": "30-39",
+            "count": 38,
+            "averageProbability": 0.34553422450364496,
+            "actualSuccessRate": 0.39473684210526316,
+            "error": 0.049202617601618204
+          },
+          {
+            "bucket": "40-49",
+            "count": 25,
+            "averageProbability": 0.4491675616600174,
+            "actualSuccessRate": 0.32,
+            "error": 0.12916756166001742
+          },
+          {
+            "bucket": "50-59",
+            "count": 13,
+            "averageProbability": 0.5424538254834002,
+            "actualSuccessRate": 0.46153846153846156,
+            "error": 0.08091536394493859
+          },
+          {
+            "bucket": "60-69",
+            "count": 9,
+            "averageProbability": 0.6393858848432955,
+            "actualSuccessRate": 0.5555555555555556,
+            "error": 0.08383032928773992
+          },
+          {
+            "bucket": "70-79",
+            "count": 4,
+            "averageProbability": 0.7294489242349156,
+            "actualSuccessRate": 0.75,
+            "error": 0.020551075765084414
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.051130191434330716
+      },
+      "Over 1.5": {
+        "sampleSize": 193,
+        "correct": 149,
+        "incorrect": 44,
+        "hitRate": 0.772020725388601,
+        "predictedProbabilityAverage": 0.7545385085581012,
+        "brier": 0.17591571739945597,
+        "logLoss": 0.5353730047364789,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "40-49",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "50-59",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "60-69",
+            "count": 19,
+            "averageProbability": 0.6728826424621893,
+            "actualSuccessRate": 0.8421052631578947,
+            "error": 0.16922262069570537
+          },
+          {
+            "bucket": "70-79",
+            "count": 146,
+            "averageProbability": 0.7518796358860742,
+            "actualSuccessRate": 0.7465753424657534,
+            "error": 0.005304293420320794
+          },
+          {
+            "bucket": "80-89",
+            "count": 28,
+            "averageProbability": 0.8238119680558943,
+            "actualSuccessRate": 0.8571428571428571,
+            "error": 0.0333308890869628
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.025507365424975108
+      },
+      "Over 2.5": {
+        "sampleSize": 193,
+        "correct": 100,
+        "incorrect": 93,
+        "hitRate": 0.5181347150259067,
+        "predictedProbabilityAverage": 0.5134032396786413,
+        "brier": 0.24699636007552667,
+        "logLoss": 0.6869572919284097,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 7,
+            "averageProbability": 0.3802868776660538,
+            "actualSuccessRate": 0.7142857142857143,
+            "error": 0.3339988366196605
+          },
+          {
+            "bucket": "40-49",
+            "count": 73,
+            "averageProbability": 0.46701136061692405,
+            "actualSuccessRate": 0.4931506849315068,
+            "error": 0.026139324314582768
+          },
+          {
+            "bucket": "50-59",
+            "count": 96,
+            "averageProbability": 0.5378089239282949,
+            "actualSuccessRate": 0.5,
+            "error": 0.037808923928294935
+          },
+          {
+            "bucket": "60-69",
+            "count": 17,
+            "averageProbability": 0.6296077113037409,
+            "actualSuccessRate": 0.7647058823529411,
+            "error": 0.1350981710492002
+          },
+          {
+            "bucket": "70-79",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.052707192415828406
+      },
+      "Over 3.5": {
+        "sampleSize": 193,
+        "correct": 138,
+        "incorrect": 55,
+        "hitRate": 0.7150259067357513,
+        "predictedProbabilityAverage": 0.29474234730573284,
+        "brier": 0.20050089200078972,
+        "logLoss": 0.5903040927167041,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 7,
+            "averageProbability": 0.18307351356225815,
+            "actualSuccessRate": 0.14285714285714285,
+            "error": 0.0402163707051153
+          },
+          {
+            "bucket": "20-29",
+            "count": 103,
+            "averageProbability": 0.26285900237292903,
+            "actualSuccessRate": 0.27184466019417475,
+            "error": 0.008985657821245718
+          },
+          {
+            "bucket": "30-39",
+            "count": 77,
+            "averageProbability": 0.3357630727304792,
+            "actualSuccessRate": 0.2727272727272727,
+            "error": 0.06303580000320647
+          },
+          {
+            "bucket": "40-49",
+            "count": 6,
+            "averageProbability": 0.44592076506867473,
+            "actualSuccessRate": 0.8333333333333334,
+            "error": 0.38741256826465864
+          },
+          {
+            "bucket": "50-59",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "60-69",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "70-79",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.0434469915044506
+      },
+      "BTTS Yes": {
+        "sampleSize": 193,
+        "correct": 103,
+        "incorrect": 90,
+        "hitRate": 0.533678756476684,
+        "predictedProbabilityAverage": 0.5192770376843254,
+        "brier": 0.24985321076774084,
+        "logLoss": 0.6932979210238963,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 1,
+            "averageProbability": 0.22823649754111375,
+            "actualSuccessRate": 1,
+            "error": 0.7717635024588863
+          },
+          {
+            "bucket": "30-39",
+            "count": 3,
+            "averageProbability": 0.3533313646460801,
+            "actualSuccessRate": 0.6666666666666666,
+            "error": 0.3133353020205865
+          },
+          {
+            "bucket": "40-49",
+            "count": 48,
+            "averageProbability": 0.46318637052254186,
+            "actualSuccessRate": 0.4791666666666667,
+            "error": 0.015980296144124828
+          },
+          {
+            "bucket": "50-59",
+            "count": 135,
+            "averageProbability": 0.5402660960034991,
+            "actualSuccessRate": 0.5333333333333333,
+            "error": 0.0069327626701657374
+          },
+          {
+            "bucket": "60-69",
+            "count": 6,
+            "averageProbability": 0.6272281560068397,
+            "actualSuccessRate": 0.8333333333333334,
+            "error": 0.2061051773264937
+          },
+          {
+            "bucket": "70-79",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.024100402320569817
+      },
+      "BTTS No": {
+        "sampleSize": 193,
+        "correct": 103,
+        "incorrect": 90,
+        "hitRate": 0.533678756476684,
+        "predictedProbabilityAverage": 0.48072296231567463,
+        "brier": 0.24985321076774084,
+        "logLoss": 0.6932979210238963,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 6,
+            "averageProbability": 0.37277184399316027,
+            "actualSuccessRate": 0.16666666666666666,
+            "error": 0.2061051773264936
+          },
+          {
+            "bucket": "40-49",
+            "count": 135,
+            "averageProbability": 0.45973390399650077,
+            "actualSuccessRate": 0.4666666666666667,
+            "error": 0.006932762670165904
+          },
+          {
+            "bucket": "50-59",
+            "count": 48,
+            "averageProbability": 0.536813629477458,
+            "actualSuccessRate": 0.5208333333333334,
+            "error": 0.01598029614412466
+          },
+          {
+            "bucket": "60-69",
+            "count": 3,
+            "averageProbability": 0.6466686353539198,
+            "actualSuccessRate": 0.3333333333333333,
+            "error": 0.3133353020205865
+          },
+          {
+            "bucket": "70-79",
+            "count": 1,
+            "averageProbability": 0.7717635024588863,
+            "actualSuccessRate": 0,
+            "error": 0.7717635024588863
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.02410040232056989
+      },
+      "1X": {
+        "sampleSize": 193,
+        "correct": 134,
+        "incorrect": 59,
+        "hitRate": 0.694300518134715,
+        "predictedProbabilityAverage": 0.6828860283630948,
+        "brier": 0.206523305440206,
+        "logLoss": 0.603154480507547,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 4,
+            "averageProbability": 0.27055107576508436,
+            "actualSuccessRate": 0.25,
+            "error": 0.02055107576508436
+          },
+          {
+            "bucket": "30-39",
+            "count": 9,
+            "averageProbability": 0.3606141151567047,
+            "actualSuccessRate": 0.4444444444444444,
+            "error": 0.0838303292877397
+          },
+          {
+            "bucket": "40-49",
+            "count": 13,
+            "averageProbability": 0.45754617451659985,
+            "actualSuccessRate": 0.5384615384615384,
+            "error": 0.08091536394493859
+          },
+          {
+            "bucket": "50-59",
+            "count": 25,
+            "averageProbability": 0.5508324383399826,
+            "actualSuccessRate": 0.68,
+            "error": 0.12916756166001742
+          },
+          {
+            "bucket": "60-69",
+            "count": 38,
+            "averageProbability": 0.6544657754963551,
+            "actualSuccessRate": 0.6052631578947368,
+            "error": 0.04920261760161826
+          },
+          {
+            "bucket": "70-79",
+            "count": 58,
+            "averageProbability": 0.7454219422731833,
+            "actualSuccessRate": 0.7413793103448276,
+            "error": 0.004042631928355633
+          },
+          {
+            "bucket": "80-89",
+            "count": 36,
+            "averageProbability": 0.842462730040339,
+            "actualSuccessRate": 0.8333333333333334,
+            "error": 0.009129396707005633
+          },
+          {
+            "bucket": "90-100",
+            "count": 10,
+            "averageProbability": 0.9317530505232883,
+            "actualSuccessRate": 0.7,
+            "error": 0.23175305052328832
+          }
+        ],
+        "ece": 0.051130191434330764
+      },
+      "X2": {
+        "sampleSize": 193,
+        "correct": 122,
+        "incorrect": 71,
+        "hitRate": 0.6321243523316062,
+        "predictedProbabilityAverage": 0.5513306710979251,
+        "brier": 0.2212051620610198,
+        "logLoss": 0.6307119403910496,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 4,
+            "averageProbability": 0.1726614212691047,
+            "actualSuccessRate": 0,
+            "error": 0.1726614212691047
+          },
+          {
+            "bucket": "20-29",
+            "count": 11,
+            "averageProbability": 0.2569255142057382,
+            "actualSuccessRate": 0.36363636363636365,
+            "error": 0.10671084943062542
+          },
+          {
+            "bucket": "30-39",
+            "count": 22,
+            "averageProbability": 0.34769181509314095,
+            "actualSuccessRate": 0.36363636363636365,
+            "error": 0.015944548543222692
+          },
+          {
+            "bucket": "40-49",
+            "count": 35,
+            "averageProbability": 0.44217360163306013,
+            "actualSuccessRate": 0.5142857142857142,
+            "error": 0.0721121126526541
+          },
+          {
+            "bucket": "50-59",
+            "count": 43,
+            "averageProbability": 0.5535514031570321,
+            "actualSuccessRate": 0.5581395348837209,
+            "error": 0.0045881317266888155
+          },
+          {
+            "bucket": "60-69",
+            "count": 41,
+            "averageProbability": 0.6525642104204521,
+            "actualSuccessRate": 0.6341463414634146,
+            "error": 0.018417868957037453
+          },
+          {
+            "bucket": "70-79",
+            "count": 22,
+            "averageProbability": 0.7456774158048938,
+            "actualSuccessRate": 0.7727272727272727,
+            "error": 0.027049856922378934
+          },
+          {
+            "bucket": "80-89",
+            "count": 14,
+            "averageProbability": 0.8485715784466464,
+            "actualSuccessRate": 0.8571428571428571,
+            "error": 0.00857127869621066
+          },
+          {
+            "bucket": "90-100",
+            "count": 1,
+            "averageProbability": 0.9219489824022183,
+            "actualSuccessRate": 1,
+            "error": 0.07805101759778166
+          }
+        ],
+        "ece": 0.033599674107410944
+      }
+    },
+    "logistic": {
+      "12": {
+        "sampleSize": 193,
+        "correct": 144,
+        "incorrect": 49,
+        "hitRate": 0.7461139896373057,
+        "predictedProbabilityAverage": 0.7460471287901231,
+        "brier": 0.19024029595216044,
+        "logLoss": 0.5678438607827807,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "40-49",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "50-59",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "60-69",
+            "count": 38,
+            "averageProbability": 0.6652078765790708,
+            "actualSuccessRate": 0.7631578947368421,
+            "error": 0.09795001815777138
+          },
+          {
+            "bucket": "70-79",
+            "count": 125,
+            "averageProbability": 0.7514700382698392,
+            "actualSuccessRate": 0.728,
+            "error": 0.023470038269839177
+          },
+          {
+            "bucket": "80-89",
+            "count": 30,
+            "averageProbability": 0.8258480587586419,
+            "actualSuccessRate": 0.8,
+            "error": 0.025848058758641823
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.038504130758986864
+      },
+      "1X2": {
+        "sampleSize": 193,
+        "correct": 91,
+        "incorrect": 102,
+        "hitRate": 0.47150259067357514,
+        "predictedProbabilityAverage": 0.48939941173573703,
+        "brier": 0.6156039252076543,
+        "logLoss": 1.0298605638328462,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 40,
+            "averageProbability": 0.37548408124009336,
+            "actualSuccessRate": 0.25,
+            "error": 0.12548408124009336
+          },
+          {
+            "bucket": "40-49",
+            "count": 69,
+            "averageProbability": 0.4420572840729851,
+            "actualSuccessRate": 0.43478260869565216,
+            "error": 0.007274675377332951
+          },
+          {
+            "bucket": "50-59",
+            "count": 54,
+            "averageProbability": 0.5387413671107145,
+            "actualSuccessRate": 0.5185185185185185,
+            "error": 0.02022284859219603
+          },
+          {
+            "bucket": "60-69",
+            "count": 24,
+            "averageProbability": 0.6420313412761002,
+            "actualSuccessRate": 0.7083333333333334,
+            "error": 0.0663019920572332
+          },
+          {
+            "bucket": "70-79",
+            "count": 5,
+            "averageProbability": 0.7247461276787575,
+            "actualSuccessRate": 1,
+            "error": 0.27525387232124254
+          },
+          {
+            "bucket": "80-89",
+            "count": 1,
+            "averageProbability": 0.8082539613588143,
+            "actualSuccessRate": 1,
+            "error": 0.19174603864118567
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.05063529991833828
+      },
+      "Home": {
+        "sampleSize": 193,
+        "correct": 123,
+        "incorrect": 70,
+        "hitRate": 0.6373056994818653,
+        "predictedProbabilityAverage": 0.4267273864413399,
+        "brier": 0.22066375270176816,
+        "logLoss": 0.6304639685072897,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 9,
+            "averageProbability": 0.15415380709677762,
+            "actualSuccessRate": 0,
+            "error": 0.15415380709677762
+          },
+          {
+            "bucket": "20-29",
+            "count": 25,
+            "averageProbability": 0.25353249473499695,
+            "actualSuccessRate": 0.28,
+            "error": 0.026467505265003077
+          },
+          {
+            "bucket": "30-39",
+            "count": 54,
+            "averageProbability": 0.352095570957568,
+            "actualSuccessRate": 0.3148148148148148,
+            "error": 0.03728075614275317
+          },
+          {
+            "bucket": "40-49",
+            "count": 40,
+            "averageProbability": 0.44131621992719977,
+            "actualSuccessRate": 0.5,
+            "error": 0.05868378007280023
+          },
+          {
+            "bucket": "50-59",
+            "count": 41,
+            "averageProbability": 0.536228996688034,
+            "actualSuccessRate": 0.5121951219512195,
+            "error": 0.02403387473681451
+          },
+          {
+            "bucket": "60-69",
+            "count": 19,
+            "averageProbability": 0.6450093843503105,
+            "actualSuccessRate": 0.6842105263157895,
+            "error": 0.03920114196547897
+          },
+          {
+            "bucket": "70-79",
+            "count": 4,
+            "averageProbability": 0.7295145484779819,
+            "actualSuccessRate": 1,
+            "error": 0.2704854515220181
+          },
+          {
+            "bucket": "80-89",
+            "count": 1,
+            "averageProbability": 0.8082539613588143,
+            "actualSuccessRate": 1,
+            "error": 0.19174603864118567
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.048774519877717665
+      },
+      "Draw": {
+        "sampleSize": 193,
+        "correct": 144,
+        "incorrect": 49,
+        "hitRate": 0.7461139896373057,
+        "predictedProbabilityAverage": 0.2539528712098763,
+        "brier": 0.19024029595216047,
+        "logLoss": 0.5678438607827807,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 30,
+            "averageProbability": 0.1741519412413583,
+            "actualSuccessRate": 0.2,
+            "error": 0.025848058758641712
+          },
+          {
+            "bucket": "20-29",
+            "count": 125,
+            "averageProbability": 0.24852996173016081,
+            "actualSuccessRate": 0.272,
+            "error": 0.023470038269839205
+          },
+          {
+            "bucket": "30-39",
+            "count": 38,
+            "averageProbability": 0.3347921234209291,
+            "actualSuccessRate": 0.23684210526315788,
+            "error": 0.09795001815777124
+          },
+          {
+            "bucket": "40-49",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "50-59",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "60-69",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "70-79",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.038504130758986836
+      },
+      "Away": {
+        "sampleSize": 193,
+        "correct": 137,
+        "incorrect": 56,
+        "hitRate": 0.7098445595854922,
+        "predictedProbabilityAverage": 0.31931974234878363,
+        "brier": 0.20469987655372568,
+        "logLoss": 0.597914379387125,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 5,
+            "averageProbability": 0.08098688758347831,
+            "actualSuccessRate": 0,
+            "error": 0.08098688758347831
+          },
+          {
+            "bucket": "10-19",
+            "count": 23,
+            "averageProbability": 0.155160517333464,
+            "actualSuccessRate": 0.21739130434782608,
+            "error": 0.06223078701436208
+          },
+          {
+            "bucket": "20-29",
+            "count": 72,
+            "averageProbability": 0.2547773317345437,
+            "actualSuccessRate": 0.2638888888888889,
+            "error": 0.009111557154345196
+          },
+          {
+            "bucket": "30-39",
+            "count": 45,
+            "averageProbability": 0.34435379901492164,
+            "actualSuccessRate": 0.3333333333333333,
+            "error": 0.01102046568158832
+          },
+          {
+            "bucket": "40-49",
+            "count": 29,
+            "averageProbability": 0.44307944151544815,
+            "actualSuccessRate": 0.3448275862068966,
+            "error": 0.09825185530855157
+          },
+          {
+            "bucket": "50-59",
+            "count": 13,
+            "averageProbability": 0.5466649969053223,
+            "actualSuccessRate": 0.5384615384615384,
+            "error": 0.008203458443783895
+          },
+          {
+            "bucket": "60-69",
+            "count": 5,
+            "averageProbability": 0.6307147775941004,
+            "actualSuccessRate": 0.8,
+            "error": 0.1692852224058996
+          },
+          {
+            "bucket": "70-79",
+            "count": 1,
+            "averageProbability": 0.7056724444818594,
+            "actualSuccessRate": 1,
+            "error": 0.2943275555181406
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.036709316276149595
+      },
+      "Over 1.5": {
+        "sampleSize": 193,
+        "correct": 149,
+        "incorrect": 44,
+        "hitRate": 0.772020725388601,
+        "predictedProbabilityAverage": 0.8164464045996535,
+        "brier": 0.1775646785351622,
+        "logLoss": 0.5411563819732623,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "40-49",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "50-59",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "60-69",
+            "count": 2,
+            "averageProbability": 0.6903578010187681,
+            "actualSuccessRate": 1,
+            "error": 0.3096421989812319
+          },
+          {
+            "bucket": "70-79",
+            "count": 57,
+            "averageProbability": 0.7749159513295981,
+            "actualSuccessRate": 0.7543859649122807,
+            "error": 0.020529986417317403
+          },
+          {
+            "bucket": "80-89",
+            "count": 130,
+            "averageProbability": 0.8337777413287011,
+            "actualSuccessRate": 0.7692307692307693,
+            "error": 0.06454697209793181
+          },
+          {
+            "bucket": "90-100",
+            "count": 4,
+            "averageProbability": 0.9080312217943242,
+            "actualSuccessRate": 1,
+            "error": 0.09196877820567584
+          }
+        ],
+        "ece": 0.05465531144716785
+      },
+      "Over 2.5": {
+        "sampleSize": 193,
+        "correct": 105,
+        "incorrect": 88,
+        "hitRate": 0.5440414507772021,
+        "predictedProbabilityAverage": 0.5502655759587092,
+        "brier": 0.24721082732723315,
+        "logLoss": 0.6873171837729277,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 1,
+            "averageProbability": 0.39727617719884945,
+            "actualSuccessRate": 0,
+            "error": 0.39727617719884945
+          },
+          {
+            "bucket": "40-49",
+            "count": 28,
+            "averageProbability": 0.47124594238835055,
+            "actualSuccessRate": 0.4642857142857143,
+            "error": 0.006960228102636246
+          },
+          {
+            "bucket": "50-59",
+            "count": 132,
+            "averageProbability": 0.5478697064931265,
+            "actualSuccessRate": 0.5303030303030303,
+            "error": 0.01756667619009622
+          },
+          {
+            "bucket": "60-69",
+            "count": 31,
+            "averageProbability": 0.6316303050964127,
+            "actualSuccessRate": 0.5806451612903226,
+            "error": 0.050985143806090094
+          },
+          {
+            "bucket": "70-79",
+            "count": 1,
+            "averageProbability": 0.7097528808766878,
+            "actualSuccessRate": 1,
+            "error": 0.29024711912331225
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.024775908799365132
+      },
+      "Over 3.5": {
+        "sampleSize": 193,
+        "correct": 138,
+        "incorrect": 55,
+        "hitRate": 0.7150259067357513,
+        "predictedProbabilityAverage": 0.3356713638399703,
+        "brier": 0.20314690106847394,
+        "logLoss": 0.5963183779319764,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 40,
+            "averageProbability": 0.27235084091485534,
+            "actualSuccessRate": 0.25,
+            "error": 0.02235084091485534
+          },
+          {
+            "bucket": "30-39",
+            "count": 132,
+            "averageProbability": 0.3400407664245409,
+            "actualSuccessRate": 0.26515151515151514,
+            "error": 0.07488925127302576
+          },
+          {
+            "bucket": "40-49",
+            "count": 21,
+            "averageProbability": 0.42881706745146025,
+            "actualSuccessRate": 0.47619047619047616,
+            "error": 0.04737340873901591
+          },
+          {
+            "bucket": "50-59",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "60-69",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "70-79",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.06100650978317589
+      },
+      "BTTS Yes": {
+        "sampleSize": 193,
+        "correct": 100,
+        "incorrect": 93,
+        "hitRate": 0.5181347150259067,
+        "predictedProbabilityAverage": 0.5866704109789879,
+        "brier": 0.25234804697620816,
+        "logLoss": 0.6980117272292251,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "30-39",
+            "count": 1,
+            "averageProbability": 0.3040526889877971,
+            "actualSuccessRate": 1,
+            "error": 0.695947311012203
+          },
+          {
+            "bucket": "40-49",
+            "count": 6,
+            "averageProbability": 0.46054020876488955,
+            "actualSuccessRate": 0.6666666666666666,
+            "error": 0.20612645790177708
+          },
+          {
+            "bucket": "50-59",
+            "count": 106,
+            "averageProbability": 0.5667497668769266,
+            "actualSuccessRate": 0.5094339622641509,
+            "error": 0.057315804612775634
+          },
+          {
+            "bucket": "60-69",
+            "count": 79,
+            "averageProbability": 0.6248650928465717,
+            "actualSuccessRate": 0.5443037974683544,
+            "error": 0.08056129537821721
+          },
+          {
+            "bucket": "70-79",
+            "count": 1,
+            "averageProbability": 0.7202777535340754,
+            "actualSuccessRate": 1,
+            "error": 0.2797222464659246
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.07591837268767962
+      },
+      "BTTS No": {
+        "sampleSize": 193,
+        "correct": 100,
+        "incorrect": 93,
+        "hitRate": 0.5181347150259067,
+        "predictedProbabilityAverage": 0.4133295890210123,
+        "brier": 0.25234804697620816,
+        "logLoss": 0.6980117272292251,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 1,
+            "averageProbability": 0.2797222464659246,
+            "actualSuccessRate": 0,
+            "error": 0.2797222464659246
+          },
+          {
+            "bucket": "30-39",
+            "count": 79,
+            "averageProbability": 0.37513490715342807,
+            "actualSuccessRate": 0.45569620253164556,
+            "error": 0.08056129537821749
+          },
+          {
+            "bucket": "40-49",
+            "count": 106,
+            "averageProbability": 0.4332502331230734,
+            "actualSuccessRate": 0.49056603773584906,
+            "error": 0.057315804612775634
+          },
+          {
+            "bucket": "50-59",
+            "count": 6,
+            "averageProbability": 0.5394597912351106,
+            "actualSuccessRate": 0.3333333333333333,
+            "error": 0.20612645790177725
+          },
+          {
+            "bucket": "60-69",
+            "count": 1,
+            "averageProbability": 0.695947311012203,
+            "actualSuccessRate": 0,
+            "error": 0.695947311012203
+          },
+          {
+            "bucket": "70-79",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "80-89",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.07591837268767974
+      },
+      "1X": {
+        "sampleSize": 193,
+        "correct": 137,
+        "incorrect": 56,
+        "hitRate": 0.7098445595854922,
+        "predictedProbabilityAverage": 0.6806802576512163,
+        "brier": 0.20469987655372568,
+        "logLoss": 0.5979143793871249,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "20-29",
+            "count": 1,
+            "averageProbability": 0.29432755551814066,
+            "actualSuccessRate": 0,
+            "error": 0.29432755551814066
+          },
+          {
+            "bucket": "30-39",
+            "count": 5,
+            "averageProbability": 0.36928522240589967,
+            "actualSuccessRate": 0.2,
+            "error": 0.16928522240589966
+          },
+          {
+            "bucket": "40-49",
+            "count": 13,
+            "averageProbability": 0.453335003094678,
+            "actualSuccessRate": 0.46153846153846156,
+            "error": 0.008203458443783562
+          },
+          {
+            "bucket": "50-59",
+            "count": 29,
+            "averageProbability": 0.5569205584845518,
+            "actualSuccessRate": 0.6551724137931034,
+            "error": 0.09825185530855163
+          },
+          {
+            "bucket": "60-69",
+            "count": 45,
+            "averageProbability": 0.6556462009850783,
+            "actualSuccessRate": 0.6666666666666666,
+            "error": 0.01102046568158832
+          },
+          {
+            "bucket": "70-79",
+            "count": 72,
+            "averageProbability": 0.7452226682654561,
+            "actualSuccessRate": 0.7361111111111112,
+            "error": 0.009111557154344974
+          },
+          {
+            "bucket": "80-89",
+            "count": 23,
+            "averageProbability": 0.8448394826665363,
+            "actualSuccessRate": 0.782608695652174,
+            "error": 0.062230787014362354
+          },
+          {
+            "bucket": "90-100",
+            "count": 5,
+            "averageProbability": 0.9190131124165217,
+            "actualSuccessRate": 1,
+            "error": 0.08098688758347827
+          }
+        ],
+        "ece": 0.03670931627614953
+      },
+      "X2": {
+        "sampleSize": 193,
+        "correct": 123,
+        "incorrect": 70,
+        "hitRate": 0.6373056994818653,
+        "predictedProbabilityAverage": 0.5732726135586603,
+        "brier": 0.2206637527017682,
+        "logLoss": 0.6304639685072897,
+        "buckets": [
+          {
+            "bucket": "0-9",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          },
+          {
+            "bucket": "10-19",
+            "count": 1,
+            "averageProbability": 0.19174603864118572,
+            "actualSuccessRate": 0,
+            "error": 0.19174603864118572
+          },
+          {
+            "bucket": "20-29",
+            "count": 4,
+            "averageProbability": 0.2704854515220181,
+            "actualSuccessRate": 0,
+            "error": 0.2704854515220181
+          },
+          {
+            "bucket": "30-39",
+            "count": 19,
+            "averageProbability": 0.3549906156496896,
+            "actualSuccessRate": 0.3157894736842105,
+            "error": 0.03920114196547908
+          },
+          {
+            "bucket": "40-49",
+            "count": 41,
+            "averageProbability": 0.46377100331196597,
+            "actualSuccessRate": 0.4878048780487805,
+            "error": 0.02403387473681451
+          },
+          {
+            "bucket": "50-59",
+            "count": 40,
+            "averageProbability": 0.5586837800728002,
+            "actualSuccessRate": 0.5,
+            "error": 0.058683780072800173
+          },
+          {
+            "bucket": "60-69",
+            "count": 54,
+            "averageProbability": 0.6479044290424322,
+            "actualSuccessRate": 0.6851851851851852,
+            "error": 0.03728075614275306
+          },
+          {
+            "bucket": "70-79",
+            "count": 25,
+            "averageProbability": 0.7464675052650033,
+            "actualSuccessRate": 0.72,
+            "error": 0.0264675052650033
+          },
+          {
+            "bucket": "80-89",
+            "count": 9,
+            "averageProbability": 0.8458461929032224,
+            "actualSuccessRate": 1,
+            "error": 0.15415380709677762
+          },
+          {
+            "bucket": "90-100",
+            "count": 0,
+            "averageProbability": null,
+            "actualSuccessRate": null,
+            "error": null
+          }
+        ],
+        "ece": 0.04877451987771766
+      }
+    },
+    "choice": {
+      "class": "temperature scaling",
+      "goals": "none"
+    },
+    "isotonic": "Not attempted: only one month for fitting; insufficient data for stable independent market step functions"
+  },
+  "ablation": {
+    "evaluatedOn": "January validation only; incremental on fixed Model 4.0 signals; no test access",
+    "rows": [
+      {
+        "name": "offset-only",
+        "groups": [],
+        "accuracy": 0.4618834080717489,
+        "brier": 0.640074088200797,
+        "logLoss": 1.060843270800659,
+        "over25Brier": 0.25451002587018545,
+        "bttsBrier": 0.2515063754911905
+      },
+      {
+        "name": "all",
+        "groups": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "accuracy": 0.4439461883408072,
+        "brier": 0.6277559209088499,
+        "logLoss": 1.0435984259110427,
+        "over25Brier": 0.24960586038864116,
+        "bttsBrier": 0.24909353378200083
+      },
+      {
+        "name": "only-A",
+        "groups": [
+          "A"
+        ],
+        "accuracy": 0.4484304932735426,
+        "brier": 0.6409422490073194,
+        "logLoss": 1.060781051815684,
+        "over25Brier": 0.25236702556361473,
+        "bttsBrier": 0.25068811510724376
+      },
+      {
+        "name": "without-A",
+        "groups": [
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "accuracy": 0.4618834080717489,
+        "brier": 0.627868873547646,
+        "logLoss": 1.0437874808632743,
+        "over25Brier": 0.2506638478566475,
+        "bttsBrier": 0.2493885870716632
+      },
+      {
+        "name": "only-B",
+        "groups": [
+          "B"
+        ],
+        "accuracy": 0.4798206278026906,
+        "brier": 0.6330585554434625,
+        "logLoss": 1.0498659657027218,
+        "over25Brier": 0.2504255223823811,
+        "bttsBrier": 0.24953811705064788
+      },
+      {
+        "name": "without-B",
+        "groups": [
+          "A",
+          "C",
+          "D",
+          "E"
+        ],
+        "accuracy": 0.45739910313901344,
+        "brier": 0.6283252031919757,
+        "logLoss": 1.04425760555962,
+        "over25Brier": 0.24925573348558724,
+        "bttsBrier": 0.24784685113718216
+      },
+      {
+        "name": "only-C",
+        "groups": [
+          "C"
+        ],
+        "accuracy": 0.484304932735426,
+        "brier": 0.6362174364711334,
+        "logLoss": 1.0547609687440487,
+        "over25Brier": 0.25341089933379346,
+        "bttsBrier": 0.25097781245309636
+      },
+      {
+        "name": "without-C",
+        "groups": [
+          "A",
+          "B",
+          "D",
+          "E"
+        ],
+        "accuracy": 0.4663677130044843,
+        "brier": 0.6324055969299139,
+        "logLoss": 1.0500785365253302,
+        "over25Brier": 0.24948610200551116,
+        "bttsBrier": 0.24935016009593325
+      },
+      {
+        "name": "only-D",
+        "groups": [
+          "D"
+        ],
+        "accuracy": 0.47085201793721976,
+        "brier": 0.6407468584326175,
+        "logLoss": 1.0621642785452876,
+        "over25Brier": 0.25016855855791015,
+        "bttsBrier": 0.24773243654370028
+      },
+      {
+        "name": "without-D",
+        "groups": [
+          "A",
+          "B",
+          "C",
+          "E"
+        ],
+        "accuracy": 0.452914798206278,
+        "brier": 0.6270697796669384,
+        "logLoss": 1.0423814904434896,
+        "over25Brier": 0.24962282356312823,
+        "bttsBrier": 0.24905120184967522
+      },
+      {
+        "name": "only-E",
+        "groups": [
+          "E"
+        ],
+        "accuracy": 0.47533632286995514,
+        "brier": 0.6351136574556889,
+        "logLoss": 1.0527469774762253,
+        "over25Brier": 0.2539429459473277,
+        "bttsBrier": 0.25016129001046883
+      },
+      {
+        "name": "without-E",
+        "groups": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "accuracy": 0.452914798206278,
+        "brier": 0.6307102092004622,
+        "logLoss": 1.0462083415805379,
+        "over25Brier": 0.24942800316589067,
+        "bttsBrier": 0.2487754093812374
+      }
+    ]
+  },
+  "splits": {
+    "train": [
+      "2025-08-15",
+      "2025-12-31"
+    ],
+    "validation": [
+      "2026-01-01",
+      "2026-02-28"
+    ],
+    "test": [
+      "2026-03-01",
+      "2026-05-24"
+    ]
+  }
+}

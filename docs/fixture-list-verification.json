@@ -1,0 +1,30 @@
+{
+  "date": "2026-09-16",
+  "results": 417,
+  "cached": true,
+  "stale": true,
+  "sanLuisAntofagasta": [
+    {
+      "fixture": {
+        "id": "1511694",
+        "date": "2026-09-15T21:00:00.000Z",
+        "kickoffPrecision": "time",
+        "status": {
+          "short": "FINISHED"
+        }
+      },
+      "teams": {
+        "home": {
+          "id": "team:sanluis",
+          "name": "San Luis",
+          "logo": "https://media.api-sports.io/football/teams/2322.png"
+        },
+        "away": {
+          "id": "team:antofagasta",
+          "name": "Antofagasta",
+          "logo": "https://media.api-sports.io/football/teams/2327.png"
+        }
+      }
+    }
+  ]
+}

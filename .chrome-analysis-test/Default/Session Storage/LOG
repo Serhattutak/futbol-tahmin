@@ -1,0 +1,14 @@
+2026/09/17-09:50:09.331 2ad0 Creating DB C:\Users\user\futbol-tahmin\.chrome-analysis-test\Default\Session Storage since it was missing.
+2026/09/17-09:50:09.431 2ad0 Reusing MANIFEST C:\Users\user\futbol-tahmin\.chrome-analysis-test\Default\Session Storage/MANIFEST-000001
+2026/09/17-10:06:58.926 28b0 Level-0 table #5: started
+2026/09/17-10:06:58.939 28b0 Level-0 table #5: 91626 bytes OK
+2026/09/17-10:06:58.957 28b0 Delete type=0 #3
+2026/09/17-14:41:15.805 28b0 Level-0 table #7: started
+2026/09/17-14:41:15.825 28b0 Level-0 table #7: 91220 bytes OK
+2026/09/17-14:41:15.834 28b0 Delete type=0 #4
+2026/09/17-15:05:27.451 28b0 Level-0 table #9: started
+2026/09/17-15:05:27.465 28b0 Level-0 table #9: 91222 bytes OK
+2026/09/17-15:05:27.494 28b0 Delete type=0 #6
+2026/09/17-15:27:28.855 28b0 Level-0 table #11: started
+2026/09/17-15:27:28.868 28b0 Level-0 table #11: 91327 bytes OK
+2026/09/17-15:27:28.884 28b0 Delete type=0 #8

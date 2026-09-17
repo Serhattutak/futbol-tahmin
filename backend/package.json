@@ -1,0 +1,26 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "capture:forward": "node scripts/runForwardCapture.js",
+    "backtest": "node scripts/runBacktest.js",
+    "model41:prepare": "node scripts/runModel41.js --prepare",
+    "model41:final": "node scripts/runModel41.js --final"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "express-rate-limit": "^8.7.0"
+  }
+}

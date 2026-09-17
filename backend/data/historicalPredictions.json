@@ -1,0 +1,788 @@
+[
+  {
+    "id": "2026-09-17T17:00:team:realbetis:team:getafe:laliga:4.0:2026-09-17T17:00:00.000Z",
+    "createdAt": "2026-09-16T07:53:19.035Z",
+    "snapshot": {
+      "fixtureId": "1570386",
+      "canonicalFixtureId": "2026-09-17T17:00:team:realbetis:team:getafe:laliga",
+      "providerFixtureIds": {
+        "api-football": "1570386"
+      },
+      "sourceProviders": [
+        "api-football",
+        "openfootball"
+      ],
+      "createdAt": "2026-09-16T07:53:19.035Z",
+      "kickoff": "2026-09-17T17:00:00.000Z",
+      "homeTeam": {
+        "id": "team:realbetis",
+        "name": "Real Betis",
+        "logo": null
+      },
+      "awayTeam": {
+        "id": "team:getafe",
+        "name": "Getafe",
+        "logo": null
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      },
+      "teams": {
+        "home": {
+          "id": "team:realbetis",
+          "name": "Real Betis",
+          "logo": null
+        },
+        "away": {
+          "id": "team:getafe",
+          "name": "Getafe",
+          "logo": null
+        }
+      },
+      "league": "La Liga",
+      "country": null,
+      "modelVersion": "4.0",
+      "prediction": {
+        "market": "1X",
+        "probability": 95.85,
+        "fairOdds": 1.043,
+        "value": null
+      },
+      "probabilities": {
+        "1": {
+          "probability": 74.08,
+          "fairOdds": 1.35,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "2": {
+          "probability": 4.15,
+          "fairOdds": 24.096,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "12": {
+          "probability": 78.23,
+          "fairOdds": 1.278,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "X": {
+          "probability": 21.77,
+          "fairOdds": 4.593,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "1X": {
+          "probability": 95.85,
+          "fairOdds": 1.043,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "X2": {
+          "probability": 25.92,
+          "fairOdds": 3.858,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Üst 1.5": {
+          "probability": 54.51,
+          "fairOdds": 1.835,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Alt 1.5": {
+          "probability": 45.49,
+          "fairOdds": 2.198,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Üst 2.5": {
+          "probability": 27.65,
+          "fairOdds": 3.617,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Alt 2.5": {
+          "probability": 72.35,
+          "fairOdds": 1.382,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Üst 3.5": {
+          "probability": 11.3,
+          "fairOdds": 8.85,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Alt 3.5": {
+          "probability": 88.7,
+          "fairOdds": 1.127,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "KG Var": {
+          "probability": 14.56,
+          "fairOdds": 6.868,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "KG Yok": {
+          "probability": 85.44,
+          "fairOdds": 1.17,
+          "value": null,
+          "bookmakerOffers": []
+        }
+      },
+      "confidence": 83,
+      "dataQuality": {
+        "score": 75,
+        "level": "high",
+        "availableSignals": 7,
+        "totalSignals": 12,
+        "missing": [
+          "H2H",
+          "Standings",
+          "Takım istatistikleri",
+          "API xG",
+          "Bookmaker odds"
+        ]
+      },
+      "form": {
+        "home": {
+          "games": 10,
+          "matchesPlayed": 10,
+          "cleanSheets": 4,
+          "failedToScore": 0,
+          "recentForm": [
+            "W",
+            "L",
+            "W",
+            "W",
+            "W",
+            "L",
+            "W",
+            "D",
+            "W",
+            "D"
+          ],
+          "avgGoalsFor": 1.6,
+          "avgGoalsAgainst": 1.3,
+          "wins": 6,
+          "draws": 2,
+          "losses": 2,
+          "goalsFor": 16,
+          "goalsAgainst": 13,
+          "averageGoalsFor": 1.6,
+          "averageGoalsAgainst": 1.3,
+          "pointsPerGame": 2,
+          "form": [
+            "W",
+            "L",
+            "W",
+            "W",
+            "W",
+            "L",
+            "W",
+            "D",
+            "W",
+            "D"
+          ],
+          "bttsRate": 60,
+          "over15Rate": 70,
+          "over25Rate": 60,
+          "over35Rate": 30,
+          "cleanSheetRate": 40
+        },
+        "away": {
+          "games": 10,
+          "matchesPlayed": 10,
+          "cleanSheets": 3,
+          "failedToScore": 6,
+          "recentForm": [
+            "D",
+            "L",
+            "W",
+            "L",
+            "W",
+            "L",
+            "W",
+            "D",
+            "L",
+            "L"
+          ],
+          "avgGoalsFor": 0.6,
+          "avgGoalsAgainst": 1.1,
+          "wins": 3,
+          "draws": 2,
+          "losses": 5,
+          "goalsFor": 6,
+          "goalsAgainst": 11,
+          "averageGoalsFor": 0.6,
+          "averageGoalsAgainst": 1.1,
+          "pointsPerGame": 1.1,
+          "form": [
+            "D",
+            "L",
+            "W",
+            "L",
+            "W",
+            "L",
+            "W",
+            "D",
+            "L",
+            "L"
+          ],
+          "bttsRate": 20,
+          "over15Rate": 50,
+          "over25Rate": 20,
+          "over35Rate": 10,
+          "cleanSheetRate": 30
+        },
+        "homeVenue": {
+          "games": 6,
+          "matchesPlayed": 6,
+          "cleanSheets": 3,
+          "failedToScore": 0,
+          "recentForm": [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "D"
+          ],
+          "avgGoalsFor": 1.6666666666666667,
+          "avgGoalsAgainst": 0.5,
+          "wins": 5,
+          "draws": 1,
+          "losses": 0,
+          "goalsFor": 10,
+          "goalsAgainst": 3,
+          "averageGoalsFor": 1.6666666666666667,
+          "averageGoalsAgainst": 0.5,
+          "pointsPerGame": 2.6666666666666665,
+          "form": [
+            "W",
+            "W",
+            "W",
+            "W",
+            "W",
+            "D"
+          ],
+          "bttsRate": 50,
+          "over15Rate": 66.66666666666666,
+          "over25Rate": 50,
+          "over35Rate": 0,
+          "cleanSheetRate": 50
+        },
+        "awayVenue": {
+          "games": 4,
+          "matchesPlayed": 4,
+          "cleanSheets": 1,
+          "failedToScore": 4,
+          "recentForm": [
+            "L",
+            "L",
+            "L",
+            "D"
+          ],
+          "avgGoalsFor": 0,
+          "avgGoalsAgainst": 1.25,
+          "wins": 0,
+          "draws": 1,
+          "losses": 3,
+          "goalsFor": 0,
+          "goalsAgainst": 5,
+          "averageGoalsFor": 0,
+          "averageGoalsAgainst": 1.25,
+          "pointsPerGame": 0.25,
+          "form": [
+            "L",
+            "L",
+            "L",
+            "D"
+          ],
+          "bttsRate": 0,
+          "over15Rate": 25,
+          "over25Rate": 25,
+          "over35Rate": 0,
+          "cleanSheetRate": 25
+        }
+      },
+      "h2h": {
+        "count": 0,
+        "homeWins": 0,
+        "awayWins": 0,
+        "draws": 0,
+        "averageGoals": 0
+      },
+      "standings": {
+        "home": null,
+        "away": null
+      },
+      "statistics": {
+        "home": {
+          "shots": null,
+          "shotsOnTarget": null,
+          "expectedGoals": null,
+          "possession": null,
+          "corners": null,
+          "yellowCards": null,
+          "redCards": null
+        },
+        "away": {
+          "shots": null,
+          "shotsOnTarget": null,
+          "expectedGoals": null,
+          "possession": null,
+          "corners": null,
+          "yellowCards": null,
+          "redCards": null
+        }
+      },
+      "expectedGoals": {
+        "home": 1.63,
+        "away": 0.2
+      },
+      "bookmakerOffers": {},
+      "sourceAgreement": {
+        "bookmakerModelProbabilityGap": 0,
+        "status": "unavailable"
+      },
+      "sourceMetadata": {
+        "providers": [
+          "api-football",
+          "openfootball"
+        ],
+        "fields": {
+          "homeMatches": "openfootball",
+          "awayMatches": "openfootball"
+        },
+        "unavailable": {
+          "h2hMatches": "not_supported",
+          "standingsResponse": "not_supported",
+          "oddsResponse": "not_supported",
+          "recentStats": "not_supported"
+        },
+        "sourceCount": 2
+      }
+    },
+    "result": {
+      "status": "pending",
+      "checkedAt": "2026-09-17T11:55:54.262Z",
+      "completedAt": null,
+      "finalScore": null,
+      "actualWinner": null,
+      "totalGoals": null,
+      "bttsResult": null,
+      "markets": null,
+      "retryable": true,
+      "errorCategory": "timeout_network",
+      "nextCheckAt": "2026-09-17T12:10:54.262Z"
+    }
+  },
+  {
+    "id": "2026-09-16T17:00:team:atleticomadrid:team:osasuna:laliga:4.0:2026-09-16T17:00:00.000Z",
+    "createdAt": "2026-09-16T14:21:52.211Z",
+    "snapshot": {
+      "fixtureId": "1570384",
+      "canonicalFixtureId": "2026-09-16T17:00:team:atleticomadrid:team:osasuna:laliga",
+      "providerFixtureIds": {
+        "api-football": "1570384"
+      },
+      "sourceProviders": [
+        "api-football",
+        "openfootball"
+      ],
+      "createdAt": "2026-09-16T14:21:52.211Z",
+      "kickoff": "2026-09-16T17:00:00.000Z",
+      "homeTeam": {
+        "id": "team:atleticomadrid",
+        "name": "Atletico Madrid",
+        "logo": "https://media.api-sports.io/football/teams/530.png"
+      },
+      "awayTeam": {
+        "id": "team:osasuna",
+        "name": "Osasuna",
+        "logo": "https://media.api-sports.io/football/teams/727.png"
+      },
+      "historicalSampleSize": {
+        "home": 10,
+        "away": 10
+      },
+      "teams": {
+        "home": {
+          "id": "team:atleticomadrid",
+          "name": "Atletico Madrid",
+          "logo": "https://media.api-sports.io/football/teams/530.png"
+        },
+        "away": {
+          "id": "team:osasuna",
+          "name": "Osasuna",
+          "logo": "https://media.api-sports.io/football/teams/727.png"
+        }
+      },
+      "league": "La Liga",
+      "country": "Spain",
+      "modelVersion": "4.0",
+      "prediction": {
+        "market": "Üst 1.5",
+        "probability": 85.39,
+        "fairOdds": 1.171,
+        "value": null
+      },
+      "probabilities": {
+        "1": {
+          "probability": 62.64,
+          "fairOdds": 1.596,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "2": {
+          "probability": 18.54,
+          "fairOdds": 5.394,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "12": {
+          "probability": 81.18,
+          "fairOdds": 1.232,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "X": {
+          "probability": 18.82,
+          "fairOdds": 5.313,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "1X": {
+          "probability": 81.46,
+          "fairOdds": 1.228,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "X2": {
+          "probability": 37.36,
+          "fairOdds": 2.677,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Üst 1.5": {
+          "probability": 85.39,
+          "fairOdds": 1.171,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Alt 1.5": {
+          "probability": 14.61,
+          "fairOdds": 6.845,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Üst 2.5": {
+          "probability": 69.07,
+          "fairOdds": 1.448,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Alt 2.5": {
+          "probability": 30.93,
+          "fairOdds": 3.233,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Üst 3.5": {
+          "probability": 46.23,
+          "fairOdds": 2.163,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "Alt 3.5": {
+          "probability": 53.77,
+          "fairOdds": 1.86,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "KG Var": {
+          "probability": 63.39,
+          "fairOdds": 1.578,
+          "value": null,
+          "bookmakerOffers": []
+        },
+        "KG Yok": {
+          "probability": 36.61,
+          "fairOdds": 2.731,
+          "value": null,
+          "bookmakerOffers": []
+        }
+      },
+      "confidence": 83,
+      "dataQuality": {
+        "score": 80,
+        "level": "high",
+        "availableSignals": 8,
+        "totalSignals": 12,
+        "missing": [
+          "Standings",
+          "TakÄ±m istatistikleri",
+          "API xG",
+          "Bookmaker odds"
+        ],
+        "homeSample": 10,
+        "awaySample": 10,
+        "missingFields": [],
+        "sources": [
+          "openfootball"
+        ]
+      },
+      "form": {
+        "home": {
+          "games": 10,
+          "matchesPlayed": 10,
+          "cleanSheets": 3,
+          "failedToScore": 2,
+          "recentForm": [
+            "L",
+            "W",
+            "D",
+            "W",
+            "L",
+            "W",
+            "W",
+            "L",
+            "W",
+            "W"
+          ],
+          "avgGoalsFor": 1.6,
+          "avgGoalsAgainst": 1.5,
+          "wins": 6,
+          "draws": 1,
+          "losses": 3,
+          "goalsFor": 16,
+          "goalsAgainst": 15,
+          "averageGoalsFor": 1.6,
+          "averageGoalsAgainst": 1.5,
+          "pointsPerGame": 1.9,
+          "form": [
+            "L",
+            "W",
+            "D",
+            "W",
+            "L",
+            "W",
+            "W",
+            "L",
+            "W",
+            "W"
+          ],
+          "bttsRate": 50,
+          "over15Rate": 80,
+          "over25Rate": 60,
+          "over35Rate": 40,
+          "cleanSheetRate": 30
+        },
+        "away": {
+          "games": 10,
+          "matchesPlayed": 10,
+          "cleanSheets": 2,
+          "failedToScore": 2,
+          "recentForm": [
+            "L",
+            "W",
+            "W",
+            "D",
+            "L",
+            "L",
+            "L",
+            "L",
+            "L",
+            "W"
+          ],
+          "avgGoalsFor": 1.2,
+          "avgGoalsAgainst": 1.7,
+          "wins": 3,
+          "draws": 1,
+          "losses": 6,
+          "goalsFor": 12,
+          "goalsAgainst": 17,
+          "averageGoalsFor": 1.2,
+          "averageGoalsAgainst": 1.7,
+          "pointsPerGame": 1,
+          "form": [
+            "L",
+            "W",
+            "W",
+            "D",
+            "L",
+            "L",
+            "L",
+            "L",
+            "L",
+            "W"
+          ],
+          "bttsRate": 70,
+          "over15Rate": 70,
+          "over25Rate": 70,
+          "over35Rate": 20,
+          "cleanSheetRate": 20
+        },
+        "homeVenue": {
+          "games": 5,
+          "matchesPlayed": 5,
+          "cleanSheets": 2,
+          "failedToScore": 1,
+          "recentForm": [
+            "D",
+            "W",
+            "W",
+            "L",
+            "W"
+          ],
+          "avgGoalsFor": 1.6,
+          "avgGoalsAgainst": 1,
+          "wins": 3,
+          "draws": 1,
+          "losses": 1,
+          "goalsFor": 8,
+          "goalsAgainst": 5,
+          "averageGoalsFor": 1.6,
+          "averageGoalsAgainst": 1,
+          "pointsPerGame": 2,
+          "form": [
+            "D",
+            "W",
+            "W",
+            "L",
+            "W"
+          ],
+          "bttsRate": 40,
+          "over15Rate": 60,
+          "over25Rate": 40,
+          "over35Rate": 40,
+          "cleanSheetRate": 40
+        },
+        "awayVenue": {
+          "games": 4,
+          "matchesPlayed": 4,
+          "cleanSheets": 0,
+          "failedToScore": 1,
+          "recentForm": [
+            "L",
+            "W",
+            "L",
+            "L"
+          ],
+          "avgGoalsFor": 1.5,
+          "avgGoalsAgainst": 2.5,
+          "wins": 1,
+          "draws": 0,
+          "losses": 3,
+          "goalsFor": 6,
+          "goalsAgainst": 10,
+          "averageGoalsFor": 1.5,
+          "averageGoalsAgainst": 2.5,
+          "pointsPerGame": 0.75,
+          "form": [
+            "L",
+            "W",
+            "L",
+            "L"
+          ],
+          "bttsRate": 75,
+          "over15Rate": 75,
+          "over25Rate": 75,
+          "over35Rate": 50,
+          "cleanSheetRate": 0
+        }
+      },
+      "h2h": {
+        "sampleSize": 1,
+        "homeWins": 1,
+        "draws": 0,
+        "awayWins": 0,
+        "goalsPerMatch": 3,
+        "over25Rate": 1,
+        "bttsRate": 1,
+        "count": 1,
+        "averageGoals": 3
+      },
+      "standings": {
+        "home": null,
+        "away": null
+      },
+      "statistics": {
+        "home": {
+          "shots": null,
+          "shotsOnTarget": null,
+          "expectedGoals": null,
+          "possession": null,
+          "corners": null,
+          "yellowCards": null,
+          "redCards": null
+        },
+        "away": {
+          "shots": null,
+          "shotsOnTarget": null,
+          "expectedGoals": null,
+          "possession": null,
+          "corners": null,
+          "yellowCards": null,
+          "redCards": null
+        }
+      },
+      "expectedGoals": {
+        "home": 2.36,
+        "away": 1.23
+      },
+      "bookmakerOffers": {},
+      "sourceAgreement": {
+        "bookmakerModelProbabilityGap": 0,
+        "status": "unavailable"
+      },
+      "sourceMetadata": {
+        "providers": [
+          "api-football",
+          "openfootball"
+        ],
+        "fields": {
+          "homeMatches": "openfootball",
+          "awayMatches": "openfootball"
+        },
+        "unavailable": {},
+        "sourceCount": 2
+      }
+    },
+    "result": {
+      "status": "completed",
+      "resultVerificationStatus": "unverified",
+      "checkedAt": "2026-09-16T19:13:44.934Z",
+      "completedAt": "2026-09-16T19:13:44.934Z",
+      "finalScore": {
+        "home": 4,
+        "away": 0
+      },
+      "actualWinner": "home",
+      "totalGoals": 4,
+      "bttsResult": false,
+      "markets": {
+        "1": true,
+        "2": false,
+        "12": true,
+        "X": false,
+        "1X": true,
+        "X2": false,
+        "Üst 1.5": true,
+        "Alt 1.5": false,
+        "Üst 2.5": true,
+        "Alt 2.5": false,
+        "Üst 3.5": true,
+        "Alt 3.5": false,
+        "KG Var": false,
+        "KG Yok": true
+      }
+    }
+  }
+]

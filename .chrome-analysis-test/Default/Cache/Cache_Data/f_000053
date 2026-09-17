@@ -1,0 +1,456 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/HistoricalStatistics.jsx");const useState = __vite__cjsImport0_react["useState"];const _jsxDEV = __vite__cjsImport1_react_jsxDevRuntime["jsxDEV"];import __vite__cjsImport0_react from "/node_modules/.vite/deps/react.js?v=4936a75c";
+var _jsxFileName = "C:/Users/user/futbol-tahmin/src/HistoricalStatistics.jsx";
+import __vite__cjsImport1_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=4936a75c";
+var _s = $RefreshSig$();
+const number = (value) => Number.isFinite(value) ? value.toLocaleString("tr-TR", { maximumFractionDigits: 2 }) : "Veri yok";
+const percent = (value) => Number.isFinite(value) ? `%${(value * 100).toFixed(1)}` : "Veri yok";
+const form = (values) => values?.length ? values.map((value) => ({
+	W: "G",
+	D: "B",
+	L: "M"
+})[value]).join(" · ") : "Veri yok";
+export default function HistoricalStatistics({ profile, home, away, statistics }) {
+	_s();
+	const [mode, setMode] = useState("raw");
+	if (!profile) return /* @__PURE__ */ _jsxDEV("section", {
+		className: "detail-section",
+		children: [/* @__PURE__ */ _jsxDEV("h2", { children: "Geçmiş maç istatistikleri" }, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 9,
+			columnNumber: 60
+		}, this), /* @__PURE__ */ _jsxDEV("p", { children: "Veri yok" }, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 9,
+			columnNumber: 94
+		}, this)]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 9,
+		columnNumber: 24
+	}, this);
+	const columns = [profile.home, profile.away];
+	const rows = (title, fields) => /* @__PURE__ */ _jsxDEV("section", {
+		className: "detail-section",
+		children: [/* @__PURE__ */ _jsxDEV("h3", { children: title }, void 0, false, {
+			fileName: _jsxFileName,
+			lineNumber: 11,
+			columnNumber: 71
+		}, this), /* @__PURE__ */ _jsxDEV("div", {
+			className: "comparison-card",
+			children: [/* @__PURE__ */ _jsxDEV("div", {
+				className: "comparison-head",
+				children: [
+					/* @__PURE__ */ _jsxDEV("b", { children: home }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 11,
+						columnNumber: 153
+					}, this),
+					/* @__PURE__ */ _jsxDEV("span", { children: mode === "raw" ? "Ham istatistik" : "Yakın maçlara daha fazla ağırlık" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 11,
+						columnNumber: 166
+					}, this),
+					/* @__PURE__ */ _jsxDEV("b", { children: away }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 11,
+						columnNumber: 251
+					}, this)
+				]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 11,
+				columnNumber: 120
+			}, this), fields.map(([label, key, format = number]) => /* @__PURE__ */ _jsxDEV("div", {
+				className: "comparison-row",
+				children: [
+					/* @__PURE__ */ _jsxDEV("strong", { children: columns[0]?.sampleSize ? format(columns[0][mode]?.[key]) : "Veri yok" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 11,
+						columnNumber: 359
+					}, this),
+					/* @__PURE__ */ _jsxDEV("span", { children: label }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 11,
+						columnNumber: 447
+					}, this),
+					/* @__PURE__ */ _jsxDEV("strong", { children: columns[1]?.sampleSize ? format(columns[1][mode]?.[key]) : "Veri yok" }, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 11,
+						columnNumber: 467
+					}, this)
+				]
+			}, key, true, {
+				fileName: _jsxFileName,
+				lineNumber: 11,
+				columnNumber: 317
+			}, this))]
+		}, void 0, true, {
+			fileName: _jsxFileName,
+			lineNumber: 11,
+			columnNumber: 87
+		}, this)]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 11,
+		columnNumber: 35
+	}, this);
+	return /* @__PURE__ */ _jsxDEV("section", {
+		className: "historical-statistics",
+		children: [
+			/* @__PURE__ */ _jsxDEV("div", {
+				className: "section-heading",
+				children: [/* @__PURE__ */ _jsxDEV("div", { children: [/* @__PURE__ */ _jsxDEV("span", {
+					className: "eyebrow",
+					children: "GERÇEK GEÇMİŞ MAÇLAR"
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 13,
+					columnNumber: 43
+				}, this), /* @__PURE__ */ _jsxDEV("h2", { children: "Takım istatistikleri" }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 13,
+					columnNumber: 96
+				}, this)] }, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 13,
+					columnNumber: 38
+				}, this), /* @__PURE__ */ _jsxDEV("label", { children: ["Hesaplama ", /* @__PURE__ */ _jsxDEV("select", {
+					value: mode,
+					onChange: (event) => setMode(event.target.value),
+					children: [/* @__PURE__ */ _jsxDEV("option", {
+						value: "raw",
+						children: "Ham"
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 13,
+						columnNumber: 217
+					}, this), /* @__PURE__ */ _jsxDEV("option", {
+						value: "weighted",
+						children: "Ağırlıklı"
+					}, void 0, false, {
+						fileName: _jsxFileName,
+						lineNumber: 13,
+						columnNumber: 249
+					}, this)]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 13,
+					columnNumber: 148
+				}, this)] }, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 13,
+					columnNumber: 131
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 13,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("p", {
+				className: "muted-note",
+				children: [
+					"Yalnızca maç başlangıcından önce tamamlanmış sonuçlar. Kaynak: ",
+					profile.dataQuality?.sources?.join(", ") || "Veri yok",
+					". Örneklem: ",
+					profile.home.sampleSize,
+					" / ",
+					profile.away.sampleSize,
+					" maç."
+				]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 14,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("section", {
+				className: "detail-section",
+				children: [/* @__PURE__ */ _jsxDEV("h3", { children: "FORM" }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 15,
+					columnNumber: 41
+				}, this), /* @__PURE__ */ _jsxDEV("div", {
+					className: "comparison-card",
+					children: [/* @__PURE__ */ _jsxDEV("div", {
+						className: "comparison-head",
+						children: [
+							/* @__PURE__ */ _jsxDEV("b", { children: home }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 15,
+								columnNumber: 120
+							}, this),
+							/* @__PURE__ */ _jsxDEV("span", { children: "G: Galibiyet · B: Beraberlik · M: Mağlubiyet" }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 15,
+								columnNumber: 133
+							}, this),
+							/* @__PURE__ */ _jsxDEV("b", { children: away }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 15,
+								columnNumber: 190
+							}, this)
+						]
+					}, void 0, true, {
+						fileName: _jsxFileName,
+						lineNumber: 15,
+						columnNumber: 87
+					}, this), [5, 10].map((size) => /* @__PURE__ */ _jsxDEV("div", {
+						className: "comparison-row",
+						children: [
+							/* @__PURE__ */ _jsxDEV("strong", { children: form(profile.home[`last${size}`]) }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 15,
+								columnNumber: 273
+							}, this),
+							/* @__PURE__ */ _jsxDEV("span", { children: [
+								"Son ",
+								size,
+								" · en yeni önce"
+							] }, void 0, true, {
+								fileName: _jsxFileName,
+								lineNumber: 15,
+								columnNumber: 325
+							}, this),
+							/* @__PURE__ */ _jsxDEV("strong", { children: form(profile.away[`last${size}`]) }, void 0, false, {
+								fileName: _jsxFileName,
+								lineNumber: 15,
+								columnNumber: 363
+							}, this)
+						]
+					}, size, true, {
+						fileName: _jsxFileName,
+						lineNumber: 15,
+						columnNumber: 230
+					}, this))]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 15,
+					columnNumber: 54
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 15,
+				columnNumber: 5
+			}, this),
+			rows("Form özeti", [
+				["Galibiyet", "wins"],
+				["Beraberlik", "draws"],
+				["Mağlubiyet", "losses"],
+				[
+					"Galibiyet oranı",
+					"winRate",
+					percent
+				],
+				[
+					"Beraberlik oranı",
+					"drawRate",
+					percent
+				],
+				[
+					"Mağlubiyet oranı",
+					"lossRate",
+					percent
+				],
+				["Maç başına puan", "pointsPerGame"]
+			]),
+			rows("GOL ORTALAMALARI", [
+				["Atılan gol (GF)", "goalsFor"],
+				["Yenilen gol (GA)", "goalsAgainst"],
+				["GF / maç", "goalsForPerMatch"],
+				["GA / maç", "goalsAgainstPerMatch"],
+				["Gol farkı / maç", "goalDifferencePerMatch"]
+			]),
+			rows("İÇ / DIŞ SAHA", [
+				["İç saha maç", "homeMatches"],
+				["İç saha galibiyet", "homeWins"],
+				["İç saha beraberlik", "homeDraws"],
+				["İç saha mağlubiyet", "homeLosses"],
+				["İç saha GF / maç", "homeGoalsForPerMatch"],
+				["İç saha GA / maç", "homeGoalsAgainstPerMatch"],
+				["Dış saha maç", "awayMatches"],
+				["Dış saha galibiyet", "awayWins"],
+				["Dış saha beraberlik", "awayDraws"],
+				["Dış saha mağlubiyet", "awayLosses"],
+				["Dış saha GF / maç", "awayGoalsForPerMatch"],
+				["Dış saha GA / maç", "awayGoalsAgainstPerMatch"]
+			]),
+			rows("GOL İSTATİSTİKLERİ", [
+				[
+					"0.5 Üst",
+					"over05Rate",
+					percent
+				],
+				[
+					"1.5 Üst",
+					"over15Rate",
+					percent
+				],
+				[
+					"2.5 Üst",
+					"over25Rate",
+					percent
+				],
+				[
+					"3.5 Üst",
+					"over35Rate",
+					percent
+				],
+				[
+					"2.5 Alt",
+					"under25Rate",
+					percent
+				],
+				[
+					"BTTS / KG Var",
+					"bttsRate",
+					percent
+				],
+				[
+					"KG Yok",
+					"bttsNoRate",
+					percent
+				],
+				[
+					"Gol yememe (Clean Sheet)",
+					"cleanSheetRate",
+					percent
+				],
+				[
+					"Gol atamama",
+					"failedToScoreRate",
+					percent
+				]
+			]),
+			rows("İLK YARI", [
+				["İlk yarı verili maç", "firstHalfSample"],
+				["İlk yarı atılan gol", "firstHalfGoalsFor"],
+				["İlk yarı yenilen gol", "firstHalfGoalsAgainst"],
+				[
+					"İlk yarı 0.5 Üst",
+					"firstHalfOver05Rate",
+					percent
+				]
+			]),
+			/* @__PURE__ */ _jsxDEV("section", {
+				className: "detail-section",
+				children: [/* @__PURE__ */ _jsxDEV("h3", { children: "H2H" }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 21,
+					columnNumber: 41
+				}, this), profile.h2h ? /* @__PURE__ */ _jsxDEV("div", {
+					className: "probability-group",
+					children: [
+						["Gerçek karşılaşma", "sampleSize"],
+						["Ev sahibi takım galibiyet", "homeWins"],
+						["Beraberlik", "draws"],
+						["Deplasman takım galibiyet", "awayWins"],
+						["Gol / maç", "goalsPerMatch"],
+						[
+							"2.5 Üst",
+							"over25Rate",
+							percent
+						],
+						[
+							"BTTS",
+							"bttsRate",
+							percent
+						]
+					].map(([label, key, format = number]) => /* @__PURE__ */ _jsxDEV("div", {
+						className: "probability-row",
+						children: [/* @__PURE__ */ _jsxDEV("span", { children: label }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 434
+						}, this), /* @__PURE__ */ _jsxDEV("strong", { children: format(profile.h2h[key]) }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 21,
+							columnNumber: 454
+						}, this)]
+					}, key, true, {
+						fileName: _jsxFileName,
+						lineNumber: 21,
+						columnNumber: 391
+					}, this))
+				}, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 21,
+					columnNumber: 68
+				}, this) : /* @__PURE__ */ _jsxDEV("p", { children: "Veri yok" }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 21,
+					columnNumber: 514
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 21,
+				columnNumber: 5
+			}, this),
+			/* @__PURE__ */ _jsxDEV("section", {
+				className: "detail-section",
+				children: [/* @__PURE__ */ _jsxDEV("h3", { children: "Provider xG" }, void 0, false, {
+					fileName: _jsxFileName,
+					lineNumber: 22,
+					columnNumber: 41
+				}, this), /* @__PURE__ */ _jsxDEV("div", {
+					className: "comparison-row",
+					children: [
+						/* @__PURE__ */ _jsxDEV("strong", { children: number(statistics?.home?.expectedGoals) }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 93
+						}, this),
+						/* @__PURE__ */ _jsxDEV("span", { children: "Gerçek kaynak xG" }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 151
+						}, this),
+						/* @__PURE__ */ _jsxDEV("strong", { children: number(statistics?.away?.expectedGoals) }, void 0, false, {
+							fileName: _jsxFileName,
+							lineNumber: 22,
+							columnNumber: 180
+						}, this)
+					]
+				}, void 0, true, {
+					fileName: _jsxFileName,
+					lineNumber: 22,
+					columnNumber: 61
+				}, this)]
+			}, void 0, true, {
+				fileName: _jsxFileName,
+				lineNumber: 22,
+				columnNumber: 5
+			}, this)
+		]
+	}, void 0, true, {
+		fileName: _jsxFileName,
+		lineNumber: 12,
+		columnNumber: 10
+	}, this);
+}
+_s(HistoricalStatistics, "YxEZ7JASj3yBJun4XwgGEnsVW2E=");
+_c = HistoricalStatistics;
+var _c;
+$RefreshReg$(_c, "HistoricalStatistics");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+import * as __vite_react_currentExports from "/src/HistoricalStatistics.jsx";
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+
+  const currentExports = __vite_react_currentExports;
+  queueMicrotask(() => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/user/futbol-tahmin/src/HistoricalStatistics.jsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/user/futbol-tahmin/src/HistoricalStatistics.jsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) { return RefreshRuntime.register(type, "C:/Users/user/futbol-tahmin/src/HistoricalStatistics.jsx" + ' ' + id); }
+function $RefreshSig$() { return RefreshRuntime.createSignatureFunctionForTransform(); }
+
+//# sourceMappingURL=data:application/json;base64,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QUQsWUFBRyxXQUFXOzs7O1lBQVc7Ozs7OztHQUN0aEIsd0JBQUMsV0FBRDtJQUFTLFdBQVU7Y0FBbkIsQ0FBb0Msd0JBQUMsTUFBRCxZQUFJLGNBQWU7Ozs7Y0FBQyx3QkFBQyxPQUFEO0tBQUssV0FBVTtlQUFmO01BQWdDLHdCQUFDLFVBQUQsWUFBUyxPQUFPLFlBQVksTUFBTSxhQUFhLEVBQVU7Ozs7O01BQUMsd0JBQUMsUUFBRCxZQUFNLG1CQUFzQjs7Ozs7TUFBQyx3QkFBQyxVQUFELFlBQVMsT0FBTyxZQUFZLE1BQU0sYUFBYSxFQUFVOzs7OztLQUFNOzs7OztZQUFVOzs7Ozs7RUFDalA7Ozs7OztBQUNYIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIkhpc3RvcmljYWxTdGF0aXN0aWNzLmpzeCJdLCJ2ZXJzaW9uIjozLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VTdGF0ZSB9IGZyb20gXCJyZWFjdFwiO1xyXG5cclxuY29uc3QgbnVtYmVyID0gdmFsdWUgPT4gTnVtYmVyLmlzRmluaXRlKHZhbHVlKSA/IHZhbHVlLnRvTG9jYWxlU3RyaW5nKFwidHItVFJcIiwgeyBtYXhpbXVtRnJhY3Rpb25EaWdpdHM6IDIgfSkgOiBcIlZlcmkgeW9rXCI7XHJcbmNvbnN0IHBlcmNlbnQgPSB2YWx1ZSA9PiBOdW1iZXIuaXNGaW5pdGUodmFsdWUpID8gYCUkeyh2YWx1ZSAqIDEwMCkudG9GaXhlZCgxKX1gIDogXCJWZXJpIHlva1wiO1xyXG5jb25zdCBmb3JtID0gdmFsdWVzID0+IHZhbHVlcz8ubGVuZ3RoID8gdmFsdWVzLm1hcCh2YWx1ZSA9PiAoeyBXOiBcIkdcIiwgRDogXCJCXCIsIEw6IFwiTVwiIH0pW3ZhbHVlXSkuam9pbihcIiDCtyBcIikgOiBcIlZlcmkgeW9rXCI7XHJcblxyXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBIaXN0b3JpY2FsU3RhdGlzdGljcyh7IHByb2ZpbGUsIGhvbWUsIGF3YXksIHN0YXRpc3RpY3MgfSkge1xyXG4gIGNvbnN0IFttb2RlLCBzZXRNb2RlXSA9IHVzZVN0YXRlKFwicmF3XCIpO1xyXG4gIGlmICghcHJvZmlsZSkgcmV0dXJuIDxzZWN0aW9uIGNsYXNzTmFtZT1cImRldGFpbC1zZWN0aW9uXCI+PGgyPkdlw6dtacWfIG1hw6cgaXN0YXRpc3Rpa2xlcmk8L2gyPjxwPlZlcmkgeW9rPC9wPjwvc2VjdGlvbj47XHJcbiAgY29uc3QgY29sdW1ucyA9IFtwcm9maWxlLmhvbWUsIHByb2ZpbGUuYXdheV07XHJcbiAgY29uc3Qgcm93cyA9ICh0aXRsZSwgZmllbGRzKSA9PiA8c2VjdGlvbiBjbGFzc05hbWU9XCJkZXRhaWwtc2VjdGlvblwiPjxoMz57dGl0bGV9PC9oMz48ZGl2IGNsYXNzTmFtZT1cImNvbXBhcmlzb24tY2FyZFwiPjxkaXYgY2xhc3NOYW1lPVwiY29tcGFyaXNvbi1oZWFkXCI+PGI+e2hvbWV9PC9iPjxzcGFuPnttb2RlID09PSBcInJhd1wiID8gXCJIYW0gaXN0YXRpc3Rpa1wiIDogXCJZYWvEsW4gbWHDp2xhcmEgZGFoYSBmYXpsYSBhxJ/EsXJsxLFrXCJ9PC9zcGFuPjxiPnthd2F5fTwvYj48L2Rpdj57ZmllbGRzLm1hcCgoW2xhYmVsLCBrZXksIGZvcm1hdCA9IG51bWJlcl0pID0+IDxkaXYgY2xhc3NOYW1lPVwiY29tcGFyaXNvbi1yb3dcIiBrZXk9e2tleX0+PHN0cm9uZz57Y29sdW1uc1swXT8uc2FtcGxlU2l6ZSA/IGZvcm1hdChjb2x1bW5zWzBdW21vZGVdPy5ba2V5XSkgOiBcIlZlcmkgeW9rXCJ9PC9zdHJvbmc+PHNwYW4+e2xhYmVsfTwvc3Bhbj48c3Ryb25nPntjb2x1bW5zWzFdPy5zYW1wbGVTaXplID8gZm9ybWF0KGNvbHVtbnNbMV1bbW9kZV0/LltrZXldKSA6IFwiVmVyaSB5b2tcIn08L3N0cm9uZz48L2Rpdj4pfTwvZGl2Pjwvc2VjdGlvbj47XHJcbiAgcmV0dXJuIDxzZWN0aW9uIGNsYXNzTmFtZT1cImhpc3RvcmljYWwtc3RhdGlzdGljc1wiPlxyXG4gICAgPGRpdiBjbGFzc05hbWU9XCJzZWN0aW9uLWhlYWRpbmdcIj48ZGl2PjxzcGFuIGNsYXNzTmFtZT1cImV5ZWJyb3dcIj5HRVLDh0VLIEdFw4dNxLDFniBNQcOHTEFSPC9zcGFuPjxoMj5UYWvEsW0gaXN0YXRpc3Rpa2xlcmk8L2gyPjwvZGl2PjxsYWJlbD5IZXNhcGxhbWEgPHNlbGVjdCB2YWx1ZT17bW9kZX0gb25DaGFuZ2U9e2V2ZW50ID0+IHNldE1vZGUoZXZlbnQudGFyZ2V0LnZhbHVlKX0+PG9wdGlvbiB2YWx1ZT1cInJhd1wiPkhhbTwvb3B0aW9uPjxvcHRpb24gdmFsdWU9XCJ3ZWlnaHRlZFwiPkHEn8SxcmzEsWtsxLE8L29wdGlvbj48L3NlbGVjdD48L2xhYmVsPjwvZGl2PlxyXG4gICAgPHAgY2xhc3NOYW1lPVwibXV0ZWQtbm90ZVwiPllhbG7EsXpjYSBtYcOnIGJhxZ9sYW5nxLFjxLFuZGFuIMO2bmNlIHRhbWFtbGFubcSxxZ8gc29udcOnbGFyLiBLYXluYWs6IHtwcm9maWxlLmRhdGFRdWFsaXR5Py5zb3VyY2VzPy5qb2luKFwiLCBcIikgfHwgXCJWZXJpIHlva1wifS4gw5ZybmVrbGVtOiB7cHJvZmlsZS5ob21lLnNhbXBsZVNpemV9IC8ge3Byb2ZpbGUuYXdheS5zYW1wbGVTaXplfSBtYcOnLjwvcD5cclxuICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cImRldGFpbC1zZWN0aW9uXCI+PGgzPkZPUk08L2gzPjxkaXYgY2xhc3NOYW1lPVwiY29tcGFyaXNvbi1jYXJkXCI+PGRpdiBjbGFzc05hbWU9XCJjb21wYXJpc29uLWhlYWRcIj48Yj57aG9tZX08L2I+PHNwYW4+RzogR2FsaWJpeWV0IMK3IEI6IEJlcmFiZXJsaWsgwrcgTTogTWHEn2x1Yml5ZXQ8L3NwYW4+PGI+e2F3YXl9PC9iPjwvZGl2PntbNSwgMTBdLm1hcChzaXplID0+IDxkaXYgY2xhc3NOYW1lPVwiY29tcGFyaXNvbi1yb3dcIiBrZXk9e3NpemV9PjxzdHJvbmc+e2Zvcm0ocHJvZmlsZS5ob21lW2BsYXN0JHtzaXplfWBdKX08L3N0cm9uZz48c3Bhbj5Tb24ge3NpemV9IMK3IGVuIHllbmkgw7ZuY2U8L3NwYW4+PHN0cm9uZz57Zm9ybShwcm9maWxlLmF3YXlbYGxhc3Qke3NpemV9YF0pfTwvc3Ryb25nPjwvZGl2Pil9PC9kaXY+PC9zZWN0aW9uPlxyXG4gICAge3Jvd3MoXCJGb3JtIMO2emV0aVwiLCBbW1wiR2FsaWJpeWV0XCIsIFwid2luc1wiXSwgW1wiQmVyYWJlcmxpa1wiLCBcImRyYXdzXCJdLCBbXCJNYcSfbHViaXlldFwiLCBcImxvc3Nlc1wiXSwgW1wiR2FsaWJpeWV0IG9yYW7EsVwiLCBcIndpblJhdGVcIiwgcGVyY2VudF0sIFtcIkJlcmFiZXJsaWsgb3JhbsSxXCIsIFwiZHJhd1JhdGVcIiwgcGVyY2VudF0sIFtcIk1hxJ9sdWJpeWV0IG9yYW7EsVwiLCBcImxvc3NSYXRlXCIsIHBlcmNlbnRdLCBbXCJNYcOnIGJhxZ/EsW5hIHB1YW5cIiwgXCJwb2ludHNQZXJHYW1lXCJdXSl9XHJcbiAgICB7cm93cyhcIkdPTCBPUlRBTEFNQUxBUklcIiwgW1tcIkF0xLFsYW4gZ29sIChHRilcIiwgXCJnb2Fsc0ZvclwiXSwgW1wiWWVuaWxlbiBnb2wgKEdBKVwiLCBcImdvYWxzQWdhaW5zdFwiXSwgW1wiR0YgLyBtYcOnXCIsIFwiZ29hbHNGb3JQZXJNYXRjaFwiXSwgW1wiR0EgLyBtYcOnXCIsIFwiZ29hbHNBZ2FpbnN0UGVyTWF0Y2hcIl0sIFtcIkdvbCBmYXJrxLEgLyBtYcOnXCIsIFwiZ29hbERpZmZlcmVuY2VQZXJNYXRjaFwiXV0pfVxyXG4gICAge3Jvd3MoXCLEsMOHIC8gREnFniBTQUhBXCIsIFtbXCLEsMOnIHNhaGEgbWHDp1wiLCBcImhvbWVNYXRjaGVzXCJdLCBbXCLEsMOnIHNhaGEgZ2FsaWJpeWV0XCIsIFwiaG9tZVdpbnNcIl0sIFtcIsSww6cgc2FoYSBiZXJhYmVybGlrXCIsIFwiaG9tZURyYXdzXCJdLCBbXCLEsMOnIHNhaGEgbWHEn2x1Yml5ZXRcIiwgXCJob21lTG9zc2VzXCJdLCBbXCLEsMOnIHNhaGEgR0YgLyBtYcOnXCIsIFwiaG9tZUdvYWxzRm9yUGVyTWF0Y2hcIl0sIFtcIsSww6cgc2FoYSBHQSAvIG1hw6dcIiwgXCJob21lR29hbHNBZ2FpbnN0UGVyTWF0Y2hcIl0sIFtcIkTEscWfIHNhaGEgbWHDp1wiLCBcImF3YXlNYXRjaGVzXCJdLCBbXCJExLHFnyBzYWhhIGdhbGliaXlldFwiLCBcImF3YXlXaW5zXCJdLCBbXCJExLHFnyBzYWhhIGJlcmFiZXJsaWtcIiwgXCJhd2F5RHJhd3NcIl0sIFtcIkTEscWfIHNhaGEgbWHEn2x1Yml5ZXRcIiwgXCJhd2F5TG9zc2VzXCJdLCBbXCJExLHFnyBzYWhhIEdGIC8gbWHDp1wiLCBcImF3YXlHb2Fsc0ZvclBlck1hdGNoXCJdLCBbXCJExLHFnyBzYWhhIEdBIC8gbWHDp1wiLCBcImF3YXlHb2Fsc0FnYWluc3RQZXJNYXRjaFwiXV0pfVxyXG4gICAge3Jvd3MoXCJHT0wgxLBTVEFUxLBTVMSwS0xFUsSwXCIsIFtbXCIwLjUgw5xzdFwiLCBcIm92ZXIwNVJhdGVcIiwgcGVyY2VudF0sIFtcIjEuNSDDnHN0XCIsIFwib3ZlcjE1UmF0ZVwiLCBwZXJjZW50XSwgW1wiMi41IMOcc3RcIiwgXCJvdmVyMjVSYXRlXCIsIHBlcmNlbnRdLCBbXCIzLjUgw5xzdFwiLCBcIm92ZXIzNVJhdGVcIiwgcGVyY2VudF0sIFtcIjIuNSBBbHRcIiwgXCJ1bmRlcjI1UmF0ZVwiLCBwZXJjZW50XSwgW1wiQlRUUyAvIEtHIFZhclwiLCBcImJ0dHNSYXRlXCIsIHBlcmNlbnRdLCBbXCJLRyBZb2tcIiwgXCJidHRzTm9SYXRlXCIsIHBlcmNlbnRdLCBbXCJHb2wgeWVtZW1lIChDbGVhbiBTaGVldClcIiwgXCJjbGVhblNoZWV0UmF0ZVwiLCBwZXJjZW50XSwgW1wiR29sIGF0YW1hbWFcIiwgXCJmYWlsZWRUb1Njb3JlUmF0ZVwiLCBwZXJjZW50XV0pfVxyXG4gICAge3Jvd3MoXCLEsExLIFlBUklcIiwgW1tcIsSwbGsgeWFyxLEgdmVyaWxpIG1hw6dcIiwgXCJmaXJzdEhhbGZTYW1wbGVcIl0sIFtcIsSwbGsgeWFyxLEgYXTEsWxhbiBnb2xcIiwgXCJmaXJzdEhhbGZHb2Fsc0ZvclwiXSwgW1wixLBsayB5YXLEsSB5ZW5pbGVuIGdvbFwiLCBcImZpcnN0SGFsZkdvYWxzQWdhaW5zdFwiXSwgW1wixLBsayB5YXLEsSAwLjUgw5xzdFwiLCBcImZpcnN0SGFsZk92ZXIwNVJhdGVcIiwgcGVyY2VudF1dKX1cclxuICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cImRldGFpbC1zZWN0aW9uXCI+PGgzPkgySDwvaDM+e3Byb2ZpbGUuaDJoID8gPGRpdiBjbGFzc05hbWU9XCJwcm9iYWJpbGl0eS1ncm91cFwiPntbW1wiR2Vyw6dlayBrYXLFn8SxbGHFn21hXCIsIFwic2FtcGxlU2l6ZVwiXSwgW1wiRXYgc2FoaWJpIHRha8SxbSBnYWxpYml5ZXRcIiwgXCJob21lV2luc1wiXSwgW1wiQmVyYWJlcmxpa1wiLCBcImRyYXdzXCJdLCBbXCJEZXBsYXNtYW4gdGFrxLFtIGdhbGliaXlldFwiLCBcImF3YXlXaW5zXCJdLCBbXCJHb2wgLyBtYcOnXCIsIFwiZ29hbHNQZXJNYXRjaFwiXSwgW1wiMi41IMOcc3RcIiwgXCJvdmVyMjVSYXRlXCIsIHBlcmNlbnRdLCBbXCJCVFRTXCIsIFwiYnR0c1JhdGVcIiwgcGVyY2VudF1dLm1hcCgoW2xhYmVsLCBrZXksIGZvcm1hdCA9IG51bWJlcl0pID0+IDxkaXYgY2xhc3NOYW1lPVwicHJvYmFiaWxpdHktcm93XCIga2V5PXtrZXl9PjxzcGFuPntsYWJlbH08L3NwYW4+PHN0cm9uZz57Zm9ybWF0KHByb2ZpbGUuaDJoW2tleV0pfTwvc3Ryb25nPjwvZGl2Pil9PC9kaXY+IDogPHA+VmVyaSB5b2s8L3A+fTwvc2VjdGlvbj5cclxuICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cImRldGFpbC1zZWN0aW9uXCI+PGgzPlByb3ZpZGVyIHhHPC9oMz48ZGl2IGNsYXNzTmFtZT1cImNvbXBhcmlzb24tcm93XCI+PHN0cm9uZz57bnVtYmVyKHN0YXRpc3RpY3M/LmhvbWU/LmV4cGVjdGVkR29hbHMpfTwvc3Ryb25nPjxzcGFuPkdlcsOnZWsga2F5bmFrIHhHPC9zcGFuPjxzdHJvbmc+e251bWJlcihzdGF0aXN0aWNzPy5hd2F5Py5leHBlY3RlZEdvYWxzKX08L3N0cm9uZz48L2Rpdj48L3NlY3Rpb24+XHJcbiAgPC9zZWN0aW9uPjtcclxufVxyXG4iXX0=
