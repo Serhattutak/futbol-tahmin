@@ -47,7 +47,9 @@ class FixtureDiscovery {
     return request;
   }
   async discover(date) {
-    const errors = [];
+  const errors = [];
+  const collectedFixtures = [];
+  const successfulProviders = [];
     const order = ["sportmonks", "api-football", "football-data", "openfootball", "thesportsdb"];
     const providers = [...this.registry.providers].sort((a, b) => {
       const rank = name => order.includes(name) ? order.indexOf(name) : order.length;
@@ -63,20 +65,44 @@ class FixtureDiscovery {
         const response = await provider.getFixtures(date);
         if (!Array.isArray(response)) throw new ProviderError("unexpected_provider_response", "Invalid fixture response.");
         const fixtures = this.reconcile(response);
-        this.registry.updateStatus(provider.name, true);
-        if (!fixtures.length) { errors.push({ provider: provider.name, category: "no_data" }); continue; }
-        fixtures.forEach(fixture => this.registry.remember(fixture));
-        const entry = { fixtures, source: provider.name, savedAt: this.registry.now(), providerError: errors.length ? errors : null };
-        this.entries.set(date, entry);
-        this.persist();
-        return { ...this.snapshot(date), cached: false };
+this.registry.updateStatus(provider.name, true);
+
+if (!fixtures.length) {
+  errors.push({
+    provider: provider.name,
+    category: "no_data"
+  });
+  continue;
+}
+
+collectedFixtures.push(...fixtures);
+successfulProviders.push(provider.name);
       } catch (error) {
         const category = error.category || "provider_unavailable";
         errors.push({ provider: provider.name, category });
         this.registry.updateStatus(provider.name, false, category);
         this.cooldowns.set(provider.name, { category, until: this.registry.now() + (["authentication", "quota"].includes(category) ? 15 * 60_000 : this.retryDelay) });
       }
-    }
+    }const fixtures = this.reconcile(collectedFixtures);
+
+if (fixtures.length) {
+  fixtures.forEach(fixture => this.registry.remember(fixture));
+
+  const entry = {
+    fixtures,
+    source: successfulProviders.join("+"),
+    savedAt: this.registry.now(),
+    providerError: errors.length ? errors : null
+  };
+
+  this.entries.set(date, entry);
+  this.persist();
+
+  return {
+    ...this.snapshot(date),
+    cached: false
+  };
+}
     const previous = this.entries.get(date);
     if (previous?.fixtures.length) {
       previous.providerError = errors;

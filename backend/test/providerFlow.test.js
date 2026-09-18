@@ -70,14 +70,14 @@ test("aliases and kickoff tolerance reconcile IDs without merging different leag
   assert.equal(reconcileFixtures([primary, secondary]).length, 2);
 });
 
-test("discovery stays cheap; selected fixture enrichment calls and caches secondary", async () => {
+test("discovery merges secondary provider and enrichment reuses cached data", async () => {
   let requests = 0;
   const registry = new MultiProviderRegistry([
     { name: "sportmonks", enabled: true, getFixtures: async () => [fixture()] },
     { name: "api-football", enabled: true, getFixtures: async () => { requests++; return [fixture("api-football", "123", "Man United")]; } },
   ]);
   const [primary] = await registry.getFixtures("2026-09-20");
-  assert.equal(requests, 0);
+  assert.equal(requests, 1);
   assert.equal((await registry.enrich(primary)).sources.length, 2);
   await registry.enrich(primary); assert.equal(requests, 1);
   assert.equal((await registry.getFixture("sm-1"))[0].providerFixtureIds["api-football"], "123");
@@ -187,3 +187,4 @@ test("non-numeric fixture reaches actual Model 4.0 analysis; insufficient data r
     assert.equal((await analyzeFixture("sm-local-test")).prediction, "NO_BET");
   } finally { providerRegistry.providers = original; providerRegistry.known.clear(); providerRegistry.cache.clear(); }
 });
+
