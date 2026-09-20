@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { localKickoffToUtc } = require("../services/localKickoff");
 const { createProviderError } = require("../services/apiFootballClient");
 
 const { collectDivisionHistory } = require("../services/divisionHistory");
@@ -30,7 +31,7 @@ function toFixture(match, leagueName, meta, season) {
   const homeId = `of-team-${normalizeName(match.team1)}`;
   const awayId = `of-team-${normalizeName(match.team2)}`;
   TEAM_ALIASES.set(homeId, match.team1); TEAM_ALIASES.set(awayId, match.team2);
-  return { provider: "openfootball", providers: ["openfootball"], fixture: { id, date: match.time ? `${match.date}T${match.time.length === 5 ? match.time + ":00" : match.time}Z` : match.date, kickoffPrecision: match.time ? "time" : "date", status: { short: score ? "FINISHED" : "SCHEDULED" } }, league: { id: `of-league-${normalizeName(leagueName)}`, name: leagueName, country: meta.country, season }, teams: { home: { id: homeId, name: match.team1 }, away: { id: awayId, name: match.team2 } }, score: { halftime: Array.isArray(match.score?.ht) ? { home: match.score.ht[0], away: match.score.ht[1] } : { home: null, away: null } }, goals: { home: score ? score[0] : null, away: score ? score[1] : null } };
+  return { provider: "openfootball", providers: ["openfootball"], fixture: { id, date: match.time ? localKickoffToUtc(match.date, match.time, meta.country) : match.date, kickoffPrecision: match.time ? "time" : "date", status: { short: score ? "FINISHED" : "SCHEDULED" } }, league: { id: `of-league-${normalizeName(leagueName)}`, name: leagueName, country: meta.country, season }, teams: { home: { id: homeId, name: match.team1 }, away: { id: awayId, name: match.team2 } }, score: { halftime: Array.isArray(match.score?.ht) ? { home: match.score.ht[0], away: match.score.ht[1] } : { home: null, away: null } }, goals: { home: score ? score[0] : null, away: score ? score[1] : null } };
 }
 async function loadLeague(leagueName, season) {
   const meta = HISTORICAL_LEAGUES[leagueName]; if (!meta) return [];
