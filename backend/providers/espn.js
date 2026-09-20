@@ -1,0 +1,113 @@
+const axios = require("axios");
+const { createProviderError } = require("../services/apiFootballClient");
+const { normalizeStatus, normalizeKickoff } = require("../services/fixtureNormalization");
+const BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer";
+const LEAGUES = {
+  "Premier League": { code: "eng.1", country: "England" },
+  "Championship": { code: "eng.2", country: "England" },
+  "League One": { code: "eng.3", country: "England" },
+  "League Two": { code: "eng.4", country: "England" },
+  "La Liga": { code: "esp.1", country: "Spain" },
+  "Segunda División": { code: "esp.2", country: "Spain" },
+  Bundesliga: { code: "ger.1", country: "Germany" },
+  "2. Bundesliga": { code: "ger.2", country: "Germany" },
+  "Serie A": { code: "ita.1", country: "Italy" },
+  "Serie B": { code: "ita.2", country: "Italy" },
+  "Ligue 1": { code: "fra.1", country: "France" },
+  "Ligue 2": { code: "fra.2", country: "France" },
+  Eredivisie: { code: "ned.1", country: "Netherlands" },
+  "Eerste Divisie": { code: "ned.2", country: "Netherlands" },
+  "Primeira Liga": { code: "por.1", country: "Portugal" },
+  "Scottish Premiership": { code: "sco.1", country: "Scotland" },
+  "Süper Lig": { code: "tur.1", country: "Turkey" },
+  "Pro League": { code: "bel.1", country: "Belgium" },
+  "Super League": { code: "sui.1", country: "Switzerland" },
+  "Austrian Bundesliga": { code: "aut.1", country: "Austria" },
+  Superliga: { code: "den.1", country: "Denmark" },
+  Allsvenskan: { code: "swe.1", country: "Sweden" },
+  Eliteserien: { code: "nor.1", country: "Norway" },
+  "Super League Greece": { code: "gre.1", country: "Greece" },
+  Ekstraklasa: { code: "pol.1", country: "Poland" },
+  "Czech First League": { code: "cze.1", country: "Czech Republic" },
+  "Liga I": { code: "rou.1", country: "Romania" },
+  "NB I": { code: "hun.1", country: "Hungary" },
+  "Serbian SuperLiga": { code: "srb.1", country: "Serbia" },
+  HNL: { code: "cro.1", country: "Croatia" },
+  "First League": { code: "bul.1", country: "Bulgaria" },
+  "Israeli Premier League": { code: "isr.1", country: "Israel" },
+  "Campeonato Brasileiro Série A": { code: "bra.1", country: "Brazil" },
+  "Primera División": { code: "arg.1", country: "Argentina" },
+  "Liga MX": { code: "mex.1", country: "Mexico" },
+  MLS: { code: "usa.1", country: "USA" },
+  "J1 League": { code: "jpn.1", country: "Japan" },
+  "K League 1": { code: "kor.1", country: "South Korea" },
+  "Chinese Super League": { code: "chn.1", country: "China" },
+  "Saudi Pro League": { code: "sau.1", country: "Saudi Arabia" },
+  "Egyptian Premier League": { code: "egy.1", country: "Egypt" },
+  "UAE Pro League": { code: "uae.1", country: "UAE" },
+  "Qatar Stars League": { code: "qat.1", country: "Qatar" },
+  "Indian Super League": { code: "ind.1", country: "India" },
+  "A-League": { code: "aus.1", country: "Australia" },
+  "League of Ireland Premier Division": { code: "ire.1", country: "Ireland" },
+  "Cymru Premier": { code: "wal.1", country: "Wales" },
+};
+const cache = new Map();
+const STATUS_MAP = {
+  STATUS_SCHEDULED: "SCHEDULED",
+  STATUS_TBD: "SCHEDULED",
+  STATUS_IN_PROGRESS: "LIVE",
+  STATUS_HALFTIME: "LIVE",
+  STATUS_FULL_TIME: "FINISHED",
+  STATUS_FINAL: "FINISHED",
+  STATUS_POSTPONED: "POSTPONED",
+  STATUS_CANCELLED: "CANCELLED",
+  STATUS_SUSPENDED: "LIVE",
+  STATUS_DELAYED: "SCHEDULED",
+};
+function toFixture(event, leagueName, meta) {
+  const competition = event?.competitions?.[0];
+  if (!competition) return null;
+  const home = competition.competitors?.find((c) => c.homeAway === "home");
+  const away = competition.competitors?.find((c) => c.homeAway === "away");
+  if (!home?.team?.displayName || !away?.team?.displayName) return null;
+  const statusName = competition.status?.type?.name || "STATUS_SCHEDULED";
+  const score = (side) => { const v = Number(side?.score); return Number.isFinite(v) ? v : null; };
+  return {
+    provider: "espn",
+    providers: ["espn"],
+    fixture: { id: `espn-${event.id}`, date: normalizeKickoff(event.date), kickoffPrecision: "time", status: { short: STATUS_MAP[statusName] || normalizeStatus(statusName) } },
+    league: { id: meta.code, name: leagueName, country: meta.country },
+    teams: { home: { id: `espn-team-${home.team.id}`, name: home.team.displayName }, away: { id: `espn-team-${away.team.id}`, name: away.team.displayName } },
+    goals: { home: score(home), away: score(away) },
+  };
+}
+async function request(path, params) {
+  const key = `${path}?${new URLSearchParams(params || {})}`;
+  if (cache.get(key)?.expiresAt > Date.now()) return cache.get(key).value;
+  const promise = axios.get(`${BASE_URL}/${path}`, { params, timeout: 12000, headers: { "User-Agent": "Mozilla/5.0 (compatible; ZEUS-ONE-BETTING/1.0)" } }).then((response) => response.data).catch((error) => { cache.delete(key); if (error.response?.status === 404) return { events: [] }; throw createProviderError(error); });
+  cache.set(key, { value: promise, expiresAt: Date.now() + 5 * 60 * 1000 });
+  if (cache.size > 200) cache.delete(cache.keys().next().value);
+  return promise;
+}
+async function getFixtures(date) {
+  const day = date.replace(/-/g, "");
+  const results = await Promise.allSettled(Object.entries(LEAGUES).map(([leagueName, meta]) => request(`${meta.code}/scoreboard`, { dates: day }).then((data) => (data.events || []).map((event) => toFixture(event, leagueName, meta)).filter(Boolean))));
+  const fixtures = [];
+  for (const result of results) if (result.status === "fulfilled") fixtures.push(...result.value);
+  return fixtures;
+}
+async function getFixture(fixtureId) {
+  const id = String(fixtureId).replace(/^espn-/, "");
+  for (const [leagueName, meta] of Object.entries(LEAGUES)) {
+    try {
+      const data = await request(`${meta.code}/scoreboard`, { dates: new Date().toISOString().slice(0, 10).replace(/-/g, "") });
+      const event = (data.events || []).find((e) => String(e.id) === id);
+      if (event) return toFixture(event, leagueName, meta);
+    } catch { /* Try next league. */ }
+  }
+  return null;
+}
+async function getTeamForm() { return null; }
+async function getH2H() { return null; }
+async function getStandings() { return null; }
+module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, supportsLeague: (name) => Boolean(LEAGUES[name]) };
