@@ -1272,11 +1272,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
 
     const candidates = [...new Map(
       pool
-        .filter((match) => {
-          const status = normalizeStatus(match.fixture?.status?.short);
-          if (status === "LIVE") return true;
-          return status === "SCHEDULED" && Date.parse(match.fixture.date) > Date.now();
-        })
+        .filter((match) => ["SCHEDULED", "LIVE"].includes(normalizeStatus(match.fixture?.status?.short)))
         .sort((a, b) => Number(openFootball.supportsHistoricalLeague(b.league)) - Number(openFootball.supportsHistoricalLeague(a.league)))
         .map((match) => [match.fixture?.id, match])
     ).values()].slice(0, BEST_PREDICTIONS_LIMIT);
