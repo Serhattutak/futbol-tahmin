@@ -18,7 +18,7 @@ const theSportsDb = require("./providers/theSportsDb");
 const sportmonks = require("./providers/sportmonks");
 const footballData = require("./providers/footballData");
 const { normalizeStatus } = require("./services/fixtureNormalization");
-const { MultiProviderRegistry, createApiFootballAdapter, createLegacyAdapter, toFrontendFixture } = require("./services/multiProviderRegistry");
+const { MultiProviderRegistry, createLegacyAdapter, toFrontendFixture } = require("./services/multiProviderRegistry");
 
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
@@ -67,7 +67,9 @@ function concurrencyGuard(limit = 2) {
 app.use("/api", generalApiLimiter);
 
 const api = axios.create({ baseURL: API_URL, timeout: 10000, headers: { "x-apisports-key": process.env.API_FOOTBALL_KEY } });
-const upstream = new ApiFootballClient({ client: api, apiKey: process.env.API_FOOTBALL_KEY, dailyBudget: process.env.API_FOOTBALL_DAILY_BUDGET || 100, cacheLimit: process.env.API_FOOTBALL_CACHE_LIMIT || 500 });
+// Ücretli api-football sağlayıcısı tamamen devre dışı bırakıldı (disabled: true).
+// Yalnızca ücretsiz kaynaklar (OpenFootball, football-data.org ücretsiz tier, TheSportsDB) kullanılır.
+const upstream = new ApiFootballClient({ client: api, apiKey: process.env.API_FOOTBALL_KEY, dailyBudget: process.env.API_FOOTBALL_DAILY_BUDGET || 100, cacheLimit: process.env.API_FOOTBALL_CACHE_LIMIT || 500, disabled: true });
 const predictionStorePath = path.join(__dirname, "data", "predictions.json");
 
 function readPredictionStore() {
@@ -106,9 +108,13 @@ function cachedApiGet(pathname, params) {
   return upstream.get(pathname, params, { ttlMs: getCacheTtl(pathname, params) });
 }
 
+// Yalnızca ücretsiz sağlayıcılar kayıtlıdır. Ücretli api-football sağlayıcısı kaldırıldı.
+// - openfootball: tamamen ücretsiz (GitHub JSON), anahtar gerektirmez
+// - football-data.org: ücretsiz tier (FOOTBALL_DATA_API_TOKEN ile, ücretsiz kayıt)
+// - thesportsdb: ücretsiz tier (anahtar gerektirmez, varsayılan "123")
+// - sportmonks: yalnızca token tanımlıysa etkinleşir (varsayılan kapalı)
 const providerRegistry = new MultiProviderRegistry([
   createLegacyAdapter(sportmonks),
-  createApiFootballAdapter(cachedApiGet, Boolean(process.env.API_FOOTBALL_KEY)),
   createLegacyAdapter(footballData),
   createLegacyAdapter(openFootball),
   createLegacyAdapter(theSportsDb),
@@ -1431,6 +1437,12 @@ app.listen(PORT, () => {
 });
 
 }
-module.exports = { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger };
+// Vercel serverless (@vercel/node), modülün dışa aktardığı isteği karşılayan bir
+// handler fonksiyonu bekler. Express uygulaması (`app`) böyle bir fonksiyondur; bu
+// nedenle modülü doğrudan `app` olarak dışa aktarıyoruz. Mevcut adlandırılmış
+// dışa aktarımlar (testlerin ve diğer modüllerin kullandığı) fonksiyona özellik
+// olarak eklenerek korunur; hiçbir mevcut import kırılmaz.
+module.exports = app;
+Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
 
 

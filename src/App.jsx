@@ -8,7 +8,10 @@ import "./App.css";
 import { getCachedFrontendJson, readFrontendJson } from "./frontendApi.js";
 import { dataQualityReasons, dataQualityText, marketMetrics, matchesMarketFilter } from "./predictionPresentation.js";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+// Production'da (Vercel) frontend ve backend aynı origin'de çalışır; bu yüzden
+// API istekleri göreli "/api/..." yoluyla gider (boş API_BASE). Geliştirmede ise
+// yerel backend'e (localhost:3001) yönlendirilir. VITE_API_BASE_URL tanımlıysa o kullanılır.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:3001" : "");
 const NAV_ITEMS = [
   { id: "home", label: "Ana Sayfa", icon: "⌂" },
   { id: "predictions", label: "Tahminler", icon: "✦" },

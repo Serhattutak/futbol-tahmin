@@ -23,12 +23,15 @@ function sortParams(params = {}) {
 }
 
 class ApiFootballClient {
-  constructor({ client, apiKey, dailyBudget = 400, cacheLimit = 500, now = () => Date.now() }) {
+  constructor({ client, apiKey, dailyBudget = 400, cacheLimit = 500, now = () => Date.now(), disabled = false }) {
     this.client = client;
     this.apiKey = apiKey;
     this.dailyBudget = Math.max(1, Number(dailyBudget) || 400);
     this.cacheLimit = Math.max(1, Number(cacheLimit) || 500);
     this.now = now;
+    // Ücretli api-football sağlayıcısı devre dışı. `disabled` true olduğunda
+    // hiçbir gerçek istek yapılmaz ve tüm çağrılar boş sonuç döndürür.
+    this.disabled = Boolean(disabled);
     this.cache = new Map();
     this.budgetDay = null;
     this.usedToday = 0;
@@ -40,6 +43,9 @@ class ApiFootballClient {
   }
 
   async get(pathname, params, { ttlMs } = {}) {
+    // Ücretli sağlayıcı devre dışı: hiçbir dış istek yapmadan boş sonuç döndür.
+    // Böylece bu istemciyi kullanan uç noktalar hata vermeden çalışmaya devam eder.
+    if (this.disabled) return [];
     const normalizedParams = sortParams(params);
     const key = `${pathname}?${new URLSearchParams(normalizedParams).toString()}`;
     const now = this.now();

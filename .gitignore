@@ -9,3 +9,6 @@ backend/data/fixture-cache.json
 backend/data/fixture-cache.backup.json
 *.backup.js
 *.backup.json
+
+# Vercel
+.vercel
