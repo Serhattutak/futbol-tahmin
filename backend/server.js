@@ -1437,6 +1437,12 @@ app.listen(PORT, () => {
 });
 
 }
-module.exports = { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger };
+// Vercel serverless (@vercel/node), modülün dışa aktardığı isteği karşılayan bir
+// handler fonksiyonu bekler. Express uygulaması (`app`) böyle bir fonksiyondur; bu
+// nedenle modülü doğrudan `app` olarak dışa aktarıyoruz. Mevcut adlandırılmış
+// dışa aktarımlar (testlerin ve diğer modüllerin kullandığı) fonksiyona özellik
+// olarak eklenerek korunur; hiçbir mevcut import kırılmaz.
+module.exports = app;
+Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
 
 
