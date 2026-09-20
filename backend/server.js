@@ -1251,7 +1251,7 @@ app.get("/api/analyze/:fixtureId", analyzeLimiter, concurrencyGuard(2), async (r
 
 const bestPredictionsCache = new Map();
 const BEST_PREDICTIONS_TTL_MS = 5 * 60 * 1000;
-const BEST_PREDICTIONS_LIMIT = 24;
+const BEST_PREDICTIONS_LIMIT = 60;
 const BEST_PREDICTIONS_MIN_QUALITY = 60;
 const BEST_PREDICTIONS_MIN_CONFIDENCE = 70;
 const BEST_PREDICTIONS_MIN_PROBABILITY = 65;
@@ -1272,7 +1272,11 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
 
     const candidates = [...new Map(
       pool
-        .filter((match) => normalizeStatus(match.fixture?.status?.short) === "SCHEDULED" && Date.parse(match.fixture.date) > Date.now())
+        .filter((match) => {
+          const status = normalizeStatus(match.fixture?.status?.short);
+          if (status === "LIVE") return true;
+          return status === "SCHEDULED" && Date.parse(match.fixture.date) > Date.now();
+        })
         .sort((a, b) => Number(openFootball.supportsHistoricalLeague(b.league)) - Number(openFootball.supportsHistoricalLeague(a.league)))
         .map((match) => [match.fixture?.id, match])
     ).values()].slice(0, BEST_PREDICTIONS_LIMIT);
@@ -1338,7 +1342,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
       eligible: evaluated.length,
       poolSize: pool.length,
       results: evaluated,
-      assessments: diagnosticAnalyses.map((analysis) => ({ fixture: analysis.fixture, status: analysis.predictionEligible ? "PREDICTION" : "INSUFFICIENT_DATA", recommendation: analysis.predictionEligible ? analysis.recommendation : { eligible: false, main: "NO_BET", reason: "INSUFFICIENT_DATA" } })),
+      assessments: diagnosticAnalyses.map((analysis) => ({ fixture: analysis.fixture, status: analysis.predictionEligible ? "PREDICTION" : "INSUFFICIENT_DATA", dataQuality: analysis.dataQuality, confidence: analysis.model?.confidence ?? 0, recommendation: analysis.predictionEligible ? analysis.recommendation : { eligible: false, main: "NO_BET", reason: "INSUFFICIENT_DATA" } })),
       diagnostics,
       note: "Yetersiz veri etiketi taÅŸÄ±yan maÃ§lar en iyi tahmin listesinde Ã¶neri olarak gÃ¶sterilmez.",
     };

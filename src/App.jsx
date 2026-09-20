@@ -56,6 +56,8 @@ function archivedAnalysis(record) {
 function App() {
   const analysisRequest = useRef(0);
   const detailCache = useRef(new Map());
+  const previousViewRef = useRef("home");
+  const scrollPositionRef = useRef(0);
   const [activeView, setActiveView] = useState("home");
   const [matches, setMatches] = useState([]);
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
@@ -137,7 +139,7 @@ function App() {
     let cancelled = false; setBestPredictions([]);
     readFrontendJson(`${API_BASE}/api/best-predictions?date=${selectedDate}`)
       .then((data) => { if (cancelled) return; const results = (data?.results || []).filter(item => item.eligible === true).sort((a, b) => (b.predictionScore ?? 0) - (a.predictionScore ?? 0)); setBestPredictions(results);
-        setAnalysisCache(current => { const next = { ...current }; for (const item of results) { const id = String(item.fixture.id); if (!next[id] || next[id].summaryOnly) next[id] = { summaryOnly: true, fixture: item.fixture, predictionEligible: true, dataQuality: item.dataQuality, model: { version: "4.0", confidence: item.confidence }, recommendation: { bestMarket: item.prediction }, markets: { [item.prediction.market]: item.prediction } }; } for (const item of data?.assessments || []) { if (item.status === "INSUFFICIENT_DATA" && !next[String(item.fixture.id)]) next[String(item.fixture.id)] = { summaryOnly: true, fixture: item.fixture, predictionEligible: false }; } return next; });
+        setAnalysisCache(current => { const next = { ...current }; for (const item of data?.assessments || []) { const id = String(item.fixture.id); if (next[id] && !next[id].summaryOnly) continue; const bestMarket = item.status === "PREDICTION" ? item.recommendation?.bestMarket : null; next[id] = bestMarket ? { summaryOnly: true, fixture: item.fixture, predictionEligible: true, dataQuality: item.dataQuality, model: { version: "4.0", confidence: item.confidence }, recommendation: { bestMarket }, markets: { [bestMarket.market]: bestMarket } } : { summaryOnly: true, fixture: item.fixture, predictionEligible: false, dataQuality: item.dataQuality }; } return next; });
       }).catch(() => {});
     return () => { cancelled = true; };
   }, [selectedDate]);
@@ -176,6 +178,7 @@ function App() {
   async function openAnalysis(match) {
     const fixtureId = String(match?.fixture?.id || "");
     if (!fixtureId) return;
+    if (activeView !== "match-detail") { previousViewRef.current = activeView; scrollPositionRef.current = window.scrollY; }
     setSelectedMatch(match); setActiveView("match-detail"); setError("");
     const requestId = ++analysisRequest.current;
     try {
@@ -196,12 +199,13 @@ function App() {
     setFavorites(current => { const removing = current[type].includes(id); const savedMatches = { ...current.savedMatches }; if (type === "matches") { if (removing) delete savedMatches[id]; else savedMatches[id] = match; } return { ...current, savedMatches, [type]: removing ? current[type].filter(item => item !== id) : [...current[type], id] }; });
   }
 
-  const liveMatches = useMemo(() => matches.filter((match) => getStatus(match) === "live"), [matches]);
-  const leagues = useMemo(() => ["Tümü", ...new Set(matches.map((match) => match?.league?.name).filter(Boolean))], [matches]);
+  const sortedMatches = useMemo(() => [...matches].sort((a, b) => (Date.parse(a?.fixture?.date) || 0) - (Date.parse(b?.fixture?.date) || 0)), [matches]);
+  const liveMatches = useMemo(() => sortedMatches.filter((match) => getStatus(match) === "live"), [sortedMatches]);
+  const leagues = useMemo(() => ["Tümü", ...new Set(sortedMatches.map((match) => match?.league?.name).filter(Boolean))], [sortedMatches]);
   const filteredMatches = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query && league === "Tümü") return matches;
-    return matches.filter((match) => {
+    if (!query && league === "Tümü") return sortedMatches;
+    return sortedMatches.filter((match) => {
       const { home, away } = getTeams(match);
       const matchesSearch = !query || `${home} ${away} ${match?.league?.name || ""}`.toLowerCase().includes(query);
       const matchesLeague = league === "Tümü" || match?.league?.name === league;
@@ -219,18 +223,26 @@ function App() {
       setLeague("Tümü");
       setOpenLeagues({});
     }
+    scrollPositionRef.current = 0;
     setActiveView(view);
     setAnalysis(null);
   }
 
+  useEffect(() => {
+    if (activeView === "match-detail") return;
+    const target = scrollPositionRef.current;
+    const frame = requestAnimationFrame(() => window.scrollTo(0, target));
+    return () => cancelAnimationFrame(frame);
+  }, [activeView]);
+
   function renderView() {
-    if (activeView === "match-detail") return <MatchDetailV2 analysis={analysis} match={selectedMatch} loading={analysisLoading} onBack={() => setActiveView("home")} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
+    if (activeView === "match-detail") return <MatchDetailV2 analysis={analysis} match={selectedMatch} loading={analysisLoading} onBack={() => setActiveView(previousViewRef.current)} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
     if (activeView === "predictions") return <PredictionsViewV2 matches={predictionMatches} onFavorite={toggleFavorite} favoriteIds={favorites.matches} analysisCache={analysisCache} market={market} setMarket={setMarket} minConfidence={minConfidence} setMinConfidence={setMinConfidence} onOpen={openAnalysis} />;
-    if (activeView === "matches") return <MatchesView selectedDate={selectedDate} groups={groupedMatches} openLeagues={openLeagues} setOpenLeagues={setOpenLeagues} search={search} setSearch={setSearch} league={league} setLeague={setLeague} leagues={leagues} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} loading={loading} />;
-    if (activeView === "live") return <LiveView matches={liveMatches} onOpen={openAnalysis} />;
+    if (activeView === "matches") return <MatchesView selectedDate={selectedDate} groups={groupedMatches} openLeagues={openLeagues} setOpenLeagues={setOpenLeagues} search={search} setSearch={setSearch} league={league} setLeague={setLeague} leagues={leagues} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} loading={loading} analysisCache={analysisCache} />;
+    if (activeView === "live") return <LiveView matches={liveMatches} onOpen={openAnalysis} analysisCache={analysisCache} />;
     if (activeView === "favorites") return <FavoritesView matches={favoriteMatches} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
     if (activeView === "performance") return <div className="view-stack"><ForwardPerformance apiBase={API_BASE} /><BacktestView apiBase={API_BASE} /><ArchivePerformanceView performance={performance} /></div>;
-    return <HomeView matches={matches} selectedDate={selectedDate} bestPredictions={bestPredictions} performance={performance} providerStatus={providerStatus} loading={loading} analysisCache={analysisCache} stats={stats} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
+    return <HomeView matches={sortedMatches} selectedDate={selectedDate} bestPredictions={bestPredictions} performance={performance} providerStatus={providerStatus} loading={loading} analysisCache={analysisCache} stats={stats} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
   }
 
   return <div className="app-shell">
@@ -307,9 +319,15 @@ function PerformanceBar({ label, stats = {} }) { return <div className="performa
 
 function PredictionsView({ matches, analysisCache, market, setMarket, minConfidence, setMinConfidence, onOpen }) { const visible = matches.filter((match) => { const data = analysisCache[match.fixture?.id]; if (!data && market !== "all") return false; return !data || Number(data.model?.confidence || 0) >= Number(minConfidence); }); return <div className="view-stack"><SectionHeading eyebrow="AI MOTORU" title="Tahmin merkezinde" action={<span className="live-dot-label">● CANLI VERİ</span>} /><div className="filter-scroll">{MARKET_GROUPS.map((item) => <button key={item.id} className={market === item.id ? "filter-chip selected" : "filter-chip"} type="button" onClick={() => setMarket(item.id)}>{item.label}</button>)}</div><div className="filter-row"><label>Minimum güven <select value={minConfidence} onChange={(event) => setMinConfidence(event.target.value)}><option value="0">Tümü</option><option value="60">%60+</option><option value="75">%75+</option></select></label><span>{visible.length} maç</span></div>{visible.length ? <div className="card-list">{visible.map((match) => <MatchCard key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div> : <EmptyState icon="✦" title="Tahminleri görmek için maç seç" text="Maç detayını açtığında model tüm marketleri hesaplar." />}<HistoryPanel /></div>; }
 
-function MatchesView({ selectedDate, groups, openLeagues, setOpenLeagues, search, setSearch, league, setLeague, leagues, onOpen, onFavorite, favoriteIds, loading }) { return <div className="view-stack"><SectionHeading eyebrow="FİKSTÜR" title="Günün maçları" action={<span className="date-chip">{formatDate(parseDateKey(selectedDate))}</span>} /><div className="toolbar"><div className="search-box"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Takım veya lig ara" /></div><select value={league} onChange={(event) => setLeague(event.target.value)}>{leagues.map((item) => <option key={item}>{item}</option>)}</select></div>{loading ? <EmptyState title="Maçlar yükleniyor" text="API-Football fikstürü getiriliyor." /> : Object.keys(groups).length ? Object.entries(groups).map(([name, leagueMatches]) => <section className="league-group" key={name}><button className="league-heading" type="button" onClick={() => setOpenLeagues((current) => ({ ...current, [name]: current[name] === false }))}><span><b>{name}</b><small>{leagueMatches[0]?.league?.country || "Uluslararası"} · {leagueMatches.length} maç</small></span><span>{openLeagues[name] === false ? "+" : "−"}</span></button>{openLeagues[name] !== false && <div className="league-matches">{leagueMatches.map((match) => <MatchRow key={match.fixture?.id} match={match} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div>}</section>) : <EmptyState title="Maç bulunamadı" text="Filtreleri değiştirerek tekrar deneyin." />}</div>; }
-function MatchRow({ match, onOpen, onFavorite, favoriteIds }) { const { home, away } = getTeams(match); return <button className="match-row" type="button" onClick={() => onOpen(match)}><span className="row-time">{formatTime(match?.fixture?.date)}</span><span className="row-teams"><b>{home}</b><b>{away}</b></span><span className="row-prediction">AI<br /><strong>—</strong></span><span className={favoriteIds.includes(String(match?.fixture?.id)) ? "row-heart saved" : "row-heart"} onClick={(event) => { event.stopPropagation(); onFavorite(match); }}>♥</span><span className="row-arrow">›</span></button>; }
-function LiveView({ matches, onOpen }) { return <div className="view-stack"><SectionHeading eyebrow="CANLI MERKEZİ" title="Şu an oynananlar" action={<span className="live-dot-label">● LIVE</span>} />{matches.length ? <div className="card-list">{matches.map((match) => <article className="live-card" key={match.fixture?.id} onClick={() => onOpen(match)}><div className="live-minute"><span>● CANLI</span><strong>{match.fixture?.status?.elapsed || "--"}'</strong></div><div className="live-teams"><b>{getTeams(match).home}</b><strong>{match.goals?.home ?? "—"} : {match.goals?.away ?? "—"}</strong><b>{getTeams(match).away}</b></div><small>{match?.league?.name} · Canlı istatistik altyapısı hazır</small></article>)}</div> : <EmptyState icon="●" title="Şu an canlı maç yok" text="Canlı karşılaşmalar başladığında burada görünecek." />}</div>; }
+function MatchesView({ selectedDate, groups, openLeagues, setOpenLeagues, search, setSearch, league, setLeague, leagues, onOpen, onFavorite, favoriteIds, loading, analysisCache }) { return <div className="view-stack"><SectionHeading eyebrow="FİKSTÜR" title="Günün maçları" action={<span className="date-chip">{formatDate(parseDateKey(selectedDate))}</span>} /><div className="toolbar"><div className="search-box"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Takım veya lig ara" /></div><select value={league} onChange={(event) => setLeague(event.target.value)}>{leagues.map((item) => <option key={item}>{item}</option>)}</select></div>{loading ? <EmptyState title="Maçlar yükleniyor" text="API-Football fikstürü getiriliyor." /> : Object.keys(groups).length ? Object.entries(groups).map(([name, leagueMatches]) => <section className="league-group" key={name}><button className="league-heading" type="button" onClick={() => setOpenLeagues((current) => ({ ...current, [name]: current[name] === false }))}><span><b>{name}</b><small>{leagueMatches[0]?.league?.country || "Uluslararası"} · {leagueMatches.length} maç</small></span><span>{openLeagues[name] === false ? "+" : "−"}</span></button>{openLeagues[name] !== false && <div className="league-matches">{leagueMatches.map((match) => <MatchRow key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div>}</section>) : <EmptyState title="Maç bulunamadı" text="Filtreleri değiştirerek tekrar deneyin." />}</div>; }
+function MatchRow({ match, analysis, onOpen, onFavorite, favoriteIds }) {
+  const { home, away } = getTeams(match);
+  const bestMarket = analysis?.recommendation?.bestMarket;
+  const predictionLabel = analysis?.predictionEligible === false ? "Yetersiz veri" : bestMarket?.market || "—";
+  const confidence = analysis?.model?.confidence;
+  return <button className="match-row" type="button" onClick={() => onOpen(match)}><span className="row-time">{formatTime(match?.fixture?.date)}</span><span className="row-teams"><b>{home}</b><b>{away}</b></span><span className="row-prediction">{predictionLabel === "—" ? "AI" : Number.isFinite(confidence) ? `%${confidence}` : "AI"}<br /><strong>{predictionLabel}</strong></span><span className={favoriteIds.includes(String(match?.fixture?.id)) ? "row-heart saved" : "row-heart"} onClick={(event) => { event.stopPropagation(); onFavorite(match); }}>♥</span><span className="row-arrow">›</span></button>;
+}
+function LiveView({ matches, onOpen, analysisCache }) { return <div className="view-stack"><SectionHeading eyebrow="CANLI MERKEZİ" title="Şu an oynananlar" action={<span className="live-dot-label">● LIVE</span>} />{matches.length ? <div className="card-list">{matches.map((match) => { const analysis = analysisCache[match.fixture?.id]; const bestMarket = analysis?.recommendation?.bestMarket; const predictionLabel = analysis?.predictionEligible === false ? "Yetersiz veri" : bestMarket?.market; return <article className="live-card" key={match.fixture?.id} onClick={() => onOpen(match)}><div className="live-minute"><span>● CANLI</span><strong>{match.fixture?.status?.elapsed || "--"}'</strong></div><div className="live-teams"><b>{getTeams(match).home}</b><strong>{match.goals?.home ?? "—"} : {match.goals?.away ?? "—"}</strong><b>{getTeams(match).away}</b></div><small>{match?.league?.name}</small>{predictionLabel && <div className="prediction-strip"><div><span className="field-label">EN GÜÇLÜ TAHMİN</span><strong>{predictionLabel}</strong></div><div><span className="field-label">MODEL GÜVENİ</span><ConfidenceBadge confidence={analysis?.model?.confidence} /></div></div>}</article>; })}</div> : <EmptyState icon="●" title="Şu an canlı maç yok" text="Canlı karşılaşmalar başladığında burada görünecek." />}</div>; }
 function FavoritesView({ matches, onOpen, onFavorite, favoriteIds }) { return <div className="view-stack"><SectionHeading eyebrow="KİŞİSEL LİSTEN" title="Favoriler" action={<span className="date-chip">Local kayıt</span>} />{matches.length ? <div className="card-list">{matches.map((match) => <MatchCard key={match.fixture?.id} match={match} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div> : <EmptyState icon="♡" title="Listen henüz boş" text="Maç kartlarındaki kalp ikonuyla favori maçlarını kaydet." />}<div className="favorite-note"><strong>Takım ve lig favorileri</strong><p>Hesap sistemi geldiğinde favori tercihleriniz hesabınızla senkronize edilebilir.</p></div></div>; }
 function HistoryPanel() { return <section className="history-panel"><div><span className="eyebrow">GEÇMİŞ TAHMİNLER</span><h3>Model performansı</h3><p>Sonuçlar maçlar tamamlandığında otomatik değerlendirilecek.</p></div><div className="history-empty"><b>—</b><span>Henüz sonuç yok</span></div></section>; }
 
