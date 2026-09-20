@@ -52,6 +52,8 @@ const LEAGUES = {
   "Cymru Premier": { code: "wal.1", country: "Wales" },
 };
 const cache = new Map();
+const COUNTRY_LEAGUES = {};
+for (const [name, meta] of Object.entries(LEAGUES)) (COUNTRY_LEAGUES[meta.country] ||= []).push(meta.code);
 const STATUS_MAP = {
   STATUS_SCHEDULED: "SCHEDULED",
   STATUS_TBD: "SCHEDULED",
@@ -71,7 +73,7 @@ function toFixture(event, leagueName, meta) {
   const away = competition.competitors?.find((c) => c.homeAway === "away");
   if (!home?.team?.displayName || !away?.team?.displayName) return null;
   const statusName = competition.status?.type?.name || "STATUS_SCHEDULED";
-  const score = (side) => { const v = Number(side?.score); return Number.isFinite(v) ? v : null; };
+  const score = (side) => { const v = Number(side?.score?.value ?? side?.score); return Number.isFinite(v) ? v : null; };
   return {
     provider: "espn",
     providers: ["espn"],
@@ -107,7 +109,29 @@ async function getFixture(fixtureId) {
   }
   return null;
 }
-async function getTeamForm() { return null; }
+async function getTeamForm(teamId, before, context = {}) {
+  const rawId = String(teamId).replace(/^espn-team-/, "");
+  const leagueName = context.league?.name;
+  const meta = leagueName ? LEAGUES[leagueName] : null;
+  if (!meta) return [];
+  const year = new Date(before).getUTCFullYear();
+  const codes = [meta.code, ...(COUNTRY_LEAGUES[meta.country] || []).filter((code) => code !== meta.code)];
+  const results = [];
+  for (const season of [year, year - 1]) {
+    for (const code of codes) {
+      if (results.length >= 20) break;
+      try {
+        const data = await request(`${code}/teams/${rawId}/schedule`, { season });
+        for (const event of data.events || []) {
+          const league = Object.entries(LEAGUES).find(([, m]) => m.code === code)?.[0] || leagueName;
+          const fixture = toFixture(event, league, meta);
+          if (fixture) results.push(fixture);
+        }
+      } catch { /* Try next league/season. */ }
+    }
+  }
+  return results;
+}
 async function getH2H() { return null; }
 async function getStandings() { return null; }
-module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, supportsLeague: (name) => Boolean(LEAGUES[name]) };
+module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, supportsLeague: (name) => Boolean(LEAGUES[name]) };
