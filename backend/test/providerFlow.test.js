@@ -142,18 +142,21 @@ test("free provider caches expire and retry changed fixture results", () => isol
 test("best-predictions retains non-numeric discovery as explicit insufficient assessment", async () => {
   const { app, providerRegistry } = require("../server");
   const original = providerRegistry.providers;
-  const current = fixture("sportmonks", "sm-endpoint-test");
+  const originalDiscovery = providerRegistry.fixtureDiscovery;
+  const kickoff = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  const current = fixture("sportmonks", "sm-endpoint-test", "Manchester United", kickoff);
   let oddsRequests = 0;
   providerRegistry.providers = [{ name: "sportmonks", enabled: true, capabilities: ["fixtures", "odds"], getFixtures: async () => [current], getOdds: async () => { oddsRequests++; return []; } }];
+  providerRegistry.fixtureDiscovery = { getFixturesByDate: async () => { providerRegistry.remember(current); return { fixtures: [current], source: "sportmonks", cached: false, stale: false, providerError: null }; } };
   const layer = app.router.stack.find((entry) => entry.route?.path === "/api/best-predictions");
   let body;
   try {
-    await layer.route.stack.at(-1).handle({ query: { date: "2026-09-20" } }, { json(value) { body = value; return this; }, status() { return this; } });
+    await layer.route.stack.at(-1).handle({ query: { date: kickoff.slice(0, 10) } }, { json(value) { body = value; return this; }, status() { return this; } });
     assert.equal(body.success, true); assert.equal(body.evaluated, 1);
     assert.equal(body.assessments[0].fixture.id, "sm-endpoint-test");
     assert.equal(body.assessments[0].recommendation.main, "NO_BET");
     assert.equal(oddsRequests, 0);
-  } finally { providerRegistry.providers = original; providerRegistry.known.clear(); providerRegistry.cache.clear(); }
+  } finally { providerRegistry.providers = original; providerRegistry.fixtureDiscovery = originalDiscovery; providerRegistry.known.clear(); providerRegistry.cache.clear(); }
 });
 
 test("network/quota remain pending, unavailable retries, unsupported is terminal", async (t) => {

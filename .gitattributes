@@ -1,1 +1,8 @@
+backend/services/model41.js -text
+backend/services/model41Experiment.js -text
+backend/services/teamStatistics.js -text
+backend/services/historicalForm.js -text
+backend/services/chronologicalBenchmark.js -text
 backend/services/predictionModel.js -text
+backend/services/benchmarkMetrics.js -text
+backend/scripts/runModel41.js -text
