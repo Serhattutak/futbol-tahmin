@@ -1251,7 +1251,10 @@ app.get("/api/analyze/:fixtureId", analyzeLimiter, concurrencyGuard(2), async (r
 
 const bestPredictionsCache = new Map();
 const BEST_PREDICTIONS_TTL_MS = 5 * 60 * 1000;
-const BEST_PREDICTIONS_LIMIT = 6;
+const BEST_PREDICTIONS_LIMIT = 24;
+const BEST_PREDICTIONS_MIN_QUALITY = 60;
+const BEST_PREDICTIONS_MIN_CONFIDENCE = 70;
+const BEST_PREDICTIONS_MIN_PROBABILITY = 65;
 
 app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, res) => {
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
@@ -1292,7 +1295,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
           STANDINGS_DATA_OK: Boolean(availability.standings),
           XG_DATA_OK: Boolean(availability.apiXg),
         }));
-        if (!analysis.predictionEligible || !analysis.recommendation?.bestMarket || analysis.dataQuality.score < 60 || analysis.model.confidence < 60 || ["NO_BET", "NO BET"].includes(analysis.recommendation.bestMarket.market)) continue;
+        if (!analysis.predictionEligible || !analysis.recommendation?.bestMarket || analysis.dataQuality.score < BEST_PREDICTIONS_MIN_QUALITY || analysis.model.confidence < BEST_PREDICTIONS_MIN_CONFIDENCE || analysis.recommendation.bestMarket.probability < BEST_PREDICTIONS_MIN_PROBABILITY || ["NO_BET", "NO BET"].includes(analysis.recommendation.bestMarket.market)) continue;
         evaluated.push({
           fixture: analysis.fixture,
           modelVersion: "MODEL_4_0", model41Available: false, model41FallbackReason: "LAZY_DETAIL_ONLY",
