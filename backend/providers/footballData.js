@@ -16,7 +16,7 @@ async function request(path, params) {
   if (cache.size > 200) cache.delete(cache.keys().next().value);
   return value;
 }
-async function getFixtures(date) { const data = await request("/matches", { dateFrom: date, dateTo: date }); return (data.matches || []).map(toFixture).filter(Boolean); }
+async function getFixtures(date) { const raw = await request('/matches', { dateFrom: date, dateTo: new Date(Date.parse(date + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10) }); const data = { matches: (raw.matches || []).filter(match => String(match.utcDate).startsWith(date)) }; return (data.matches || []).map(toFixture).filter(Boolean); }
 async function getFixture(fixtureId) { const id = String(fixtureId).replace(/^fd-/, ""); return toFixture(await request(`/matches/${id}`)); }
 
 async function getTeamForm(id, before = new Date().toISOString()) {
