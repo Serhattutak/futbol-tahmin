@@ -7,9 +7,11 @@ const { ProviderError } = require("./apiFootballClient");
 const { normalize, teamKey, normalizeStatus, normalizeKickoff, normalizeProviderIds } = require("./fixtureNormalization");
 const canonicalTeamId = (team) => `team:${teamKey(team?.name)}`;
 const kickoffKey = (value) => normalizeKickoff(value)?.slice(0, 16);
+const LEAGUE_ALIASES = { primeradivision: "laliga" };
+const leagueKey = (name) => { const key = normalize(name); return LEAGUE_ALIASES[key] || key; };
 function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
   return canonicalTeamId(a.homeTeam) === canonicalTeamId(b.homeTeam) && canonicalTeamId(a.awayTeam) === canonicalTeamId(b.awayTeam)
-    && normalize(a.league?.name) === normalize(b.league?.name) && Boolean(normalize(a.league?.name))
+    && leagueKey(a.league?.name) === leagueKey(b.league?.name) && Boolean(leagueKey(a.league?.name))
     && Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= tolerance;
 }
 
