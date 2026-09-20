@@ -58,12 +58,14 @@ async function collectDivisionHistory({ team, before, fixtureId, league, catalog
   if (remote && !load) break;
   rows = [];
   for (let offset = 0; offset < 3; offset++) {
-    const year = current - offset, season = `${year}-${String(year + 1).slice(-2)}`;
+    const year = current - offset;
     for (const division of divisions) {
+      const season = catalog[division]?.calendarYear ? String(year) : `${year}-${String(year + 1).slice(-2)}`;
       // Completed prior seasons are reusable; current snapshots have a bounded age.
       const installed = datasets.find(s => s.league === division && s.season === season);
       let incoming = installed?.matches || [];
-      if (remote && (!installed || (season === seasonOf(new Date(now).toISOString()) && now - Date.parse(installed.retrievedAt || 0) > 6 * 3600_000))) {
+      const currentSeason = catalog[division]?.calendarYear ? String(new Date(now).getUTCFullYear()) : seasonOf(new Date(now).toISOString());
+      if (remote && (!installed || (season === currentSeason && now - Date.parse(installed.retrievedAt || 0) > 6 * 3600_000))) {
         try { const fresh = await load(division, season); if (fresh.length) incoming = fresh; } catch { /* Keep real cached evidence on outage. */ }
       }
       incoming = incoming.filter(m => m.league?.country === league.country).map(m => ({ ...m, teams: Object.fromEntries(Object.entries(m.teams).map(([side, team]) => [side, { ...team, id: m.provider === "openfootball" ? OPENFOOTBALL_IDS[team.id] || team.id : team.id }])) }));

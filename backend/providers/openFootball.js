@@ -6,6 +6,7 @@ const { collectDivisionHistory } = require("../services/divisionHistory");
 const BASE_URL = "https://raw.githubusercontent.com/openfootball/football.json/master";
 const LEAGUES = {
   "Premier League": { file: "en.1.json", country: "England" },
+  "Championship": { file: "en.2.json", country: "England" },
   "La Liga": { file: "es.1.json", country: "Spain" },
   Bundesliga: { file: "de.1.json", country: "Germany" },
   "Serie A": { file: "it.1.json", country: "Italy" },
@@ -13,6 +14,7 @@ const LEAGUES = {
   Eredivisie: { file: "nl.1.json", country: "Netherlands" },
   "Primeira Liga": { file: "pt.1.json", country: "Portugal" },
   "Scottish Premiership": { file: "sco.1.json", country: "Scotland" },
+  "Campeonato Brasileiro Série A": { file: "br.1.json", country: "Brazil", calendarYear: true },
 };
 const cache = new Map();
 const HISTORICAL_LEAGUES = { ...LEAGUES, "Segunda División": { file: "es.2.json", country: "Spain" } };
@@ -21,6 +23,10 @@ const TEAM_ALIASES = new Map();
 function seasonKey(date) {
   const year = new Date(`${date}T00:00:00`).getFullYear();
   return `${year - (new Date(`${date}T00:00:00`).getMonth() < 7 ? 1 : 0)}-${String(year + (new Date(`${date}T00:00:00`).getMonth() < 7 ? 0 : 1)).slice(-2)}`;
+}
+function seasonKeyFor(meta, date) {
+  if (meta.calendarYear) return String(new Date(`${date}T00:00:00`).getFullYear());
+  return seasonKey(date);
 }
 function normalizeName(value) { return String(value || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, ""); }
 function deterministicId(match, league) { return `of-${normalizeName(league)}-${match.date}-${normalizeName(match.team1)}-${normalizeName(match.team2)}`; }
@@ -40,17 +46,18 @@ async function loadLeague(leagueName, season) {
   cache.set(key, { value: promise, expiresAt: Date.now() + 5 * 60 * 1000 }); return promise;
 }
 async function getFixtures(date, league) {
-  const season = seasonKey(date); const all = []; let lastError;
+  const all = []; let lastError;
   for (const leagueName of league && LEAGUES[league] ? [league] : Object.keys(LEAGUES)) {
     try {
-      const fixtures = await loadLeague(leagueName, season);
+      const meta = LEAGUES[leagueName];
+      const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date));
       all.push(...fixtures.filter((fixture) => fixture.fixture.date.slice(0, 10) === date));
     } catch (error) { lastError = error; }
   }
   if (!all.length && lastError) throw lastError;
   return all;
 }
-async function getFixture(fixtureId) { for (const leagueName of Object.keys(LEAGUES)) { const fixtures = await loadLeague(leagueName, seasonKey(String(fixtureId).match(/\d{4}-\d{2}-\d{2}/)?.[0] || new Date().toISOString().slice(0, 10))); const found = fixtures.find((fixture) => fixture.fixture.id === fixtureId); if (found) return found; } return null; }
+async function getFixture(fixtureId) { for (const leagueName of Object.keys(LEAGUES)) { const meta = LEAGUES[leagueName]; const date = String(fixtureId).match(/\d{4}-\d{2}-\d{2}/)?.[0] || new Date().toISOString().slice(0, 10); const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date)); const found = fixtures.find((fixture) => fixture.fixture.id === fixtureId); if (found) return found; } return null; }
 async function getTeamForm(teamId, before = new Date().toISOString(), context = {}) {
   const team = context.team || { name: TEAM_ALIASES.get(teamId) };
   return collectDivisionHistory({ team, before, fixtureId: context.fixtureId, league: context.league, catalog: HISTORICAL_LEAGUES, load: loadLeague });
