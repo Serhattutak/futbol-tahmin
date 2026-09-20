@@ -46,9 +46,9 @@ app.use((req, res, next) => {
   next();
 });
 
-const generalApiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 120, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Ã‡ok fazla istek gÃ¶nderildi. LÃ¼tfen daha sonra tekrar deneyin." } });
-const analyzeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Analiz istek limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
-const heavyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "AÄŸÄ±r iÅŸlem limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
+const generalApiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Ã‡ok fazla istek gÃ¶nderildi. LÃ¼tfen daha sonra tekrar deneyin." } });
+const analyzeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Analiz istek limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
+const heavyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "AÄŸÄ±r iÅŸlem limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
 const activeByIp = new Map();
 function concurrencyGuard(limit = 2) {
   return (req, res, next) => {
