@@ -243,7 +243,7 @@ function App() {
     if (activeView === "live") return <LiveView matches={liveMatches} onOpen={openAnalysis} analysisCache={analysisCache} />;
     if (activeView === "favorites") return <FavoritesView matches={favoriteMatches} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
     if (activeView === "performance") return <div className="view-stack"><ForwardPerformance apiBase={API_BASE} /><BacktestView apiBase={API_BASE} /><ArchivePerformanceView performance={performance} /></div>;
-    return <HomeView matches={sortedMatches} selectedDate={selectedDate} bestPredictions={bestPredictions} performance={performance} providerStatus={providerStatus} loading={loading} analysisCache={analysisCache} stats={stats} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
+    return <HomeView matches={sortedMatches} selectedDate={selectedDate} bestPredictions={bestPredictions} performance={performance} providerStatus={providerStatus} loading={loading} analysisCache={analysisCache} stats={stats} onOpen={openAnalysis} onFavorite={toggleFavorite} onShowMatches={() => setActiveView("matches")} favoriteIds={favorites.matches} />;
   }
 
   return <div className="app-shell">
@@ -306,7 +306,7 @@ function PerformanceCard({ performance }) {
   return <section className="performance-card"><div><span className="eyebrow">📊 MODEL PERFORMANSI</span><h3>{completed ? `Son ${Math.min(completed, 100)} gerçek sonuç` : "Henüz yeterli tamamlanmış tahmin bulunmuyor."}</h3><p>{completed ? "Tamamlanmış gerçek fixture sonuçlarından hesaplanır." : "Arşivde sonuçlanan tahminler oluştuğunda performans burada hesaplanacak."}</p></div><strong>{completed && Number.isFinite(archive.successRate) ? `%${archive.successRate}` : "—"}</strong></section>;
 }
 
-function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCache, onOpen, onFavorite, favoriteIds }) {
+function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCache, onOpen, onFavorite, onShowMatches, favoriteIds }) {
   const strongest = bestPredictions
     .filter((item) => item.eligible === true && item.dataQuality?.score >= 60 && item.confidence >= 60 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market))
     .slice(0, 3);
@@ -328,11 +328,12 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCac
       </div>
     </section>
 
-    <section className="home-section">
-      <SectionHeading eyebrow="FİKSTÜR" title="Maçlar" action={<span>{selectedLabel} · {matches.length}</span>} />
-      <div className="card-list">
-        {matches.length ? matches.map((match) => <MatchCard key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} summary={bestById.get(String(match.fixture?.id))} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />) : <EmptyState title={loading ? "Maçlar yükleniyor" : "Bu tarihte maç bulunamadı"} text="Farklı bir günü yukarıdaki tarih seçicisinden seçebilirsiniz." />}
+    <section className="home-section home-all-matches">
+      <div className="home-all-matches-copy">
+        <strong>Diğer maçları mı arıyorsun?</strong>
+        <span>Fikstürü aç, tarih ve liglere göre filtrele.</span>
       </div>
+      <button className="primary-button compact" type="button" onClick={onShowMatches}>Tüm maçları gör <span>→</span></button>
     </section>
 
     <p className="home-disclaimer">Gösterilen yüzdeler model tahmin olasılıklarıdır; garanti değildir. Eksik veya doğrulanamayan olasılıklar gizlenir. “Model güveni”, maçın kazanılma olasılığıyla aynı şey değildir.</p>
