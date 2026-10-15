@@ -334,7 +334,7 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, predictionD
     </section>
 
     <section className="home-quick-actions" aria-label="Hızlı erişim">
-      <button type="button" className="home-quick-action primary" onClick={onShowMatches}><span className="home-quick-icon">▦</span><span><strong>Bugünün tüm maçları</strong><small>{loading ? "Fikstür yükleniyor…" : `${matches.length} karşılaşma · tarih ve lig filtresi`}</small></span><b>→</b></button>
+      <button type="button" className="home-quick-action primary" onClick={onShowMatches}><span className="home-quick-icon">▦</span><span><strong>Seçili günün tüm maçları</strong><small>{loading ? "Fikstür yükleniyor…" : `${matches.length} karşılaşma · tarih ve lig filtresi`}</small></span><b>→</b></button>
       <div className="home-quick-stats"><div><strong>{new Set(matches.map(match => match?.league?.id).filter(Boolean)).size}</strong><span>Lig</span></div><div><strong>{new Set(matches.flatMap(match => [match?.teams?.home?.id, match?.teams?.away?.id]).filter(Boolean)).size}</strong><span>Takım</span></div><div><strong>{strongest.length}</strong><span>Doğrulanmış seçim</span></div></div>
       {predictionDiagnostics && <div className="home-data-status" role="status" aria-label="Gerçek maç veri kapsamı">
         <span>Analiz edilen <b>{predictionDiagnostics.analyzedCount ?? 0}</b></span>
