@@ -42,8 +42,7 @@ function initialSelectedDate() {
   const value = new URLSearchParams(window.location.search).get("date");
   const parsed = value ? parseDateKey(value) : null;
   if (!parsed) return dateKey(today);
-  const difference = Math.round((parsed - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / 86400000);
-  return difference >= -7 && difference <= 7 ? dateKey(parsed) : dateKey(today);
+  return dateKey(parsed);
 }
 function pct(value) { if (value == null || value === "") return "—"; const number = Number(value); return Number.isFinite(number) ? `${number.toFixed(2)}%` : "—"; }
 function fairOdds(value) { const number = Number(value); return Number.isFinite(number) && number > 0 ? (100 / number).toFixed(2) : "—"; }
@@ -171,9 +170,6 @@ function App() {
   function changeDate(value) {
     const next = parseDateKey(value);
     if (!next) return;
-    const today = parseDateKey(todayKey());
-    const difference = Math.round((next - today) / 86400000);
-    if (difference < -7 || difference > 7) return;
     setSelectedDate(dateKey(next));
     setSearch("");
     setLeague("Tümü");
@@ -264,13 +260,20 @@ function App() {
 function SectionHeading({ eyebrow, title, action }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2></div>{action}</div>; }
 function DateSelector({ selectedDate, onChange }) {
   const today = new Date();
-  const selected = parseDateKey(selectedDate);
-  const selectedOffset = selected ? Math.round((selected - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / 86400000) : 0;
+  const selected = parseDateKey(selectedDate) || today;
   const dates = Array.from({ length: 15 }, (_, index) => {
-    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7 + index);
-    return { key: dateKey(date), date, offset: index - 7 };
+    const date = new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() - 7 + index);
+    return { key: dateKey(date), date };
   });
-  return <section className="date-selector"><div className="date-nav"><button type="button" disabled={selectedOffset <= -7} onClick={() => onChange(dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + selectedOffset - 1)))}>← Önceki Gün</button><button className="today-button" type="button" onClick={() => onChange(dateKey(today))}>BUGÜN</button><button type="button" disabled={selectedOffset >= 7} onClick={() => onChange(dateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() + selectedOffset + 1)))}>Sonraki Gün →</button></div><div className="date-strip" role="tablist" aria-label="Gün seçici">{dates.map(({ key, date, offset }) => <button key={key} className={selectedDate === key ? "date-item selected" : "date-item"} type="button" role="tab" aria-selected={selectedDate === key} onClick={() => onChange(key)}><small>{offset === 0 ? "BUGÜN" : date.toLocaleDateString("tr-TR", { weekday: "short" })}</small><strong>{date.toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</strong></button>)}</div></section>;
+  return <section className="date-selector">
+    <div className="date-nav">
+      <button type="button" onClick={() => onChange(dateKey(new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() - 1)))}>← Önceki Gün</button>
+      <button className="today-button" type="button" onClick={() => onChange(dateKey(today))}>BUGÜN</button>
+      <label className="date-picker-label">Tarih seç <input type="date" value={selectedDate} onChange={event => onChange(event.target.value)} aria-label="Maç analiz tarihi" /></label>
+      <button type="button" onClick={() => onChange(dateKey(new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() + 1)))}>Sonraki Gün →</button>
+    </div>
+    <div className="date-strip" role="tablist" aria-label="Seçili tarihin çevresindeki günler">{dates.map(({ key, date }) => <button key={key} className={selectedDate === key ? "date-item selected" : "date-item"} type="button" role="tab" aria-selected={selectedDate === key} onClick={() => onChange(key)}><small>{key === todayKey() ? "BUGÜN" : date.toLocaleDateString("tr-TR", { weekday: "short" })}</small><strong>{date.toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</strong></button>)}</div>
+  </section>;
 }
 function EmptyState({ icon = "◌", title, text }) { return <div className="empty-state"><span>{icon}</span><strong>{title}</strong><p>{text}</p></div>; }
 function ConfidenceBadge({ confidence }) { const value = confidence == null ? NaN : Number(confidence); if (!Number.isFinite(value)) return <span className="confidence muted">ANALİZ BEKLİYOR</span>; const tone = value >= 75 ? "high" : value >= 60 ? "medium" : "low"; return <span className={`confidence ${tone}`}>{tone === "high" ? "YÜKSEK" : tone === "medium" ? "ORTA" : "DÜŞÜK"} %{value}</span>; }
