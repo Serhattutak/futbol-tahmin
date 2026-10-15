@@ -13,7 +13,7 @@ const { selectHeadToHead, calculateStandingsRows } = require("../providers/openF
 function openFootballMatch(home, away, date, homeGoals, awayGoals) {
   const finished = Number.isFinite(homeGoals) && Number.isFinite(awayGoals);
   const id = (name) => `of-team-${String(name).toLowerCase().replace(/[^a-z0-9]/g, "")}`;
-  return { fixture: { id: `test-${date}-${home}-${away}`, date, kickoffPrecision: /^\\d{4}-\\d{2}-\\d{2}$/.test(date) ? "date" : "time", status: { short: finished ? "FINISHED" : "SCHEDULED" } }, teams: { home: { id: id(home), name: home }, away: { id: id(away), name: away } }, goals: { home: homeGoals, away: awayGoals } };
+  return { fixture: { id: `test-${date}-${home}-${away}`, date, kickoffPrecision: /^\x5cd{4}-\x5cd{2}-\x5cd{2}$/.test(date) ? "date" : "time", status: { short: finished ? "FINISHED" : "SCHEDULED" } }, teams: { home: { id: id(home), name: home }, away: { id: id(away), name: away } }, goals: { home: homeGoals, away: awayGoals } };
 }
 
 test("OpenFootball H2H uses only verified finished meetings before kickoff", () => {
