@@ -80,7 +80,7 @@ test("Insufficient-history fallback logs include sample counts and provider cove
   const input = await realInput();
   input.homeMatches = [];
   input.awayMatches = [];
-  input.sourceMetadata = { fields: { fixture: "openfootball" }, unavailable: { homeMatches: "insufficient_history", awayMatches: "insufficient_history", h2hMatches: "unavailable" } };
+  input.sourceMetadata = { fields: { fixture: "openfootball" }, unavailable: { homeMatches: "insufficient_history", awayMatches: "insufficient_history", h2hMatches: "unavailable" }, historyAttempts: [{ provider: "espn", side: "home", outcome: "history_not_supported" }] };
   const logs = [];
   const s = await service({ collect: async () => input, logger: entry => logs.push(entry) });
   const result = await s.analyze("coverage-diagnostics", { modelVersion: MODEL_4_1 });
@@ -89,6 +89,7 @@ test("Insufficient-history fallback logs include sample counts and provider cove
   assert.deepEqual(fallback.historicalSampleSize, { home: 0, away: 0 });
   assert.ok(fallback.statisticsQuality);
   assert.deepEqual(fallback.sourceMetadata.unavailable, { homeMatches: "insufficient_history", awayMatches: "insufficient_history", h2hMatches: "unavailable" });
+  assert.deepEqual(fallback.sourceMetadata.historyAttempts, [{ provider: "espn", side: "home", outcome: "history_not_supported" }]);
 });
 
 test("Runtime errors fall back with safe reason metadata and server-only error logs", async () => {
