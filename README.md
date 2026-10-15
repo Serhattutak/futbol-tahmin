@@ -1,37 +1,58 @@
-# React + Vite
+# ZEUS AI — Futbol Analizi
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+ZEUS AI, futbol maçlarını mevcut ve doğrulanabilir veriler üzerinden analiz eden bir web uygulamasıdır. Tahminler kesin sonuç veya kazanç garantisi değildir.
 
-Currently, two official plugins are available:
+## Ürün ilkeleri
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Gerçek veri:** Veri sağlayıcısından doğrulanamayan istatistikler, oranlar veya olasılıklar uydurulmaz.
+- **Yetersiz veri:** Güvenilir analiz için veri yeterli değilse sistem tahmin üretmek yerine bunu açıkça belirtir.
+- **Model güvenliği:** Üretimde kullanılan Model 4.0 varsayılan olarak korunur. Model 4.1, kronolojik ileriye dönük testlerle doğrulanmadan üretim modelinin yerine geçirilmez.
+- **Şeffaflık:** Eksik kadro, sakatlık, oran veya diğer veri alanları mevcutmuş gibi gösterilmez.
 
-## React Compiler
+## Teknoloji
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Frontend: React, Vite
+- Backend: Node.js, Express
+- Güvenlik ve istek sınırlandırma: Helmet, express-rate-limit
+- Dağıtım yapılandırması: Vercel (vercel.json)
 
-## Expanding the Oxlint configuration
+## Yerel geliştirme
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Node.js 22 önerilir.
 
+### Frontend
 
-## Veri Sağlayıcıları (Sadece Ücretsiz Kaynaklar)
+    npm ci
+    npm run dev
 
-Bu proje futbol verilerini **yalnızca ücretsiz** kaynaklardan alır. Ücretli
-`api-football` sağlayıcısı tamamen devre dışı bırakılmıştır ve hiçbir istek
-yapılmaz.
+### Backend
 
-Kullanılan ücretsiz kaynaklar:
+    cd backend
+    npm ci
+    cp .env.example .env
+    npm test
+    npm start
 
-- **OpenFootball** — tamamen ücretsiz (GitHub üzerinden JSON), anahtar gerektirmez.
-- **football-data.org** — ücretsiz tier. Premier League, La Liga, Bundesliga,
-  Serie A ve Ligue 1 dahil büyük ligleri kapsar. Ücretsiz anahtar:
-  https://www.football-data.org/client/register — alınan anahtarı
-  `backend/.env` dosyasında `FOOTBALL_DATA_API_TOKEN` olarak tanımlayın.
-- **TheSportsDB** — ücretsiz tier. Ücretsiz genel anahtar `123` ile çalışır,
-  kayıt gerektirmez.
-- **Sportmonks** — opsiyonel ve ücretlidir; yalnızca `SPORTMONKS_API_TOKEN`
-  tanımlıysa etkinleşir, varsayılan olarak kapalıdır.
+Frontend ve backend farklı adreslerde çalışıyorsa, backend/.env içindeki CORS_ORIGINS değerini yerel frontend adresine göre ayarlayın. Veri sağlayıcılarının token gerektiren özellikleri yalnızca geçerli anahtarlar tanımlandığında kullanılabilir. Gizli anahtarları GitHub'a commit etmeyin.
 
-Ortam değişkenleri için `backend/.env.example` dosyasına bakın.
+## Kontroller
+
+    npm run lint
+    npm run build
+    cd backend
+    npm test
+
+Pull request doğrulamasında en son bilinen sonuç: Vite production build başarılı, 184 test başarılı ve 0 başarısız. Lint adımı halen uyarılar üretiyor; bu uyarılar üretim öncesi incelenmelidir.
+
+## Reklam sistemi
+
+Reklam altyapısı isteğe bağlıdır. AdSense ve Google Ad Manager kimlikleri tanımlı değilse gerçek reklam gösterimi veya reklam geliri varsayılmaz. Yayından önce yayıncı hesabı ve reklam birimleri onaylanmalı; hedef bölgeye uygun izin/CMP çözümü ile gizlilik ve çerez açıklamaları tamamlanmalıdır. Kurulum adımları için docs/AD-MONETIZATION-SETUP.md dosyasına bakın.
+
+## Yayına alma yaklaşımı
+
+1. Değişiklikleri geliştirme dalında doğrulayın.
+2. CI, build ve regresyon testlerini kontrol edin.
+3. Canlı maç/veri akışını, hata durumlarını ve mobil arayüzü kontrol edin.
+4. Üretime geçişten önce gizlilik, güvenlik, sağlayıcı limitleri ve dağıtım ortamı ayarlarını doğrulayın.
+
+Bu depo için hazırlanan geliştirmeler, açık onay olmadan ana dala birleştirilmez veya üretime dağıtılmaz.
