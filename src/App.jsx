@@ -69,6 +69,7 @@ function App() {
   const fixtureCache = useRef(new Map());
   const fixtureRequests = useRef(new Map());
   const [bestPredictions, setBestPredictions] = useState([]);
+  const [predictionDiagnostics, setPredictionDiagnostics] = useState(null);
   const [performance, setPerformance] = useState(null);
   const [providerStatus, setProviderStatus] = useState([]);
   const [analysisCache, setAnalysisCache] = useState({});
@@ -142,7 +143,7 @@ function App() {
   useEffect(() => {
     let cancelled = false; setBestPredictions([]);
     readFrontendJson(`${API_BASE}/api/best-predictions?date=${selectedDate}`)
-      .then((data) => { if (cancelled) return; const results = (data?.results || []).filter(item => item.eligible === true).sort((a, b) => (b.predictionScore ?? 0) - (a.predictionScore ?? 0)); setBestPredictions(results);
+      .then((data) => { if (cancelled) return; const results = (data?.results || []).filter(item => item.eligible === true).sort((a, b) => (b.predictionScore ?? 0) - (a.predictionScore ?? 0)); setBestPredictions(results); setPredictionDiagnostics(data?.diagnostics || null);
         setAnalysisCache(current => { const next = { ...current }; for (const item of data?.assessments || []) { const id = String(item.fixture.id); if (next[id] && !next[id].summaryOnly) continue; const bestMarket = item.status === "PREDICTION" ? item.recommendation?.bestMarket : null; next[id] = bestMarket ? { summaryOnly: true, fixture: item.fixture, predictionEligible: true, dataQuality: item.dataQuality, model: { version: "ZEUS AI", confidence: item.confidence }, recommendation: { bestMarket }, markets: { [bestMarket.market]: bestMarket } } : { summaryOnly: true, fixture: item.fixture, predictionEligible: false, dataQuality: item.dataQuality }; } return next; });
       }).catch(() => {});
     return () => { cancelled = true; };
@@ -249,7 +250,7 @@ function App() {
     if (activeView === "favorites") return <FavoritesView matches={favoriteMatches} onOpen={openAnalysis} onFavorite={toggleFavorite} favoriteIds={favorites.matches} />;
     if (activeView === "legal") return <LegalCenter />;
     if (activeView === "performance") return <div className="view-stack"><ForwardPerformance apiBase={API_BASE} /><BacktestView apiBase={API_BASE} /><ArchivePerformanceView performance={performance} /></div>;
-    return <HomeView matches={sortedMatches} selectedDate={selectedDate} bestPredictions={bestPredictions} performance={performance} providerStatus={providerStatus} loading={loading} analysisCache={analysisCache} stats={stats} onOpen={openAnalysis} onFavorite={toggleFavorite} onShowMatches={() => setActiveView("matches")} favoriteIds={favorites.matches} />;
+    return <HomeView matches={sortedMatches} selectedDate={selectedDate} bestPredictions={bestPredictions} predictionDiagnostics={predictionDiagnostics} performance={performance} providerStatus={providerStatus} loading={loading} analysisCache={analysisCache} stats={stats} onOpen={openAnalysis} onFavorite={toggleFavorite} onShowMatches={() => setActiveView("matches")} favoriteIds={favorites.matches} />;
   }
 
   return <div className="app-shell">
@@ -313,7 +314,7 @@ function PerformanceCard({ performance }) {
   return <section className="performance-card"><div><span className="eyebrow">📊 MODEL PERFORMANSI</span><h3>{completed ? `Son ${Math.min(completed, 100)} gerçek sonuç` : "Henüz yeterli tamamlanmış tahmin bulunmuyor."}</h3><p>{completed ? "Tamamlanmış gerçek fixture sonuçlarından hesaplanır." : "Arşivde sonuçlanan tahminler oluştuğunda performans burada hesaplanacak."}</p></div><strong>{completed && Number.isFinite(archive.successRate) ? `%${archive.successRate}` : "—"}</strong></section>;
 }
 
-function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCache, onOpen, onFavorite, onShowMatches, favoriteIds }) {
+function HomeView({ loading, matches, selectedDate, bestPredictions, predictionDiagnostics, analysisCache, onOpen, onFavorite, onShowMatches, favoriteIds }) {
   const strongest = bestPredictions
     .filter((item) => item.eligible === true && Number.isFinite(Number(item.dataQuality?.score)) && Number(item.dataQuality.score) >= 45 && Number.isFinite(Number(item.confidence)) && Number(item.confidence) >= 50 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market))
     .slice(0, 3);
@@ -331,6 +332,7 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCac
     <section className="home-quick-actions" aria-label="Hızlı erişim">
       <button type="button" className="home-quick-action primary" onClick={onShowMatches}><span className="home-quick-icon">▦</span><span><strong>Bugünün tüm maçları</strong><small>{loading ? "Fikstür yükleniyor…" : `${matches.length} karşılaşma · tarih ve lig filtresi`}</small></span><b>→</b></button>
       <div className="home-quick-stats"><div><strong>{new Set(matches.map(match => match?.league?.id).filter(Boolean)).size}</strong><span>Lig</span></div><div><strong>{new Set(matches.flatMap(match => [match?.teams?.home?.id, match?.teams?.away?.id]).filter(Boolean)).size}</strong><span>Takım</span></div><div><strong>{strongest.length}</strong><span>Doğrulanmış seçim</span></div></div>
+      {predictionDiagnostics && <div className="home-data-status" role="status"><span>Analiz edilen <b>{predictionDiagnostics.analyzedCount ?? 0}</b></span><span>Veri yeterli <b>{predictionDiagnostics.eligibleCount ?? 0}</b></span><span>Form verisi <b>{predictionDiagnostics.formAvailableCount ?? 0}</b></span><span>Oran bulunan <b>{predictionDiagnostics.oddsAvailableCount ?? 0}</b></span></div>}
     </section>
     <section className="home-section">
       <SectionHeading eyebrow="GERÇEK VERİ" title="Tahminler" action={<span className="home-section-note">{strongest.length} uygun maç</span>} />
