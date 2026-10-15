@@ -71,6 +71,23 @@ test("does not verify matching IDs when prediction payloads differ", async () =>
   assert.deepEqual(report.payloadMismatches, [stableEventId(prediction)]);
 });
 
+test("conflict evidence ordering does not create a false payload mismatch", async () => {
+  const sourceConflict = {
+    type: "conflict", ledgerId: "reconcile-conflict",
+    evidence: [{ provider: "alpha", home: 1, away: 0 }, { provider: "beta", home: 0, away: 0 }],
+  };
+  const destinationConflict = {
+    type: "conflict", ledgerId: "reconcile-conflict",
+    evidence: [{ provider: "beta", home: 0, away: 0 }, { provider: "gamma", home: 1, away: 0 }],
+  };
+  const report = await reconcileFilesystemEvents({
+    sourceEvents: [sourceConflict],
+    destinationStore: storeWith([destinationConflict]),
+  });
+  assert.equal(report.verified, true);
+  assert.deepEqual(report.payloadMismatches, []);
+});
+
 test("rejects conflicting source records that reuse a stable event identity", async () => {
   const changedPrediction = { type: "prediction", ledgerId: "reconcile-1", snapshot: { ledgerId: "reconcile-1", value: "different" } };
   await assert.rejects(
