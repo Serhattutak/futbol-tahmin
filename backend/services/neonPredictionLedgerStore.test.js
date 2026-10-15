@@ -15,8 +15,8 @@ function fakePool() {
         events.set(eventId, { event_id: eventId, ledger_id: ledgerId, event_type: type, payload: JSON.parse(payload) });
         return { rowCount: 1, rows: [{ event_id: eventId }] };
       }
-      if (sql.startsWith("SELECT payload")) {
-        return { rows: [...events.values()].map(row => ({ payload: row.payload })) };
+      if (sql.startsWith("SELECT event_id")) {
+        return { rows: [...events.values()] };
       }
       if (sql.startsWith("SELECT COUNT")) {
         const rows = [...events.values()];
@@ -80,4 +80,18 @@ test("rejects unsupported event types and missing ledger identifiers before data
   await assert.rejects(store.append({ type: "unknown", ledgerId: "p" }), /INVALID_LEDGER_EVENT/);
   await assert.rejects(store.append({ type: "prediction", ledgerId: "" }), /INVALID_LEDGER_EVENT/);
   assert.equal(calls, 0);
+});
+
+
+test("rejects persisted rows whose indexed columns disagree with the payload", async () => {
+  const pool = fakePool();
+  const event = { type: "prediction", ledgerId: "actual-id", snapshot: { homeProbability: 0.5 } };
+  pool.events.set("prediction:other-id", {
+    event_id: "prediction:other-id",
+    ledger_id: "other-id",
+    event_type: "prediction",
+    payload: event
+  });
+  const store = new NeonPredictionLedgerStore({ pool });
+  await assert.rejects(store.loadEvents(), /LEDGER_EVENT_COLUMN_MISMATCH/);
 });
