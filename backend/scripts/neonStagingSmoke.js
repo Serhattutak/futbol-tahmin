@@ -48,6 +48,20 @@ async function runStagingSmoke({
     const duplicate = await store.append(event);
     if (!first.saved || duplicate.saved) throw new Error("STAGING_SMOKE_IDEMPOTENCY_FAILED");
 
+    const settlement = {
+      type: "settlement",
+      ledgerId,
+      result: { resultStatus: "settled", actualHomeGoals: 1, actualAwayGoals: 0 },
+    };
+    const conflict = {
+      type: "conflict",
+      ledgerId,
+      evidence: [{ home: 1, away: 0 }, { home: 0, away: 0 }],
+    };
+    const settlementWrite = await store.append(settlement);
+    const conflictWrite = await store.append(conflict);
+    if (!settlementWrite.saved || !conflictWrite.saved) throw new Error("STAGING_SMOKE_EVENT_TYPES_FAILED");
+
     restorePool = await createPool(connectionString);
     const restoredStore = new NeonPredictionLedgerStore({ pool: restorePool, table });
     const ledger = new AsyncPredictionLedger({ store: restoredStore });
@@ -55,7 +69,9 @@ async function runStagingSmoke({
     const entries = ledger.entries();
     const status = await ledger.status();
     if (entries.length !== 1 || entries[0].ledgerId !== ledgerId ||
-        status.eventCount !== 1 || status.predictionCount !== 1) {
+        entries[0].resultStatus !== "settled" || entries[0].conflicts?.length !== 1 ||
+        status.eventCount !== 3 || status.predictionCount !== 1 ||
+        status.settlementCount !== 1 || status.conflictCount !== 1) {
       throw new Error("STAGING_SMOKE_RESTORE_FAILED");
     }
 
@@ -64,9 +80,13 @@ async function runStagingSmoke({
       table,
       firstAppendSaved: first.saved,
       duplicateAppendSaved: duplicate.saved,
+      settlementSaved: settlementWrite.saved,
+      conflictSaved: conflictWrite.saved,
       restoredEntryCount: entries.length,
       eventCount: status.eventCount,
       predictionCount: status.predictionCount,
+      settlementCount: status.settlementCount,
+      conflictCount: status.conflictCount,
       cleanup: "completed in finally before return",
     };
   } finally {
