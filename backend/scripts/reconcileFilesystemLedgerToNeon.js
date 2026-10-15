@@ -2,21 +2,14 @@
 
 const { PredictionLedger } = require("../services/predictionLedger");
 const { NeonPredictionLedgerStore } = require("../services/neonPredictionLedgerStore");
-const { reconcileFilesystemEvents } = require("../services/reconcileFilesystemLedger");
+const { reconcileFilesystemEvents, compareEventSets } = require("../services/reconcileFilesystemLedger");
 const { stableEventId } = require("../services/neonPredictionLedgerStore");
 
 const APPLY_FLAG = "--apply";
 const APPLY_CONFIRMATION = "I_HAVE_VERIFIED_SOURCE_AND_TARGET";
 
 function compareEventIds(sourceEvents, destinationEvents) {
-  const sourceIds = new Set(sourceEvents.map(stableEventId));
-  const destinationIds = new Set(destinationEvents.map(stableEventId));
-  return {
-    sourceEventCount: sourceIds.size,
-    destinationEventCount: destinationIds.size,
-    missingFromDestination: [...sourceIds].filter(id => !destinationIds.has(id)).sort(),
-    destinationOnly: [...destinationIds].filter(id => !sourceIds.has(id)).sort(),
-  };
+  return compareEventSets(sourceEvents, destinationEvents);
 }
 
 async function main() {
@@ -42,6 +35,9 @@ async function main() {
     if (apply && initial.destinationOnly.length) {
       throw new Error("DESTINATION_HAS_UNEXPECTED_EVENTS");
     }
+    if (apply && initial.payloadMismatches.length) {
+      throw new Error("DESTINATION_PAYLOAD_MISMATCH");
+    }
 
     if (!apply) {
       const report = {
@@ -51,7 +47,8 @@ async function main() {
         ...initial,
         wouldAppend: initial.missingFromDestination.length,
         sourceDirectoryConfigured: Boolean(process.env.ZEUS_LEDGER_DIR?.trim()),
-        safeToApply: Boolean(process.env.ZEUS_LEDGER_DIR?.trim()) && initial.destinationOnly.length === 0,
+        safeToApply: Boolean(process.env.ZEUS_LEDGER_DIR?.trim()) &&
+          initial.destinationOnly.length === 0 && initial.payloadMismatches.length === 0,
       };
       process.stdout.write(JSON.stringify(report, null, 2) + "\n");
       return report;
