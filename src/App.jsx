@@ -145,12 +145,14 @@ function App() {
     return () => { cancelled = true; };
   }, [selectedDate]);
 
+  // Performance/archive data is global dashboard state; fetch once per app session.
+  // Refetching on every tab switch created avoidable concurrent requests and HTTP 429s.
   useEffect(() => {
     let cancelled = false;
     readFrontendJson(`${API_BASE}/api/archive/performance`)
       .then(data => { if (cancelled || !data.success) return; setPerformance(data); setAnalysisCache(current => { const next = { ...current }; for (const record of data.history || []) { const restored = archivedAnalysis(record); if (restored && (!next[restored.fixture.id] || next[restored.fixture.id].summaryOnly)) next[restored.fixture.id] = restored; } return next; }); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [activeView]);
+  }, []);
 
   useEffect(() => {
     readFrontendJson(`${API_BASE}/api/providers/status`)
