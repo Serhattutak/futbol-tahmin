@@ -26,7 +26,7 @@ const app = express();
 const isProduction = process.env.NODE_ENV === "production";
 const PORT = Number(process.env.PORT) || 3001;
 const API_URL = "https://v3.football.api-sports.io";
-const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:5173,http://127.0.0.1:5173").split(",").map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:5173,http://127.0.0.1:5173,https://zeus-one-betting.onrender.com").split(",").map((origin) => origin.trim()).filter(Boolean);
 
 app.disable("x-powered-by");
 if (process.env.TRUST_PROXY === "true") app.set("trust proxy", 1);
