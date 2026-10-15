@@ -1477,12 +1477,38 @@ app.use((error, req, res, next) => {
 if (require.main === module) {
   (async () => {
     const ledgerMode = process.env.ZEUS_LEDGER_MODE || "filesystem";
-    // Fail closed rather than silently using the filesystem if Neon is selected
-    // before source reconciliation, runtime dependency, and staging gates are complete.
-    if (ledgerMode !== "filesystem") {
-      throw new Error("NEON_CUTOVER_BLOCKED: filesystem reconciliation, PostgreSQL runtime dependency, and staging verification are required before enabling Neon.");
+    let ledgerRuntime = null;
+
+    if (ledgerMode === "filesystem") {
+      predictionLedgerHandle.markReady();
+    } else if (ledgerMode === "neon") {
+      // The operator must first run and verify the guarded reconciliation CLI
+      // against the intended staging database. Never infer this approval.
+      if (process.env.ZEUS_LEDGER_RECONCILIATION_VERIFIED !== "true") {
+        throw new Error("NEON_RECONCILIATION_REQUIRED: run the guarded reconciliation dry-run/apply and explicitly verify the source/target event IDs before enabling Neon.");
+      }
+      const { Pool } = require("pg");
+      const { createPredictionLedgerRuntime } = require("./services/createPredictionLedgerRuntime");
+      ledgerRuntime = await createPredictionLedgerRuntime({
+        mode: ledgerMode,
+        filesystemLedger: filesystemPredictionLedger,
+        createPool: connectionString => new Pool({
+          connectionString,
+          connectionTimeoutMillis: 10000,
+          idleTimeoutMillis: 30000,
+          max: 5,
+        }),
+      });
+      predictionLedgerHandle.replace(ledgerRuntime.ledger);
+      predictionLedgerHandle.markReady();
+      console.log(JSON.stringify({
+        type: "LEDGER_RUNTIME_READY",
+        mode: ledgerRuntime.mode,
+        ...ledgerRuntime.ledger.status(),
+      }));
+    } else {
+      throw new Error("UNSUPPORTED_LEDGER_MODE");
     }
-    predictionLedgerHandle.markReady();
 
     // CI's local server must not start scheduled provider requests or mutate runtime ledgers.
     if (process.env.ZEUS_DISABLE_CAPTURE_SCHEDULER !== "1") {
@@ -1498,9 +1524,18 @@ if (require.main === module) {
       resultCheckTimer.unref();
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`);
     });
+    const shutdown = () => {
+      server.close(() => {
+        if (ledgerRuntime?.pool) {
+          ledgerRuntime.pool.end().catch(error => console.warn(JSON.stringify({ type: "LEDGER_POOL_SHUTDOWN_FAILED", message: error.message })));
+        }
+      });
+    };
+    process.once("SIGTERM", shutdown);
+    process.once("SIGINT", shutdown);
   })().catch(error => {
     console.error(JSON.stringify({ type: "LEDGER_STARTUP_BLOCKED", message: error.message }));
     process.exitCode = 1;
