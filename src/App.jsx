@@ -328,18 +328,12 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCac
       <div className="home-hero-meta"><span>{selectedLabel}</span><span>{loading ? "Maçlar yükleniyor…" : `${matches.length} maç listelendi`}</span></div>
     </section>
 
-    <section className="signal-panel">
-      <div className="signal-panel-heading"><div><span className="eyebrow accent">CANLI VERİ ÖZETİ</span><h2>Model sinyalleri</h2><p>Yalnızca mevcut analizlerden üretilen görünüm</p></div><span className="signal-live-mark"><i /> GÜNCEL</span></div>
-      {strongest.length ? <div className="signal-list">{strongest.map((item) => <div className="signal-row" key={item.fixture?.id}>
-        <div className="signal-match"><strong>{item.fixture?.home || "Ev sahibi"}</strong><span>vs</span><strong>{item.fixture?.away || "Deplasman"}</strong></div>
-        <div className="signal-tracks"><div className="signal-track" aria-label={`Model güveni yüzde ${Math.round(item.confidence || 0)}`}><span style={{ width: `${Math.max(0, Math.min(100, Number(item.confidence) || 0))}%` }} /></div><div className="signal-track quality" aria-label={`Veri kalitesi yüzde ${Math.round(item.dataQuality?.score || 0)}`}><span style={{ width: `${Math.max(0, Math.min(100, Number(item.dataQuality?.score) || 0))}%` }} /></div></div>
-        <div className="signal-values"><b>%{Number(item.confidence || 0).toFixed(0)}</b><small>Güven</small><b>%{Number(item.dataQuality?.score || 0).toFixed(0)}</b><small>Veri</small></div>
-      </div>)}</div> : <div className="signal-empty"><span>◌</span><p>Doğrulanabilir model sinyali oluştuğunda grafik burada görünecek.</p></div>}
-      <div className="signal-legend"><span><i className="legend-confidence" /> Model güveni</span><span><i className="legend-quality" /> Veri kalitesi</span></div>
+    <section className="home-quick-actions" aria-label="Hızlı erişim">
+      <button type="button" className="home-quick-action primary" onClick={onShowMatches}><span className="home-quick-icon">▦</span><span><strong>Bugünün tüm maçları</strong><small>{loading ? "Fikstür yükleniyor…" : `${matches.length} karşılaşma · tarih ve lig filtresi`}</small></span><b>→</b></button>
+      <div className="home-quick-stats"><div><strong>{new Set(matches.map(match => match?.league?.id).filter(Boolean)).size}</strong><span>Lig</span></div><div><strong>{new Set(matches.flatMap(match => [match?.teams?.home?.id, match?.teams?.away?.id]).filter(Boolean)).size}</strong><span>Takım</span></div><div><strong>{strongest.length}</strong><span>Doğrulanmış seçim</span></div></div>
     </section>
-
     <section className="home-section">
-      <SectionHeading eyebrow="MODEL + VERİ KALİTESİ" title="Öne çıkan analizler" action={<span className="home-section-note">En fazla 3 maç</span>} />
+      <SectionHeading eyebrow="GERÇEK VERİ" title="Tahminler" action={<span className="home-section-note">{strongest.length} uygun maç</span>} />
       <div className="card-list">
         {strongest.length ? strongest.map((item) => <MatchCard key={item.fixture?.id} match={bestPredictionToMatch(item)} summary={item} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} featured />) : <EmptyState icon="✦" title="Şimdilik doğrulanabilir seçim yok" text="Sadece veri kalitesi ve model koşullarını karşılayan gerçek maç analizleri burada gösterilir. Uygun maç yoksa sistem tahmin uydurmaz." />}
       </div>
