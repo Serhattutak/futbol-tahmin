@@ -139,33 +139,38 @@ class MultiProviderRegistry {
     const order = ["openfootball", "sportmonks", "football-data", "api-football", "thesportsdb", "espn"];
     let best = { matches: [], provider: null }; let updated = fixture;
     const historyCandidates = [];
+    const historyAttempts = [];
     for (const name of order) {
       const provider = this.providers.find((p) => p.name === name);
-      if (!provider || !this.canRequest(provider) || !provider.capabilities?.some((capability) => ["historicalResults", "teamForm", "form"].includes(capability)) || !provider.getTeamForm) continue;
-      if (provider.supportsHistoricalLeague ? !provider.supportsHistoricalLeague(updated.league) : provider.supportsLeague && !provider.supportsLeague(updated.league.name)) continue;
+      if (!provider) { historyAttempts.push({ provider: name, outcome: "not_installed" }); continue; }
+      if (!this.canRequest(provider)) { historyAttempts.push({ provider: name, outcome: "disabled_or_cooling_down" }); continue; }
+      if (!provider.capabilities?.some((capability) => ["historicalResults", "teamForm", "form"].includes(capability)) || !provider.getTeamForm) { historyAttempts.push({ provider: name, outcome: "history_not_supported" }); continue; }
+      if (provider.supportsHistoricalLeague ? !provider.supportsHistoricalLeague(updated.league) : provider.supportsLeague && !provider.supportsLeague(updated.league.name)) { historyAttempts.push({ provider: name, outcome: "league_not_supported" }); continue; }
       let context = updated.providerTeams?.[name];
       if (!context && name !== "openfootball") {
         updated = await this.matchProvider(updated, provider);
         context = updated.providerTeams?.[name];
       }
-      if (!context && name !== "openfootball") continue;
+      if (!context && name !== "openfootball") { historyAttempts.push({ provider: name, outcome: "fixture_not_matched" }); continue; }
       const team = updated[side === "home" ? "homeTeam" : "awayTeam"];
       const league = context?.league || { ...updated.league, season: updated.season };
       try {
         const raw = await this.providerRequest(provider, `history:${VERSION}:${name}:${team.canonicalTeamId}:${updated.kickoff}`, () => provider.getTeamForm(context?.[side]?.id || team.canonicalTeamId, updated.kickoff, { team, league, season: league.season, fixtureId: updated.providerFixtureIds?.[name] }), { strict: true });
         const matches = selectHistory(raw, { team, before: updated.kickoff, fixtureId: updated.providerFixtureIds?.[name], now: this.now() }).map((m) => { const canonical = toCanonicalLegacy(name, m); return canonical ? { ...toFrontendFixture(canonical), score: m.score } : null; }).filter(Boolean);
         for (const match of matches) for (const side of ["home", "away"]) { if (historicalTeamKey(match.teams[side].name) === historicalTeamKey(team.name)) match.teams[side].id = team.canonicalTeamId; }
+        historyAttempts.push({ provider: name, outcome: matches.length ? "history_found" : "no_usable_history", matchCount: matches.length });
         historyCandidates.push(...matches);
         best = { matches: mergeHistory(historyCandidates, { team, before: updated.kickoff, now: this.now() }), provider: best.provider || (matches.length ? name : null) };
         if (best.matches.length >= 10) break;
-      } catch (error) { this.updateStatus(name, false, error.category || "provider_unavailable"); }
+      } catch (error) { historyAttempts.push({ provider: name, outcome: "request_failed", category: error.category || "provider_unavailable" }); this.updateStatus(name, false, error.category || "provider_unavailable"); }
     }
-    return { ...best, fixture: updated };
+    return { ...best, fixture: updated, historyAttempts };
   }
   async collectAnalysis(fixture, { includeMatchStatistics = true } = {}) {
     const data = { fixture, homeMatches: [], awayMatches: [], h2hMatches: [], standingsResponse: [], oddsResponse: [], recentStats: [], sourceMetadata: { providers: [...fixture.sources], fields: {}, unavailable: {} } };
     for (const side of ["home", "away"]) {
       const history = await this.getHistoricalForm(fixture, side); fixture = history.fixture;
+      if (history.historyAttempts?.length) data.sourceMetadata.historyAttempts = [...(data.sourceMetadata.historyAttempts || []), ...history.historyAttempts.map((attempt) => ({ ...attempt, side }))];
       const field = side === "home" ? "homeMatches" : "awayMatches";
       data[field] = history.matches;
       if (history.provider) data.sourceMetadata.fields[field] = history.provider;

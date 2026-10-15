@@ -11,3 +11,13 @@ test("provider team idleri stable canonical team kimligine baglanir", () => { as
 test("source agreement sadece mevcut sayisal kaynaklari uzlastirir", () => { assert.equal(numericAgreement([1.42, 1.39]).status, "high"); assert.equal(numericAgreement([1.42, 2.31]).conflict, true); assert.equal(numericAgreement([]).value, null); });
 test("sonuc kaynaklari quota ile bitince hata saklanmaz", async () => { const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixture: async () => { throw new ProviderError("quota", "quota"); } }]); await assert.rejects(registry.getResults({ a: "fixture-1" }), (error) => error.category === "quota"); });
 test("capability secimi yalnizca etkin ve uygun provideri dondurur", () => { const registry = new MultiProviderRegistry([{ name: "primary", enabled: true, capabilities: ["fixtures"] }, { name: "secondary", enabled: true, capabilities: ["odds"] }]); assert.equal(registry.getBestAvailableProvider("odds").name, "secondary"); assert.equal(registry.getBestAvailableProvider("xg"), null); });
+
+test("historical collection explains providers that are absent or do not support history", async () => {
+  const registry = new MultiProviderRegistry([{ name: "openfootball", enabled: true, capabilities: ["fixtures"] }]);
+  const result = await registry.loadHistoricalForm(fixture("origin"), "home");
+  const byProvider = Object.fromEntries(result.historyAttempts.map((attempt) => [attempt.provider, attempt.outcome]));
+  assert.equal(byProvider.openfootball, "history_not_supported");
+  assert.equal(byProvider.sportmonks, "not_installed");
+  assert.equal(byProvider["football-data"], "not_installed");
+  assert.equal(byProvider.espn, "not_installed");
+});

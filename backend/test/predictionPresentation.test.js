@@ -8,14 +8,24 @@ test("Market heading follows the selected actual model, including 4.0 fallback",
     [MODEL41]: { modelVersion: MODEL41, probabilities: { home: 0.5133 } },
   } };
   const original = structuredClone(response);
-  assert.equal(modelLabel(selectModelAnalysis(response, MODEL40)), "MODEL 4.0");
-  assert.equal(modelLabel(selectModelAnalysis(response, MODEL41)), "MODEL 4.1");
-  assert.equal(modelLabel(selectModelAnalysis({ ...response, model41Available: false }, MODEL41)), "MODEL 4.0");
-  assert.equal(modelLabel({}), "MODEL 4.0");
+  assert.equal(modelLabel(selectModelAnalysis(response, MODEL40)), "ZEUS AI");
+  assert.equal(modelLabel(selectModelAnalysis(response, MODEL41)), "ZEUS AI");
+  assert.equal(modelLabel(selectModelAnalysis({ ...response, model41Available: false }, MODEL41)), "ZEUS AI");
+  assert.equal(modelLabel({}), "ZEUS AI");
+  assert.equal(selectModelAnalysis(response).modelVersion, MODEL40, "detail view stays aligned with the production list model");
+  assert.equal(selectModelAnalysis(response, MODEL41).modelVersion, MODEL41, "internal model comparison remains available when explicitly requested");
+  assert.equal(selectModelAnalysis({ ...response, model41Available: false }).modelVersion, MODEL40, "baseline safely handles unavailable advanced model");
   assert.deepEqual(response, original);
   const app = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../src/App.jsx"), "utf8");
   const marketSection = app.slice(app.indexOf("function ModelMarkets("), app.indexOf("const MARKET_SECTIONS"));
   assert.match(marketSection, /eyebrow=\{modelLabel\(analysis\)\}/);
+});
+
+test("match cards show only valid 1X2 probabilities that sum to 100%", async () => {
+  const { oneXTwoSummary } = await import("../../src/predictionPresentation.js");
+  assert.deepEqual(oneXTwoSummary({ homeWin: 48.2, draw: 27.4, awayWin: 24.4 }), { home: 48.2, draw: 27.4, away: 24.4 });
+  assert.equal(oneXTwoSummary({ homeWin: 50, draw: 25, awayWin: 20 }), null);
+  assert.equal(oneXTwoSummary({ homeWin: null, draw: 30, awayWin: 70 }), null);
 });
 
 test("frontend market sunumu oran, adil oran, implied probability ve value hesaplar", async () => {

@@ -1,0 +1,28 @@
+.zeus-assistant-root { position: fixed; z-index: 30; right: max(16px, calc((100vw - 1120px) / 2)); bottom: 88px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; font-family: inherit; }
+.zeus-assistant-launcher { display: inline-flex; align-items: center; gap: 9px; min-height: 54px; padding: 7px 16px 7px 8px; border: 1px solid rgba(180,255,104,.38); border-radius: 999px; color: #08130b; background: linear-gradient(135deg,#d5ff8c,#a9f36d); box-shadow: 0 12px 35px rgba(0,0,0,.35),0 0 25px rgba(180,255,104,.15); font-size: 12px; font-weight: 900; cursor: pointer; }
+.zeus-assistant-launcher.open { color: var(--text); border-color: var(--line); background: var(--surface); }
+.zeus-launcher-orb { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; color: #d8ff9c; background: #10231b; font-size: 17px; font-weight: 900; box-shadow: inset 0 0 0 1px rgba(180,255,104,.35); }
+.zeus-launcher-spark { font-size: 17px; }
+.zeus-assistant-panel { display: grid; grid-template-rows: auto minmax(120px,1fr) auto auto auto; width: min(390px, calc(100vw - 28px)); max-height: min(620px, calc(100dvh - 175px)); overflow: hidden; border: 1px solid rgba(180,255,104,.23); border-radius: 22px; background: #0a1415; box-shadow: 0 24px 80px rgba(0,0,0,.55); }
+.zeus-assistant-header { display: flex; align-items: center; gap: 11px; padding: 15px; border-bottom: 1px solid rgba(180,255,104,.12); background: linear-gradient(110deg,#10251d,#101a22); }
+.zeus-bot-avatar { display: grid; place-items: center; width: 39px; height: 39px; flex: 0 0 auto; border: 1px solid rgba(180,255,104,.35); border-radius: 13px; color: #d5ff8c; background: #172d20; font-weight: 900; }
+.zeus-assistant-header div { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.zeus-assistant-header strong { font-size: 13px; }.zeus-assistant-header small { color: #91a2a0; font-size: 10px; }
+.zeus-assistant-header > button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: transparent; font-size: 22px; cursor: pointer; }
+.zeus-assistant-messages { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-height: 100px; padding: 14px; }
+.zeus-assistant-welcome { padding: 14px; border: 1px solid rgba(180,255,104,.12); border-radius: 14px; background: rgba(180,255,104,.035); }
+.zeus-assistant-welcome p { margin: 8px 0 0; color: #c1cfca; font-size: 12px; line-height: 1.6; }
+.zeus-chat-bubble { max-width: 92%; padding: 11px 12px; border-radius: 13px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.zeus-chat-bubble.user { align-self: flex-end; border: 1px solid rgba(180,255,104,.2); border-bottom-right-radius: 4px; color: #e7f5dc; background: #1a3225; }
+.zeus-chat-bubble.assistant { align-self: flex-start; border: 1px solid #233a35; border-bottom-left-radius: 4px; color: #d0ded8; background: #111f20; }
+.zeus-quick-prompts { display: grid; gap: 6px; padding: 0 14px 12px; }
+.zeus-quick-prompts button { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 11px; border: 1px solid #233a35; border-radius: 10px; color: #c8d9d0; background: #101d1e; text-align: left; font-size: 11px; cursor: pointer; }
+.zeus-quick-prompts button:hover { border-color: #a9f36d; color: #e6ffce; }
+.zeus-quick-prompts button span { color: #b4ff68; }
+.zeus-assistant-input { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid #233a35; }
+.zeus-assistant-input input { min-width: 0; flex: 1; padding: 11px 12px; border: 1px solid #2a403a; border-radius: 11px; outline: none; color: #f1f6fc; background: #0d191a; font-size: 12px; }
+.zeus-assistant-input input:focus { border-color: #a9f36d; }
+.zeus-assistant-input button { width: 42px; border: 0; border-radius: 11px; color: #08130b; background: #b4ff68; font-size: 20px; font-weight: 900; cursor: pointer; }
+.zeus-assistant-input button:disabled { opacity: .35; cursor: not-allowed; }
+.zeus-assistant-footnote { margin: 0; padding: 0 14px 12px; color: #71857e; font-size: 9px; }
+@media (max-width: 480px) { .zeus-assistant-root { right: 12px; bottom: 82px; }.zeus-assistant-panel { max-height: calc(100dvh - 155px); } }

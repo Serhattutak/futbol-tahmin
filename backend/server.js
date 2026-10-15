@@ -1,5 +1,6 @@
 const { buildMatchStatistics, calculateTeamStatistics } = require("./services/teamStatistics");
 const { apiHistory } = require("./services/historicalForm");
+const { forEachConcurrent } = require("./services/forEachConcurrent");
 ﻿const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -25,7 +26,8 @@ const app = express();
 const isProduction = process.env.NODE_ENV === "production";
 const PORT = Number(process.env.PORT) || 3001;
 const API_URL = "https://v3.football.api-sports.io";
-const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:5173,http://127.0.0.1:5173").split(",").map((origin) => origin.trim()).filter(Boolean);
+const defaultAllowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "https://zeus-one-betting.onrender.com"];
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...(process.env.CORS_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean)])];
 
 app.disable("x-powered-by");
 if (process.env.TRUST_PROXY === "true") app.set("trust proxy", 1);
@@ -47,24 +49,11 @@ app.use((req, res, next) => {
   next();
 });
 
-const generalApiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Ã‡ok fazla istek gÃ¶nderildi. LÃ¼tfen daha sonra tekrar deneyin." } });
-const analyzeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Analiz istek limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
-const heavyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "AÄŸÄ±r iÅŸlem limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
-const activeByIp = new Map();
-function concurrencyGuard(limit = 2) {
-  return (req, res, next) => {
-    const key = req.ip || "unknown";
-    const active = activeByIp.get(key) || 0;
-    if (active >= limit) return res.status(429).json({ success: false, error: "Ã‡ok fazla eÅŸzamanlÄ± istek." });
-    activeByIp.set(key, active + 1);
-    res.on("finish", () => {
-      const nextActive = (activeByIp.get(key) || 1) - 1;
-      if (nextActive > 0) activeByIp.set(key, nextActive);
-      else activeByIp.delete(key);
-    });
-    next();
-  };
-}
+const generalApiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Çok fazla istek gönderildi. Lütfen daha sonra tekrar deneyin." } });
+const analyzeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Analiz istek limiti aşıldı. Lütfen daha sonra tekrar deneyin." } });
+const heavyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Ağır işlem limiti aşıldı. Lütfen daha sonra tekrar deneyin." } });
+const { createConcurrencyGuard } = require("./services/concurrencyGuard");
+const concurrencyGuard = createConcurrencyGuard();
 app.use("/api", generalApiLimiter);
 
 const api = axios.create({ baseURL: API_URL, timeout: 10000, headers: { "x-apisports-key": process.env.API_FOOTBALL_KEY } });
@@ -134,12 +123,12 @@ async function optionalApiGet(pathname, params) {
 function getPublicErrorMessage(error, fallback) {
   if (!(error instanceof ProviderError)) return fallback;
   return {
-    quota: "Veri saÄŸlayÄ±cÄ±sÄ± kotasÄ± ÅŸu an yetersiz. LÃ¼tfen daha sonra tekrar deneyin.",
-    authentication: "Veri saÄŸlayÄ±cÄ±sÄ± yapÄ±landÄ±rmasÄ± kullanÄ±lamÄ±yor.",
-    timeout_network: "Veri saÄŸlayÄ±cÄ±sÄ±na ÅŸu an ulaÅŸÄ±lamÄ±yor. LÃ¼tfen daha sonra tekrar deneyin.",
-    provider_unavailable: "Veri saÄŸlayÄ±cÄ±sÄ± geÃ§ici olarak kullanÄ±lamÄ±yor.",
-    no_data: "Ä°stenen maÃ§ veya istatistik iÃ§in veri bulunamadÄ±.",
-    unexpected_provider_response: "Veri saÄŸlayÄ±cÄ±sÄ±ndan doÄŸrulanabilir veri alÄ±namadÄ±.",
+    quota: "Veri sağlayıcısı kotası şu an yetersiz. Lütfen daha sonra tekrar deneyin.",
+    authentication: "Veri sağlayıcısı yapılandırması kullanılamıyor.",
+    timeout_network: "Veri sağlayıcısına şu an ulaşılamıyor. Lütfen daha sonra tekrar deneyin.",
+    provider_unavailable: "Veri sağlayıcısı geçici olarak kullanılamıyor.",
+    no_data: "İstenen maç veya istatistik için veri bulunamadı.",
+    unexpected_provider_response: "Veri sağlayıcısından doğrulanabilir veri alınamadı.",
   }[error.category] || fallback;
 }
 
@@ -157,7 +146,7 @@ function getProviderErrorStatus(error, fallback = 500) {
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Futbol Analiz AI Backend Ã§alÄ±ÅŸÄ±yor.",
+    message: "Futbol Analiz AI Backend çalışıyor.",
     status: "active",
   });
 });
@@ -169,7 +158,7 @@ app.get("/", (req, res) => {
 app.get("/api/test", (req, res) => {
   res.json({
     success: true,
-    message: "API baÄŸlantÄ±sÄ± hazÄ±r.",
+    message: "API bağlantısı hazır.",
   });
 });
 
@@ -179,7 +168,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // --------------------------------------------------
-// TARÄ°H OLUÅTURMA
+// TARİH OLUŞTURMA
 // --------------------------------------------------
 
 function getDateString(date) {
@@ -202,16 +191,16 @@ function getRequestedDate(value) {
 }
 
 // --------------------------------------------------
-// BUGÃœN + 7 GÃœN MAÃ‡LARI
+// BUGÜN + 7 GÜN MAÇLARI
 // --------------------------------------------------
 
 app.get("/api/football-test", async (req, res) => {
   try {
     if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
-      return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
+      return res.status(400).json({ success: false, error: "Geçersiz tarih formatı. YYYY-MM-DD bekleniyor." });
     }
     const dateString = getRequestedDate(req.query.date);
-    console.log(`MaÃ§lar Ã§ekiliyor: ${dateString}`);
+    console.log(`Maçlar çekiliyor: ${dateString}`);
     const discovery = await providerRegistry.getFixturesByDate(dateString);
     const matches = discovery.fixtures.map(toFrontendFixture);
 
@@ -227,7 +216,7 @@ app.get("/api/football-test", async (req, res) => {
       dailyResults: [{ date: dateString, results: matches.length }],
     });
   } catch (error) {
-    console.error("MAÃ‡ API HATASI:");
+    console.error("MAÇ API HATASI:");
 
     if (error.response) {
       console.error(error.category || "provider_unavailable");
@@ -237,19 +226,19 @@ app.get("/api/football-test", async (req, res) => {
 
     res.status(getProviderErrorStatus(error)).json({
       success: false,
-      error: getPublicErrorMessage(error, "MaÃ§ verileri alÄ±namadÄ±."),
+      error: getPublicErrorMessage(error, "Maç verileri alınamadı."),
     });
   }
 });
 
 // --------------------------------------------------
-// TAKIM SON 10 MAÃ‡
+// TAKIM SON 10 MAÇ
 // --------------------------------------------------
 
 app.get("/api/team/:teamId/form", async (req, res) => {
   try {
     const teamId = req.params.teamId;
-    if (!/^\d{1,12}$/.test(teamId)) return res.status(400).json({ success: false, error: "GeÃ§ersiz takÄ±m kimliÄŸi." });
+    if (!/^\d{1,12}$/.test(teamId)) return res.status(400).json({ success: false, error: "Geçersiz takım kimliği." });
 
     const before = req.query.before || new Date().toISOString();
     if (typeof before !== "string" || !Number.isFinite(Date.parse(before))) return res.status(400).json({ success: false, error: "Geçersiz geçmiş maç tarihi." });
@@ -269,7 +258,7 @@ app.get("/api/team/:teamId/form", async (req, res) => {
 
     res.status(getProviderErrorStatus(error)).json({
       success: false,
-      error: getPublicErrorMessage(error, "TakÄ±m form verileri alÄ±namadÄ±."),
+      error: getPublicErrorMessage(error, "Takım form verileri alınamadı."),
     });
   }
 });
@@ -282,7 +271,7 @@ app.get("/api/h2h/:homeId/:awayId", async (req, res) => {
   try {
     const homeId = req.params.homeId;
     const awayId = req.params.awayId;
-    if (!/^\d{1,12}$/.test(homeId) || !/^\d{1,12}$/.test(awayId)) return res.status(400).json({ success: false, error: "GeÃ§ersiz takÄ±m kimliÄŸi." });
+    if (!/^\d{1,12}$/.test(homeId) || !/^\d{1,12}$/.test(awayId)) return res.status(400).json({ success: false, error: "Geçersiz takım kimliği." });
 
     const matches = await cachedApiGet("/fixtures/headtohead", { h2h: `${homeId}-${awayId}`, last: 10 });
 
@@ -296,7 +285,7 @@ app.get("/api/h2h/:homeId/:awayId", async (req, res) => {
 
     res.status(getProviderErrorStatus(error)).json({
       success: false,
-      error: getPublicErrorMessage(error, "H2H verileri alÄ±namadÄ±."),
+      error: getPublicErrorMessage(error, "H2H verileri alınamadı."),
     });
   }
 });
@@ -520,7 +509,7 @@ function getOddsKey(market) {
 function calculateDataQuality({ fixtureAvailable, teamsAvailable, leagueAvailable, homeForm10, awayForm10, homeForm5, awayForm5, homeVenueForm, awayVenueForm, h2h, standings, stats, bookmakerOdds }) {
   const signals = [
     ["Fixture", fixtureAvailable, 10],
-    ["TakÄ±m bilgileri", teamsAvailable, 10],
+    ["Takım bilgileri", teamsAvailable, 10],
     ["Lig bilgisi", leagueAvailable, 5],
     ["Ev sahibi son 10", homeForm10.games > 0, 15],
     ["Deplasman son 10", awayForm10.games > 0, 15],
@@ -528,7 +517,7 @@ function calculateDataQuality({ fixtureAvailable, teamsAvailable, leagueAvailabl
     ["Ev/deplasman formu", homeVenueForm.games > 0 && awayVenueForm.games > 0, 10],
     ["H2H", h2h.count > 0, 5],
     ["Standings", Boolean(standings.home || standings.away), 5],
-    ["TakÄ±m istatistikleri", Number.isFinite(stats.home.shots) || Number.isFinite(stats.away.shots), 5],
+    ["Takım istatistikleri", Number.isFinite(stats.home.shots) || Number.isFinite(stats.away.shots), 5],
     ["API xG", Number.isFinite(stats.home.expectedGoals) || Number.isFinite(stats.away.expectedGoals), 5],
     ["Bookmaker odds", Object.keys(bookmakerOdds).length > 0, 5],
   ];
@@ -647,7 +636,7 @@ function summarizePerformance(records) {
     const group = record.market === "1" || record.market === "X" || record.market === "2"
       ? "1X2"
       : ["1X", "X2", "12"].includes(record.market)
-        ? "Ã‡ifte Åans"
+        ? "Çifte Şans"
         : record.market.startsWith("Üst") || record.market.startsWith("Alt")
           ? "Üst/Alt"
           : record.market.startsWith("KG")
@@ -733,7 +722,7 @@ function summarizeH2H(matches, homeId, awayId) {
 }
 
 // --------------------------------------------------
-// MAÃ‡ ANALÄ°ZÄ°
+// MAÇ ANALİZİ
 // --------------------------------------------------
 
 function insufficientAnalysis(fixture, sourceMetadata = {}, statisticsProfile = null, version = MODEL_VERSION) {
@@ -828,7 +817,7 @@ function analyzeCollectedFixture(collected, { variant = "stats", now = Date.now(
     expectedHomeGoals *= HOME_ADVANTAGE * (1 + weightedEdge);
     expectedAwayGoals *= 1 - weightedEdge;
 
-    // AÅŸÄ±rÄ± deÄŸerleri sÄ±nÄ±rla
+    // Aşırı değerleri sınırla
     expectedHomeGoals = Math.min(
       Math.max(expectedHomeGoals, 0.2),
       4
@@ -840,7 +829,7 @@ function analyzeCollectedFixture(collected, { variant = "stats", now = Date.now(
     );
 
     // ------------------------------------------------
-    // MAÃ‡ SKOR OLASILIKLARI
+    // MAÇ SKOR OLASILIKLARI
     // ------------------------------------------------
 
     let homeWin = 0;
@@ -916,7 +905,7 @@ let over25 = 0;
     const bttsNo = 1 - bttsYes;
 
     // ------------------------------------------------
-    // Ã‡Ä°FTE ÅANS
+    // ÇİFTE ŞANS
     // ------------------------------------------------
 
     const doubleChance1X = homeWin + draw;
@@ -924,7 +913,7 @@ let over25 = 0;
     const doubleChance12 = homeWin + awayWin;
 
     // ------------------------------------------------
-    // TAHMÄ°N
+    // TAHMİN
     // ------------------------------------------------
 
     let prediction = "X";
@@ -1013,7 +1002,7 @@ let over25 = 0;
     const predictionScore = rankMarket({ probability: bestMarket.probability, confidence, dataQuality: dataQuality.score, value: bestMarket.value, hasOdds: Number.isFinite(bestMarket.bookmakerOdds) });
 
     // ------------------------------------------------
-    // SONUÃ‡
+    // SONUÇ
     // ------------------------------------------------
 
     const isPreKickoff = new Date(fixture.fixture.date).getTime() > now && normalizeStatus(fixture.fixture?.status?.short) === "SCHEDULED";
@@ -1081,7 +1070,7 @@ let over25 = 0;
       },
 
       model: {
-        name: "Ä°statistiksel Poisson + GÃ¼ncel Form",
+        name: "İstatistiksel Poisson + Güncel Form",
         version: analysisVersion,
         ...(model41Output ? { id: "MODEL_4_1", calibration: model41Artifact.calibration.method, goalModel: model41Artifact.goalChoice, rawProbabilities: model41Output.probabilities } : {}),
         confidence: Number(confidence.toFixed(0)),
@@ -1099,7 +1088,7 @@ let over25 = 0;
       statistics: { home: homeStats, away: awayStats },
 
       dataQuality,
-      dataQualityLabel: dataQuality.score >= 90 ? "Ã‡ok gÃ¼Ã§lÃ¼ veri" : dataQuality.score >= 75 ? "GÃ¼Ã§lÃ¼ veri" : dataQuality.score >= 60 ? "Orta veri" : dataQuality.score >= 40 ? "ZayÄ±f veri" : "Yetersiz veri",
+      dataQualityLabel: dataQuality.score >= 90 ? "Çok güçlü veri" : dataQuality.score >= 75 ? "Güçlü veri" : dataQuality.score >= 60 ? "Orta veri" : dataQuality.score >= 40 ? "Zayıf veri" : "Yetersiz veri",
       predictionEligible,
       predictionScore,
       standings,
@@ -1198,12 +1187,12 @@ let over25 = 0;
         eligible: false,
         main: "NO_BET",
         reason: "Yetersiz veri",
-        message: "Bu maÃ§ iÃ§in gÃ¼venilir istatistiksel tahmin oluÅŸturmak iÃ§in yeterli veri bulunamadÄ±.",
+        message: "Bu maç için güvenilir istatistiksel tahmin oluşturmak için yeterli veri bulunamadı.",
         confidence: Number(confidence.toFixed(0)),
       },
 
       note:
-        "Bu sonuÃ§lar istatistiksel model Ã§Ä±ktÄ±sÄ±dÄ±r. Kesin maÃ§ sonucu veya bahis garantisi deÄŸildir.",
+        "Bu sonuçlar istatistiksel model çıktısıdır. Kesin maç sonucu veya bahis garantisi değildir.",
     };
   } catch (error) {
     throw error;
@@ -1236,14 +1225,30 @@ const forwardCapture = new ForwardCapture({
 
 app.get("/api/analyze/:fixtureId", analyzeLimiter, concurrencyGuard(2), async (req, res) => {
   const fixtureId = req.params.fixtureId;
-  if (!fixtureId || fixtureId.length > 500 || /[\x00-\x1f]/.test(fixtureId)) return res.status(400).json({ success: false, error: { message: "GeÃ§erli bir maÃ§ kimliÄŸi gÃ¶nderilmedi." } });
+  if (!fixtureId || fixtureId.length > 500 || /[\x00-\x1f]/.test(fixtureId)) return res.status(400).json({ success: false, error: { message: "Geçerli bir maç kimliği gönderilmedi." } });
   if (req.query.model !== undefined && !["MODEL_4_0", "MODEL_4_1"].includes(req.query.model)) return res.status(400).json({ success: false, error: { message: "Geçersiz model seçimi." } });
   try {
     return res.json(await analyzeFixture(fixtureId, { shadow: true, modelVersion: req.query.model }));
   } catch (error) {
     console.error(JSON.stringify({ type: "ANALYSIS_FAILED", fixtureId, category: error.category || "internal", message: error.message }));
     const status = error.status || getProviderErrorStatus(error);
-    return res.status(status).json({ success: false, error: { message: getPublicErrorMessage(error, "Analiz verileri alÄ±namadÄ±. LÃ¼tfen daha sonra tekrar deneyin.") } });
+    return res.status(status).json({ success: false, error: { message: getPublicErrorMessage(error, "Analiz verileri alınamadı. Lütfen daha sonra tekrar deneyin.") } });
+  }
+});
+
+app.get("/api/match-context/:fixtureId", analyzeLimiter, concurrencyGuard(2), async (req, res) => {
+  const fixtureId = req.params.fixtureId;
+  if (!fixtureId || fixtureId.length > 500 || /[\x00-\x1f]/.test(fixtureId)) return res.status(400).json({ success: false, error: "Geçerli bir maç kimliği gönderilmedi." });
+  try {
+    const fixtures = await providerRegistry.getFixture(fixtureId);
+    const fixture = fixtures?.[0];
+    if (!fixture) return res.status(404).json({ success: false, error: "Maç veri sağlayıcılarında bulunamadı." });
+    const newsFixture = { league: fixture.league, teams: { home: fixture.homeTeam, away: fixture.awayTeam } };
+    const context = await espn.getNewsForFixture(newsFixture);
+    return res.json({ success: true, fixture: { id: fixture.fixtureId || fixture.canonicalFixtureId, league: fixture.league?.name, home: fixture.homeTeam?.name, away: fixture.awayTeam?.name }, context });
+  } catch (error) {
+    console.warn(JSON.stringify({ type: "MATCH_CONTEXT_UNAVAILABLE", fixtureId, category: error.category || "provider_unavailable" }));
+    return res.json({ success: true, context: { provider: "ESPN", available: false, reason: error.category || "provider_unavailable", articles: [] } });
   }
 });
 
@@ -1253,14 +1258,14 @@ app.get("/api/analyze/:fixtureId", analyzeLimiter, concurrencyGuard(2), async (r
 
 const bestPredictionsCache = new Map();
 const BEST_PREDICTIONS_TTL_MS = 5 * 60 * 1000;
-const BEST_PREDICTIONS_LIMIT = 60;
-const BEST_PREDICTIONS_MIN_QUALITY = 60;
-const BEST_PREDICTIONS_MIN_CONFIDENCE = 70;
-const BEST_PREDICTIONS_MIN_PROBABILITY = 65;
+const BEST_PREDICTIONS_LIMIT = 200;
+const BEST_PREDICTIONS_MIN_QUALITY = 45;
+const BEST_PREDICTIONS_MIN_CONFIDENCE = 50;
+const BEST_PREDICTIONS_MIN_PROBABILITY = 50;
 
-app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, res) => {
+app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
-    return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
+    return res.status(400).json({ success: false, error: "Geçersiz tarih formatı. YYYY-MM-DD bekleniyor." });
   }
   const requestedDate = getRequestedDate(req.query.date);
   const cacheKey = `${requestedDate}:MODEL_4_0:historical-v1`;
@@ -1280,8 +1285,10 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
     ).values()].slice(0, BEST_PREDICTIONS_LIMIT);
     const evaluated = [];
     const diagnosticAnalyses = [];
-
-    for (const match of candidates) {
+    // Bound upstream work: the endpoint can see hundreds of fixtures, but must not
+    // fan out an unbounded number of provider requests or wait for 200 sequential analyses.
+    const ANALYSIS_CONCURRENCY = 4;
+    await forEachConcurrent(candidates, ANALYSIS_CONCURRENCY, async (match) => {
       try {
         const analysis = await analyzeFixture(String(match.fixture.id), { includeMatchStatistics: false, modelVersion: "MODEL_4_0" });
         diagnosticAnalyses.push(analysis);
@@ -1297,7 +1304,8 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
           STANDINGS_DATA_OK: Boolean(availability.standings),
           XG_DATA_OK: Boolean(availability.apiXg),
         }));
-        if (!analysis.predictionEligible || !analysis.recommendation?.bestMarket || analysis.dataQuality.score < BEST_PREDICTIONS_MIN_QUALITY || analysis.model.confidence < BEST_PREDICTIONS_MIN_CONFIDENCE || analysis.recommendation.bestMarket.probability < BEST_PREDICTIONS_MIN_PROBABILITY || ["NO_BET", "NO BET"].includes(analysis.recommendation.bestMarket.market)) continue;
+        const bestMarket = analysis.recommendation?.bestMarket;
+        if (!analysis.predictionEligible || !bestMarket || Number(analysis.dataQuality?.score) < BEST_PREDICTIONS_MIN_QUALITY || Number(analysis.model?.confidence) < BEST_PREDICTIONS_MIN_CONFIDENCE || Number(bestMarket.probability) < BEST_PREDICTIONS_MIN_PROBABILITY || ["NO_BET", "NO BET"].includes(bestMarket.market)) return;
         evaluated.push({
           fixture: analysis.fixture,
           modelVersion: "MODEL_4_0", model41Available: false, model41FallbackReason: "LAZY_DETAIL_ONLY",
@@ -1307,7 +1315,9 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
           dataQualityLabel: analysis.dataQualityLabel,
           confidence: analysis.model?.confidence ?? 0,
           predictionScore: analysis.predictionScore ?? 0,
-          prediction: analysis.recommendation.bestMarket,
+          predictions: analysis.predictions,
+          expectedGoals: analysis.expectedGoals,
+          prediction: bestMarket,
           bookmakerOdds: analysis.recommendation?.bookmakerOdds ?? null,
           fairOdds: analysis.recommendation?.fairOdds ?? null,
           value: analysis.recommendation?.value ?? null,
@@ -1315,10 +1325,21 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
           availability: analysis.dataAvailability,
         });
       } catch (error) {
-        diagnosticAnalyses.push(insufficientAnalysis((await providerRegistry.getFixture(String(match.fixture.id)))[0], { errorCategory: error.category || "provider_unavailable" }));
+        // A secondary provider lookup must not turn one failed match into a failed response.
+        let fallback = null;
+        try { fallback = (await providerRegistry.getFixture(String(match.fixture.id)))[0] || null; } catch { /* provider remains unavailable */ }
+        if (fallback) diagnosticAnalyses.push(insufficientAnalysis(fallback, { errorCategory: error.category || "provider_unavailable" }));
+        else diagnosticAnalyses.push({
+          success: false,
+          predictionEligible: false,
+          model: { confidence: 0 },
+          dataQuality: { score: 0, missing: ["PROVIDER_UNAVAILABLE"] },
+          dataAvailability: { fixture: false, teamForm: { home: false, away: false }, h2h: false, odds: false, standings: false, apiXg: false },
+          fixture: { id: match.fixture?.id, date: match.fixture?.date, league: match.league?.name, home: match.teams?.home?.name, away: match.teams?.away?.name },
+        });
         console.warn(`Best prediction analiz edilemedi: ${match.fixture?.id}`);
       }
-    }
+    });
 
     evaluated.sort((left, right) => right.predictionScore - left.predictionScore);
     const diagnostics = {
@@ -1342,20 +1363,20 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
       results: evaluated,
       assessments: diagnosticAnalyses.map((analysis) => ({ fixture: analysis.fixture, status: analysis.predictionEligible ? "PREDICTION" : "INSUFFICIENT_DATA", dataQuality: analysis.dataQuality, confidence: analysis.model?.confidence ?? 0, recommendation: analysis.predictionEligible ? analysis.recommendation : { eligible: false, main: "NO_BET", reason: "INSUFFICIENT_DATA" } })),
       diagnostics,
-      note: "Yetersiz veri etiketi taÅŸÄ±yan maÃ§lar en iyi tahmin listesinde Ã¶neri olarak gÃ¶sterilmez.",
+      note: "Yetersiz veri etiketi taşıyan maçlar en iyi tahmin listesinde öneri olarak gösterilmez.",
     };
     bestPredictionsCache.set(cacheKey, { createdAt: Date.now(), value });
     return res.json(value);
   } catch (error) {
     console.error("BEST PREDICTIONS HATASI:", error.message);
-    return res.status(getProviderErrorStatus(error)).json({ success: false, error: getPublicErrorMessage(error, "En iyi tahminler alÄ±namadÄ±.") });
+    return res.status(getProviderErrorStatus(error)).json({ success: false, error: getPublicErrorMessage(error, "En iyi tahminler alınamadı.") });
   }
 });
 
-app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(1), async (req, res) => {
-  if (isProduction) return res.status(404).json({ success: false, error: "Endpoint bulunamadÄ±." });
+app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(3), async (req, res) => {
+  if (isProduction) return res.status(404).json({ success: false, error: "Endpoint bulunamadı." });
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
-    return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
+    return res.status(400).json({ success: false, error: "Geçersiz tarih formatı. YYYY-MM-DD bekleniyor." });
   }
   const requestedDate = getRequestedDate(req.query.date);
   const cached = bestPredictionsCache.get(requestedDate);
@@ -1364,27 +1385,27 @@ app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(1), async (req, 
     const fixtures = await providerRegistry.getFixtures(requestedDate);
     return res.json({ success: true, date: requestedDate, fixtureCount: fixtures.length, analyzedCount: 0, eligibleCount: 0, fixtureDataCount: fixtures.length, formAvailableCount: 0, h2hAvailableCount: 0, standingsAvailableCount: 0, oddsAvailableCount: 0, xgAvailableCount: 0, averageDataQuality: 0 });
   } catch (error) {
-    return res.status(500).json({ success: false, error: "Data diagnostics alÄ±namadÄ±." });
+    return res.status(500).json({ success: false, error: "Data diagnostics alınamadı." });
   }
 });
 
-app.get("/api/performance", heavyLimiter, concurrencyGuard(1), async (req, res) => {
+app.get("/api/performance", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   try {
     const records = await checkPendingPredictions(10);
     const archive = await settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 });
     return res.json({ success: true, ...summarizePerformance(records), archive: summarizeArchive(archive.records), archiveSettlement: { checked: archive.checked, quotaStopped: archive.quotaStopped } });
   } catch (error) {
     console.error("PERFORMANS HATASI:", error.message);
-    return res.status(500).json({ success: false, error: "Performans verileri alÄ±namadÄ±." });
+    return res.status(500).json({ success: false, error: "Performans verileri alınamadı." });
   }
 });
 
-app.get("/api/archive/status", heavyLimiter, concurrencyGuard(1), (req, res) => {
+app.get("/api/archive/status", heavyLimiter, concurrencyGuard(3), (req, res) => {
   const summary = summarizeArchive(readArchive(historicalArchivePath));
   return res.json({ success: true, totalPredictions: summary.totalPredictions, completed: summary.completed, verified: summary.verified, unverified: summary.unverified, conflict: summary.conflict, pending: summary.pending, unavailable: summary.unavailable, noBet: summary.noBet, coverage: summary.coverage, modelVersions: summary.modelVersions });
 });
 
-app.get("/api/archive/performance", heavyLimiter, concurrencyGuard(1), (req, res) => {
+app.get("/api/archive/performance", heavyLimiter, concurrencyGuard(3), (req, res) => {
   return res.json({ success: true, ...summarizeArchive(readArchive(historicalArchivePath)) });
 });
 
@@ -1413,14 +1434,14 @@ app.get("/api/capture/status", (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ success: false, error: "Endpoint bulunamadÄ±." });
+  res.status(404).json({ success: false, error: "Endpoint bulunamadı." });
 });
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
   console.error(JSON.stringify({ timestamp: new Date().toISOString(), endpoint: req.originalUrl, errorType: error.type || error.name || "UnknownError", message: error.message }));
   const status = error.type === "entity.too.large" ? 413 : error.message === "CORS origin denied" ? 403 : 500;
-  return res.status(status).json({ success: false, error: status === 413 ? "Ä°stek gÃ¶vdesi Ã§ok bÃ¼yÃ¼k." : status === 403 ? "Origin izinli deÄŸil." : "Sunucu hatasÄ±." });
+  return res.status(status).json({ success: false, error: status === 413 ? "İstek gövdesi çok büyük." : status === 403 ? "Origin izinli değil." : "Sunucu hatası." });
 });
 
 if (require.main === module) {
@@ -1428,16 +1449,16 @@ forwardCapture.startScheduler();
 const resultCheckTimer = setInterval(() => {
   predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
     .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
-  checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuÃ§ kontrolÃ¼ baÅŸarÄ±sÄ±z:", error.message));
+  checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
   settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
-    .then((result) => { if (result.quotaStopped) console.warn("Archive sonuÃ§ kontrolÃ¼ kota nedeniyle durduruldu."); })
-    .catch((error) => console.warn("Archive otomatik sonuÃ§ kontrolÃ¼ baÅŸarÄ±sÄ±z:", error.message));
+    .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
+    .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
 }, 15 * 60 * 1000);
 resultCheckTimer.unref();
 
 app.listen(PORT, () => {
   console.log(
-    `Futbol Analiz AI backend Ã§alÄ±ÅŸÄ±yor: http://localhost:${PORT}`
+    `Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`
   );
 });
 

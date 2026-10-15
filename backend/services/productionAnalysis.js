@@ -78,7 +78,22 @@ class ProductionAnalysis {
       reason = safeCodes.includes(error.code) ? error.code : /feature (schema|order) mismatch/i.test(error.message) ? "FEATURE_SCHEMA_MISMATCH" : "MODEL41_RUNTIME_ERROR";
       this.logger({ type: "MODEL41_FALLBACK", fixture: fixtureId, requestedModelVersion: requested, actualModelVersion: MODEL_4_0, modelVersion: MODEL_4_1, error: error.message, fallbackReason: reason });
     }
-    if (reason && readiness.reason === reason) this.logger({ type: "MODEL41_FALLBACK", fixture: fixtureId, requestedModelVersion: requested, actualModelVersion: MODEL_4_0, modelVersion: MODEL_4_1, error: "Historical input validation failed", fallbackReason: reason });
+    if (reason && readiness.reason === reason) this.logger({
+      type: "MODEL41_FALLBACK",
+      fixture: fixtureId,
+      requestedModelVersion: requested,
+      actualModelVersion: MODEL_4_0,
+      modelVersion: MODEL_4_1,
+      error: "Historical input validation failed",
+      fallbackReason: reason,
+      historicalSampleSize: readiness.historicalSampleSize || null,
+      statisticsQuality: readiness.statisticsQuality ?? null,
+      sourceMetadata: collected.sourceMetadata ? {
+        fields: collected.sourceMetadata.fields || {},
+        unavailable: collected.sourceMetadata.unavailable || {},
+        historyAttempts: collected.sourceMetadata.historyAttempts || [],
+      } : null,
+    });
     if (!base.value && !advanced) throw Object.assign(new Error("No production model available"), { code: "NO_PRODUCTION_MODEL" });
     const actual = (requested === MODEL_4_1 || !base.value) && advanced ? MODEL_4_1 : MODEL_4_0;
     const metadata = { history: provenance(collected.homeMatches || [], collected.awayMatches || []), model41Available: Boolean(advanced), MODEL_4_1_READY: Boolean(advanced), model41FallbackReason: reason, statisticsQuality: readiness.statisticsQuality, historicalSampleSize: readiness.historicalSampleSize };

@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { createProviderError } = require("../services/apiFootballClient");
 const { normalizeStatus, normalizeKickoff } = require("../services/fixtureNormalization");
+const { forEachConcurrent } = require("../services/forEachConcurrent");
 const BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer";
 const LEAGUES = {
   "Premier League": { code: "eng.1", country: "England" },
@@ -93,10 +94,18 @@ async function request(path, params) {
 }
 async function getFixtures(date) {
   const day = date.replace(/-/g, "");
-  const results = await Promise.allSettled(Object.entries(LEAGUES).map(([leagueName, meta]) => request(`${meta.code}/scoreboard`, { dates: day }).then((data) => (data.events || []).map((event) => toFixture(event, leagueName, meta)).filter(Boolean))));
-  const fixtures = [];
-  for (const result of results) if (result.status === "fulfilled") fixtures.push(...result.value);
-  return fixtures;
+  const entries = Object.entries(LEAGUES);
+  const results = new Array(entries.length);
+  // ESPN is a public upstream. Avoid launching dozens of requests at once on a free instance.
+  await forEachConcurrent(entries, 5, async ([leagueName, meta], index) => {
+    try {
+      const data = await request(`${meta.code}/scoreboard`, { dates: day });
+      results[index] = (data.events || []).map((event) => toFixture(event, leagueName, meta)).filter(Boolean);
+    } catch {
+      results[index] = [];
+    }
+  });
+  return results.flat();
 }
 async function getFixture(fixtureId) {
   const id = String(fixtureId).replace(/^espn-/, "");
@@ -109,6 +118,36 @@ async function getFixture(fixtureId) {
   }
   return null;
 }
+function normalizeNewsForTeams(payload, homeName, awayName, limit = 8) {
+  const rows = Array.isArray(payload?.articles) ? payload.articles : Array.isArray(payload?.headlines) ? payload.headlines : Array.isArray(payload?.items) ? payload.items : [];
+  const normalize = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const home = normalize(homeName); const away = normalize(awayName);
+  if (!home && !away) return [];
+  return rows.map(row => {
+    const item = row?.data || row;
+    const headline = item?.headline || item?.title || item?.story?.headline || "";
+    const description = item?.description || item?.summary || item?.story?.description || "";
+    const href = item?.links?.web?.href || item?.link || item?.url || null;
+    const published = item?.published || item?.lastModified || item?.date || null;
+    return { headline: String(headline).trim(), description: String(description).trim(), url: typeof href === "string" ? href : null, published: typeof published === "string" ? published : null };
+  }).filter(item => { const text = normalize(item.headline + " " + item.description); return Boolean(item.headline && ((home && text.includes(home)) || (away && text.includes(away)))); })
+    .slice(0, limit);
+}
+async function getNewsForFixture(fixture) {
+  const leagueName = fixture?.league?.name;
+  const meta = leagueName ? LEAGUES[leagueName] : null;
+  if (!meta || !fixture?.teams?.home?.name || !fixture?.teams?.away?.name) {
+    return { provider: "ESPN", available: false, reason: "unsupported_league", articles: [] };
+  }
+  try {
+    const data = await request(`${meta.code}/news`, { limit: 15 });
+    const articles = normalizeNewsForTeams(data, fixture.teams.home.name, fixture.teams.away.name, 8);
+    return { provider: "ESPN", available: true, fetchedAt: new Date().toISOString(), articles };
+  } catch (error) {
+    return { provider: "ESPN", available: false, reason: error.category || "provider_unavailable", articles: [] };
+  }
+}
+
 async function getTeamForm(teamId, before, context = {}) {
   const rawId = String(teamId).replace(/^espn-team-/, "");
   const leagueName = context.league?.name;
@@ -134,4 +173,4 @@ async function getTeamForm(teamId, before, context = {}) {
 }
 async function getH2H() { return null; }
 async function getStandings() { return null; }
-module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, supportsLeague: (name) => Boolean(LEAGUES[name]) };
+module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form", "news"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, getNewsForFixture, normalizeNewsForTeams, supportsLeague: (name) => Boolean(LEAGUES[name]) };
