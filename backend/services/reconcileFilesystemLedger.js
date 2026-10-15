@@ -2,6 +2,47 @@
 
 const { stableEventId } = require("./neonPredictionLedgerStore");
 
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function compareEventSets(sourceEvents, destinationEvents) {
+  const sourceById = new Map();
+  const destinationById = new Map();
+  for (const event of sourceEvents) {
+    const id = stableEventId(event);
+    if (!sourceById.has(id)) sourceById.set(id, event);
+    else if (event.type !== "conflict" && canonicalJson(sourceById.get(id)) !== canonicalJson(event)) {
+      throw new Error("SOURCE_EVENT_ID_COLLISION");
+    }
+  }
+  for (const event of destinationEvents) {
+    const id = stableEventId(event);
+    if (destinationById.has(id)) throw new Error("DUPLICATE_DESTINATION_EVENT_ID");
+    destinationById.set(id, event);
+  }
+  const missingFromDestination = [...sourceById.keys()].filter(id => !destinationById.has(id)).sort();
+  const destinationOnly = [...destinationById.keys()].filter(id => !sourceById.has(id)).sort();
+  // Conflict identity intentionally represents distinct score outcomes, so
+  // provider evidence ordering/metadata may differ without changing the event.
+  const payloadMismatches = [...sourceById.entries()]
+    .filter(([id, event]) => destinationById.has(id) && event.type !== "conflict" &&
+      canonicalJson(event) !== canonicalJson(destinationById.get(id)))
+    .map(([id]) => id)
+    .sort();
+  return {
+    sourceEventCount: sourceById.size,
+    destinationEventCount: destinationById.size,
+    missingFromDestination,
+    destinationOnly,
+    payloadMismatches,
+  };
+}
+
 /**
  * Copy filesystem ledger events into an empty/preview Neon ledger without
  * deleting or mutating the source. Re-running after partial failure is safe
@@ -42,24 +83,14 @@ async function reconcileFilesystemEvents({ sourceEvents, destinationStore } = {}
   }
 
   const destinationEvents = await destinationStore.loadEvents();
-  const destinationById = new Map();
-  for (const event of destinationEvents) {
-    const id = stableEventId(event);
-    if (destinationById.has(id)) throw new Error("DUPLICATE_DESTINATION_EVENT_ID");
-    destinationById.set(id, event);
-  }
-
-  const missingFromDestination = [...sourceById.keys()].filter(id => !destinationById.has(id)).sort();
-  const destinationOnly = [...destinationById.keys()].filter(id => !sourceById.has(id)).sort();
+  const comparison = compareEventSets([...sourceById.values()], destinationEvents);
   return {
-    verified: missingFromDestination.length === 0 && destinationOnly.length === 0,
-    sourceEventCount: sourceById.size,
-    destinationEventCount: destinationById.size,
+    verified: comparison.missingFromDestination.length === 0 &&
+      comparison.destinationOnly.length === 0 && comparison.payloadMismatches.length === 0,
+    ...comparison,
     appended,
     alreadyPresent,
-    missingFromDestination,
-    destinationOnly,
   };
 }
 
-module.exports = { reconcileFilesystemEvents };
+module.exports = { reconcileFilesystemEvents, compareEventSets };
