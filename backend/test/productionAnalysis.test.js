@@ -76,6 +76,21 @@ test("Missing historical data safely falls back to 4.0 without invented statisti
   assert.equal(r.statisticsProfile.home.weighted.goalsForPerMatch, null); assert.equal(r.models[MODEL_4_1], null);
 });
 
+test("Insufficient-history fallback logs include sample counts and provider coverage reasons", async () => {
+  const input = await realInput();
+  input.homeMatches = [];
+  input.awayMatches = [];
+  input.sourceMetadata = { fields: { fixture: "openfootball" }, unavailable: { homeMatches: "insufficient_history", awayMatches: "insufficient_history", h2hMatches: "unavailable" } };
+  const logs = [];
+  const s = await service({ collect: async () => input, logger: entry => logs.push(entry) });
+  const result = await s.analyze("coverage-diagnostics", { modelVersion: MODEL_4_1 });
+  const fallback = logs.find(entry => entry.type === "MODEL41_FALLBACK" && entry.fallbackReason === "INSUFFICIENT_HISTORY");
+  assert.equal(result.modelVersion, MODEL_4_0);
+  assert.deepEqual(fallback.historicalSampleSize, { home: 0, away: 0 });
+  assert.ok(fallback.statisticsQuality);
+  assert.deepEqual(fallback.sourceMetadata.unavailable, { homeMatches: "insufficient_history", awayMatches: "insufficient_history", h2hMatches: "unavailable" });
+});
+
 test("Runtime errors fall back with safe reason metadata and server-only error logs", async () => {
   const logs = []; const s = await service({ logger: row => logs.push(row), calculate: (input, options) => {
     if (options.model41Artifact) throw Error("private runtime diagnostic"); return analyzeCollectedFixture(input, options);
