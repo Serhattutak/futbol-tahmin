@@ -1497,11 +1497,25 @@ if (require.main === module) {
         const rehearsal = await rehearseProductionLedgerMigration();
         console.log(JSON.stringify(rehearsal));
       }
-      // Optional staging preflight: run a read-only reconciliation comparison on
-      // this exact source/target pair. Refuse startup if any source event is missing
-      // from Neon or any destination-only event exists; no writes happen here.
-      let reconciliationVerified = process.env.ZEUS_LEDGER_RECONCILIATION_VERIFIED === "true";
-      if (process.env.ZEUS_LEDGER_RECONCILIATION_PREFLIGHT === "true") {
+      // One-shot, explicitly confirmed import from the read-only production API
+      // into the dedicated staging Neon branch. This never writes to production.
+      let stagingImportVerified = false;
+      if (process.env.ZEUS_LEDGER_STAGING_IMPORT_PRODUCTION === "true") {
+        const { importProductionLedgerToStaging } = require("./scripts/importProductionLedgerToStaging");
+        const report = await importProductionLedgerToStaging();
+        if (report?.targetVerified !== true || report.target !== "dedicated Neon staging branch") {
+          throw new Error("STAGING_PRODUCTION_IMPORT_NOT_VERIFIED");
+        }
+        console.log(JSON.stringify(report));
+        stagingImportVerified = true;
+      }
+
+      // Optional read-only filesystem reconciliation applies only when no explicit
+      // production-to-staging import ran; an empty /tmp source is not authoritative
+      // after staging has been populated from the live production API.
+      let reconciliationVerified =
+        process.env.ZEUS_LEDGER_RECONCILIATION_VERIFIED === "true" || stagingImportVerified;
+      if (!stagingImportVerified && process.env.ZEUS_LEDGER_RECONCILIATION_PREFLIGHT === "true") {
         const { main: runReconciliationDryRun } = require("./scripts/reconcileFilesystemLedgerToNeon");
         const report = await runReconciliationDryRun();
         if (report?.mode !== "dry-run" || !report.safeToApply ||
