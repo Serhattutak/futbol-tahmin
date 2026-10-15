@@ -54,6 +54,10 @@ jobs:
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Verify live Render API compatibility
+        env:
+          ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
+        run: node .github/scripts/live-api-smoke.cjs
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
