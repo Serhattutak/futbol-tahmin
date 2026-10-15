@@ -1487,10 +1487,21 @@ if (require.main === module) {
     if (ledgerMode === "filesystem") {
       predictionLedgerHandle.markReady();
     } else if (ledgerMode === "neon") {
-      // The operator must first run and verify the guarded reconciliation CLI
-      // against the intended staging database. Never infer this approval.
-      if (process.env.ZEUS_LEDGER_RECONCILIATION_VERIFIED !== "true") {
-        throw new Error("NEON_RECONCILIATION_REQUIRED: run the guarded reconciliation dry-run/apply and explicitly verify the source/target event IDs before enabling Neon.");
+      // Optional staging preflight: run a read-only reconciliation comparison on
+      // this exact source/target pair. Refuse startup if any source event is missing
+      // from Neon or any destination-only event exists; no writes happen here.
+      let reconciliationVerified = process.env.ZEUS_LEDGER_RECONCILIATION_VERIFIED === "true";
+      if (process.env.ZEUS_LEDGER_RECONCILIATION_PREFLIGHT === "true") {
+        const { main: runReconciliationDryRun } = require("./scripts/reconcileFilesystemLedgerToNeon");
+        const report = await runReconciliationDryRun();
+        if (report?.mode !== "dry-run" || !report.safeToApply ||
+            report.missingFromDestination?.length !== 0 || report.destinationOnly?.length !== 0) {
+          throw new Error("NEON_RECONCILIATION_MISMATCH: source and destination event IDs must match exactly before startup.");
+        }
+        reconciliationVerified = true;
+      }
+      if (!reconciliationVerified) {
+        throw new Error("NEON_RECONCILIATION_REQUIRED: run and verify the guarded reconciliation CLI before enabling Neon.");
       }
       const { Pool } = require("pg");
       const { createPredictionLedgerRuntime } = require("./services/createPredictionLedgerRuntime");
