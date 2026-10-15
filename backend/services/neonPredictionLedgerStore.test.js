@@ -68,3 +68,16 @@ test("status reports event counts without exposing payloads", async () => {
   await store.append({ type: "settlement", ledgerId: "p", result: {} });
   assert.deepEqual(await store.status(), { connected: true, event_count: 2, prediction_count: 1, settlement_count: 1, conflict_count: 0 });
 });
+
+test("propagates database write failures so callers cannot mistake them for success", async () => {
+  const store = new NeonPredictionLedgerStore({ pool: { query: async () => { throw new Error("DATABASE_UNAVAILABLE"); } } });
+  await assert.rejects(store.append({ type: "prediction", ledgerId: "p", snapshot: {} }), /DATABASE_UNAVAILABLE/);
+});
+
+test("rejects unsupported event types and missing ledger identifiers before database access", async () => {
+  let calls = 0;
+  const store = new NeonPredictionLedgerStore({ pool: { query: async () => { calls++; return { rowCount: 1, rows: [] }; } } });
+  await assert.rejects(store.append({ type: "unknown", ledgerId: "p" }), /INVALID_LEDGER_EVENT/);
+  await assert.rejects(store.append({ type: "prediction", ledgerId: "" }), /INVALID_LEDGER_EVENT/);
+  assert.equal(calls, 0);
+});
