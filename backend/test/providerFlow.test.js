@@ -35,6 +35,7 @@ test("OpenFootball reconstructs standings only from completed results before kic
     openFootballMatch("Chelsea", "Spurs", "2026-09-10T12:00:00Z", 1, 0),
     openFootballMatch("Arsenal", "Spurs", "2026-09-12T12:00:00Z", 1, 1),
     openFootballMatch("Spurs", "Arsenal", "2026-09-16T12:00:00Z", 4, 0),
+    openFootballMatch("Future FC", "New Town", "2026-09-16T12:00:00Z", 2, 0),
   ];
   const rows = calculateStandingsRows(matches, "2026-09-15T15:00:00Z");
   assert.equal(rows[0].team.name, "Arsenal");
@@ -44,6 +45,7 @@ test("OpenFootball reconstructs standings only from completed results before kic
   assert.equal(rows[2].team.name, "Spurs");
   assert.equal(rows[2].points, 1);
   assert.ok(rows.every((row) => row.all.played <= 2));
+  assert.ok(rows.every((row) => !["Future FC", "New Town"].includes(row.team.name)));
 });
 
 test.before(() => {
