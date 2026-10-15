@@ -127,6 +127,13 @@ test("Cross-source fixture aliases merge only within the same country", () => {
     make("espn", "First League", "Bulgaria"),
     make("openfootball-text", "Bulgarian First League", "Bulgaria", "2026-10-16T00:00:00Z", "date"),
   ]).length, 1);
+  const argentina = reconcileFixtures([
+    { ...make("espn", "Primera División", "Argentina"), homeTeam: { canonicalTeamId: "team:gimnasiaplata", name: "Gimnasia La Plata" }, awayTeam: { canonicalTeamId: "team:huracan", name: "Huracán" }, providerFixtureIds: { espn: "espn-401841622" } },
+    { ...make("thesportsdb", "Argentinian Primera Division", "Argentina"), homeTeam: { canonicalTeamId: "team:gimnasiaplata", name: "Gimnasia y Esgrima de La Plata" }, awayTeam: { canonicalTeamId: "team:huracan", name: "Huracán" }, providerFixtureIds: { thesportsdb: "tsdb-2398139" } },
+  ]);
+  assert.equal(argentina.length, 1);
+  assert.deepEqual(Object.keys(argentina[0].providerFixtureIds).sort(), ["espn", "thesportsdb"]);
+
   assert.equal(reconcileFixtures([
     make("espn", "Super League", "Switzerland"),
     make("other", "Super League", "Greece"),
