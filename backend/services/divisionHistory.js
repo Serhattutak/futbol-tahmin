@@ -59,8 +59,8 @@ async function collectDivisionHistory({ team, before, fixtureId, league, catalog
   if (remote && !load) break;
   rows = [];
   for (let offset = 0; offset < 3; offset++) {
-    const year = current - offset;
     for (const division of divisions) {
+      const year = (catalog[division]?.calendarYear ? currentCalendarYear : currentSeasonYear) - offset;
       const season = catalog[division]?.calendarYear ? String(year) : `${year}-${String(year + 1).slice(-2)}`;
       // Completed prior seasons are reusable; current snapshots have a bounded age.
       const installed = datasets.find(s => s.league === division && s.season === season);
