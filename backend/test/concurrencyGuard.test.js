@@ -40,3 +40,20 @@ test("a single endpoint still enforces its own concurrency limit and releases it
   assert.equal(after.statusCode, 200);
   assert.equal(nextCount, 2);
 });
+
+test("allows three concurrent dashboard reads without false 429s, then releases each slot", () => {
+  const guard = createConcurrencyGuard();
+  const middleware = guard(3);
+  const active = [response(), response(), response()];
+  let nextCount = 0;
+  for (const res of active) middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, res, () => nextCount++);
+  assert.equal(nextCount, 3);
+  const fourth = response();
+  middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, fourth, () => nextCount++);
+  assert.equal(fourth.statusCode, 429);
+  active[0].finish();
+  const afterRelease = response();
+  middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, afterRelease, () => nextCount++);
+  assert.equal(afterRelease.statusCode, 200);
+  assert.equal(nextCount, 4);
+});
