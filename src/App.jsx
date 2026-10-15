@@ -332,7 +332,16 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, predictionD
     <section className="home-quick-actions" aria-label="Hızlı erişim">
       <button type="button" className="home-quick-action primary" onClick={onShowMatches}><span className="home-quick-icon">▦</span><span><strong>Bugünün tüm maçları</strong><small>{loading ? "Fikstür yükleniyor…" : `${matches.length} karşılaşma · tarih ve lig filtresi`}</small></span><b>→</b></button>
       <div className="home-quick-stats"><div><strong>{new Set(matches.map(match => match?.league?.id).filter(Boolean)).size}</strong><span>Lig</span></div><div><strong>{new Set(matches.flatMap(match => [match?.teams?.home?.id, match?.teams?.away?.id]).filter(Boolean)).size}</strong><span>Takım</span></div><div><strong>{strongest.length}</strong><span>Doğrulanmış seçim</span></div></div>
-      {predictionDiagnostics && <div className="home-data-status" role="status"><span>Analiz edilen <b>{predictionDiagnostics.analyzedCount ?? 0}</b></span><span>Veri yeterli <b>{predictionDiagnostics.eligibleCount ?? 0}</b></span><span>Form verisi <b>{predictionDiagnostics.formAvailableCount ?? 0}</b></span><span>Oran bulunan <b>{predictionDiagnostics.oddsAvailableCount ?? 0}</b></span></div>}
+      {predictionDiagnostics && <div className="home-data-status" role="status" aria-label="Gerçek maç veri kapsamı">
+        <span>Analiz edilen <b>{predictionDiagnostics.analyzedCount ?? 0}</b></span>
+        <span>Veri yeterli <b>{predictionDiagnostics.eligibleCount ?? 0}</b></span>
+        <span>Form <b>{predictionDiagnostics.formAvailableCount ?? 0}</b></span>
+        <span>H2H <b>{predictionDiagnostics.h2hAvailableCount ?? 0}</b></span>
+        <span>Lig tablosu <b>{predictionDiagnostics.standingsAvailableCount ?? 0}</b></span>
+        <span>Oran <b>{predictionDiagnostics.oddsAvailableCount ?? 0}</b></span>
+        <span>xG <b>{predictionDiagnostics.xgAvailableCount ?? 0}</b></span>
+        <span>Ort. veri kalitesi <b>{predictionDiagnostics.averageDataQuality ?? 0}/100</b></span>
+      </div>}
     </section>
     <section className="home-section">
       <SectionHeading eyebrow="GERÇEK VERİ" title="Tahminler" action={<span className="home-section-note">{strongest.length} uygun maç</span>} />
