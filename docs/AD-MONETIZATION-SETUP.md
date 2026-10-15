@@ -17,11 +17,21 @@
 
 Bunlar Vercel projesinin frontend build environment variables bölümüne eklenir. Gerçek reklam için hesap onayı ve geçerli reklam birimleri gerekir.
 
-## Yayına almadan önce
-1. AdSense ve Google Ad Manager hesaplarını/reklam birimlerini oluşturup onayları tamamla.
-2. Hedef coğrafyaya uygun Google sertifikalı CMP/consent çözümü kur. Basit tercih arayüzü, EEA/Birleşik Krallık/İsviçre için CMP gereksinimini tek başına karşılamaz.
-3. Gerçek işletmeci bilgileri, veri işleme amaçları, saklama süreleri ve iletişim kanalıyla gizlilik/çerez bildirimlerini tamamla.
-4. Reklam bulunmaması, reklam engelleyici ve ödül verilmemesi durumlarını test et.
-5. Reklamları kesin kazanç veya garantili tahmin iddiası gibi sunma.
+## Uygulama sırası
+1. ZEUS AI'nin gerçek alan adını netleştir ve AdSense hesabına site olarak ekle.
+2. AdSense site doğrulamasını ve inceleme/onay sürecini tamamla. Alan adı ve yayıncı kimliği olmadan `ads.txt` içeriği uydurma.
+3. AdSense'ten gerçek yayıncı kimliğini (`ca-pub-...`) ve oluşturulan banner reklam birimi kimliğini al.
+4. Bu değerleri önce **Vercel Preview** ortam değişkenlerine ekle: `VITE_ADSENSE_CLIENT_ID`, `VITE_ADSENSE_BANNER_SLOT_ID`. Gerçek işletmeci ve iletişim bilgilerini de `VITE_OPERATOR_NAME`, `VITE_CONTACT_EMAIL` olarak gir. Değerleri Git'e yazma.
+5. Preview build'de `npm run ads:check` çalıştır. Zorunlu reklam yapılandırmasını doğrulamak için `ZEUS_ADS_REQUIRED=true npm run ads:check` kullan; bu kontrol sadece biçimi doğrular.
+6. Hedef coğrafyaya uygun, Google tarafından sertifikalı CMP/consent çözümünü yapılandır ve reddetme/tercih değiştirme akışlarını test et. Mevcut basit kabul/reddet arayüzü tek başına sertifikalı CMP yerine geçmez.
+7. Boş reklam envanteri, reklam engelleyici, mobil yerleşim, tekrar script yüklenmesi ve reklam yokken uygulamanın çalışması senaryolarını doğrula.
+8. Ödüllü reklamı ayrı aşamada Google Ad Manager birim yolu ile etkinleştir; ödül yalnızca Google'ın `rewardedSlotGranted` olayı geldiğinde verilsin.
+9. Yayına geçişten önce gizlilik/çerez metinlerini ve alan adına uygun `ads.txt` kaydını tamamla.
 
-Bu dosya kod altyapısının tek başına gelir başlatmadığını açıklar. Değişiklikler geliştirme dalında kalır; üretime aktarılmaz.
+## Güvenli varsayılanlar
+- Reklam kimlikleri boşsa gerçek reklamlar yüklenmez ve gelir varmış gibi raporlanmaz.
+- `npm run ads:check` boş yapılandırmayı, reklamlar kapalı olduğu sürece beklenen durum sayar. `ZEUS_ADS_REQUIRED=true` ise eksik yapılandırma build öncesi kontrolü başarısız kılar.
+- `npm run ads:check` AdSense site onayını, CMP uygunluğunu, gerçek reklam gösterimini veya gelir oluştuğunu doğrulamaz.
+- Hesap/alan adı/kimlik bilgileri verilmediğinden bu değişiklik reklamları etkinleştirmez; sadece güvenli ön kontrol sağlar.
+
+Bu çalışma geliştirme dalında kalır; üretim reklamlarını veya ortam değişkenlerini değiştirmez.
