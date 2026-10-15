@@ -29,7 +29,9 @@ const { chromium } = require("playwright");
       match.teams?.away?.id || match.teams?.away?.name || "",
       String(match.fixture?.date || "").slice(0, 10),
     ].join("|"));
-    assert.equal(new Set(fixtureKeys).size, fixtureKeys.length, "the same fixture must not appear twice under provider name/time variants");
+    const duplicateKeys = fixtureKeys.filter((key, index) => fixtureKeys.indexOf(key) !== index);
+    if (duplicateKeys.length) console.log("Duplicate fixture diagnostics:", JSON.stringify(payload.matches.filter(match => match.league?.name === "Segunda División").map(match => ({ date: match.fixture?.date, id: match.fixture?.id, home: match.teams?.home?.name, homeId: match.teams?.home?.id, away: match.teams?.away?.name, awayId: match.teams?.away?.id, league: match.league?.name, providers: match.providers }))));
+    assert.deepEqual(duplicateKeys, [], `duplicate fixture keys: ${duplicateKeys.join("; ")}`);
     await page.waitForFunction(() => document.querySelectorAll(".match-row").length > 0, null, { timeout: 45000 });
     await page.screenshot({ path: "artifacts/zeus-desktop.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
