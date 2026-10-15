@@ -193,7 +193,18 @@ class MultiProviderRegistry {
         if (!this.canRequest(provider) || !provider.capabilities?.includes(capability)) continue;
         supported = true;
         if (!matchedProviders.has(provider.name)) { fixture = await this.matchProvider(fixture, provider); matchedProviders.add(provider.name); }
-        const context = fixture.providerTeams?.[provider.name]; if (!context) continue;
+        const matchedContext = fixture.providerTeams?.[provider.name];
+        const historicalContext = !matchedContext
+          && ["h2h", "standings"].includes(capability)
+          && provider.supportsHistoricalLeague?.(fixture.league)
+          ? {
+              home: { id: fixture.homeTeam.providerTeamId || fixture.homeTeam.canonicalTeamId, name: fixture.homeTeam.name },
+              away: { id: fixture.awayTeam.providerTeamId || fixture.awayTeam.canonicalTeamId, name: fixture.awayTeam.name },
+              league: fixture.league,
+            }
+          : null;
+        const context = matchedContext || historicalContext;
+        if (!context) continue;
         try {
           let value;
           if (capability === "teamForm") value = await provider.getTeamForm(context[field === "homeMatches" ? "home" : "away"].id, fixture.kickoff);
