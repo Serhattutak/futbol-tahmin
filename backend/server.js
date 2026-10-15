@@ -30,7 +30,10 @@ const defaultAllowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173",
 const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...(process.env.CORS_ORIGINS || "").split(",").map((origin) => origin.trim()).filter(Boolean)])];
 
 app.disable("x-powered-by");
-if (process.env.TRUST_PROXY === "true") app.set("trust proxy", 1);
+// Render terminates TLS and forwards one trusted proxy hop. Configure Express accordingly
+// so express-rate-limit uses the client IP instead of rejecting X-Forwarded-For.
+if (isProduction) app.set("trust proxy", 1);
+else if (process.env.TRUST_PROXY === "true") app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"], baseUri: ["'none'"] } }, referrerPolicy: { policy: "strict-origin-when-cross-origin" } }));
 app.use(cors({
   origin(origin, callback) {
