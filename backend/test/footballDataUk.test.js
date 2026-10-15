@@ -19,10 +19,13 @@ test("football-data.co.uk validates dates and maps dates to European seasons", (
 
 test("football-data.co.uk fixtures preserve verified scores and never invent them", () => {
   const meta = provider.LEAGUES["Premier League"];
-  const finished = provider.toFixture({ Date: "15/10/26", Time: "19:45", HomeTeam: "Arsenal", AwayTeam: "Chelsea", FTHG: "2", FTAG: "1", FTR: "H" }, "Premier League", meta, "2627");
+  const finished = provider.toFixture({ Date: "15/10/26", Time: "19:45", HomeTeam: "Arsenal", AwayTeam: "Chelsea", FTHG: "2", FTAG: "1", FTR: "H", HS: "12", AS: "7", HST: "5", AST: "2", HC: "6", AC: "3", HY: "1", AY: "2" }, "Premier League", meta, "2627");
   assert.equal(finished.provider, "football-data-uk");
   assert.equal(finished.fixture.status.short, "FINISHED");
   assert.deepEqual(finished.goals, { home: 2, away: 1 });
+  const stats = provider.getStatistics(finished.fixture.id);
+  assert.equal(stats.find((row) => row.team.id === "fdu-team-arsenal").statistics.find((stat) => stat.type === "Total Shots").value, 12);
+  assert.equal(stats.find((row) => row.team.id === "fdu-team-chelsea").statistics.find((stat) => stat.type === "Shots on Goal").value, 2);
   assert.match(finished.fixture.id, /^fdu-e0-2627-2026-10-15-/);
   const upcoming = provider.toFixture({ Date: "20/10/26", Time: "20:00", HomeTeam: "Arsenal", AwayTeam: "Chelsea", FTHG: "", FTAG: "", FTR: "" }, "Premier League", meta, "2627");
   assert.equal(upcoming.fixture.status.short, "SCHEDULED");
