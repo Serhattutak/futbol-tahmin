@@ -37,51 +37,65 @@ async function runStagingSmoke({
     created = true;
 
     const store = new NeonPredictionLedgerStore({ pool, table });
-    await store.validateSchema();
+    const ledger = new AsyncPredictionLedger({ store });
+    await ledger.initialize();
     const ledgerId = `staging-smoke-${suffix}`;
+    const kickoffTime = new Date(Date.now() - 60_000).toISOString();
     const event = {
       type: "prediction",
       ledgerId,
-      snapshot: { ledgerId, predictionCreatedAt: new Date().toISOString() },
+      snapshot: {
+        ledgerId,
+        fixtureId: `staging-fixture-${suffix}`,
+        predictionCreatedAt: new Date().toISOString(),
+        kickoffTime,
+        providerFixtureIds: { espn: `fixture-${suffix}` },
+        homeProbability: 0.6,
+        drawProbability: 0.2,
+        awayProbability: 0.2,
+        over15: 0.7,
+        over25: 0.45,
+        over35: 0.2,
+        bttsYes: 0.5,
+      },
     };
-    const first = await store.append(event);
-    const duplicate = await store.append(event);
+    const first = await ledger.appendEvent(event);
+    const duplicate = await ledger.appendEvent(event);
     if (!first.saved || duplicate.saved) throw new Error("STAGING_SMOKE_IDEMPOTENCY_FAILED");
 
-    const settlement = {
-      type: "settlement",
-      ledgerId,
-      result: { resultStatus: "settled", actualHomeGoals: 1, actualAwayGoals: 0 },
-    };
-    const conflict = {
-      type: "conflict",
-      ledgerId,
-      evidence: [{ home: 1, away: 0 }, { home: 0, away: 0 }],
-    };
-    const settlementWrite = await store.append(settlement);
-    const conflictWrite = await store.append(conflict);
-    if (!settlementWrite.saved || !conflictWrite.saved) throw new Error("STAGING_SMOKE_EVENT_TYPES_FAILED");
+    const finalFixture = score => ({
+      provider: "espn",
+      providerFixtureId: `fixture-${suffix}`,
+      status: "FINISHED",
+      result: { status: "FINISHED", homeGoals: score.home, awayGoals: score.away },
+    });
+    const settlement = await ledger.settle(ledgerId, [finalFixture({ home: 1, away: 0 })]);
+    const conflict = await ledger.settle(ledgerId, [finalFixture({ home: 0, away: 0 })]);
+    if (!settlement.saved || conflict.reason !== "RESULT_CONFLICT") {
+      throw new Error("STAGING_SMOKE_SETTLEMENT_OR_CONFLICT_FAILED");
+    }
 
     restorePool = await createPool(connectionString);
     const restoredStore = new NeonPredictionLedgerStore({ pool: restorePool, table });
-    const ledger = new AsyncPredictionLedger({ store: restoredStore });
-    await ledger.initialize();
-    const entries = ledger.entries();
-    const status = await ledger.status();
+    const restoredLedger = new AsyncPredictionLedger({ store: restoredStore });
+    await restoredLedger.initialize();
+    const entries = restoredLedger.entries();
+    const status = await restoredLedger.status();
     if (entries.length !== 1 || entries[0].ledgerId !== ledgerId ||
-        entries[0].resultStatus !== "settled" || entries[0].conflicts?.length !== 1 ||
-        status.eventCount !== 3 || status.predictionCount !== 1 ||
-        status.settlementCount !== 1 || status.conflictCount !== 1) {
+        entries[0].resultStatus !== "settled" || entries[0].actualHomeGoals !== 1 ||
+        entries[0].conflicts?.length !== 1 || status.eventCount !== 3 ||
+        status.predictionCount !== 1 || status.settlementCount !== 1 ||
+        status.conflictCount !== 1) {
       throw new Error("STAGING_SMOKE_RESTORE_FAILED");
     }
-
     return {
       type: "LEDGER_STAGING_SMOKE_PASSED",
       table,
       firstAppendSaved: first.saved,
       duplicateAppendSaved: duplicate.saved,
-      settlementSaved: settlementWrite.saved,
-      conflictSaved: conflictWrite.saved,
+      settlementSaved: settlement.saved,
+      settlementReason: settlement.reason,
+      conflictReason: conflict.reason,
       restoredEntryCount: entries.length,
       eventCount: status.eventCount,
       predictionCount: status.predictionCount,
