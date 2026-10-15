@@ -2,7 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { normalizeStatus } = require("./fixtureNormalization");
-const DEFAULT_DIRECTORY = path.join(__dirname, "../data/prediction-ledger");
+const DEFAULT_DIRECTORY = process.env.ZEUS_LEDGER_DIR ? path.join(path.resolve(process.env.ZEUS_LEDGER_DIR), "prediction-ledger") : path.join(__dirname, "../data/prediction-ledger");
 const MODELS = ["MODEL_4_0", "MODEL_4_1"];
 const hash = value => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const clone = value => JSON.parse(JSON.stringify(value));
