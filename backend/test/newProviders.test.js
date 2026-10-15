@@ -25,3 +25,7 @@ test("OpenFootball historical lookup covers additional public-domain league data
     { name: "Pro League", country: "Belgium" },
   ]) assert.equal(openFootball.supportsHistoricalLeague(league), true, league.name);
 });
+
+test("OpenFootball date filtering uses Turkey local calendar date for timed kickoffs", () => {
+  assert.equal(openFootball.turkeyDate("2026-10-14T21:30:00.000Z"), "2026-10-15");
+});
