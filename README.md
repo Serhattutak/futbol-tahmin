@@ -14,7 +14,15 @@ ZEUS AI, futbol maçlarını mevcut ve doğrulanabilir veriler üzerinden analiz
 - Frontend: React, Vite
 - Backend: Node.js, Express
 - Güvenlik ve istek sınırlandırma: Helmet, express-rate-limit
-- Dağıtım yapılandırması: Vercel (vercel.json)
+- Dağıtım: Render (web arayüzü ve API ayrı servisler olarak dağıtılır)
+
+## Dağıtım adresleri
+
+- Web arayüzü: https://zeus-one-betting.onrender.com
+- Üretim API'si: https://zeus-one-betting-api.onrender.com
+- İzole ledger staging API'si: https://zeus-ai-ledger-staging.onrender.com
+
+Staging servisi, üretim servislerinden ayrı bir dalda çalışır. Staging veritabanı veya kimlik bilgileri üretim ortamında kullanılmamalıdır. Ayrıntılar için [Aşama 7 üretime hazırlık kontrolü](docs/STAGE-7-PRODUCTION-READINESS.md) belgesine bakın.
 
 ## Yerel geliştirme
 
