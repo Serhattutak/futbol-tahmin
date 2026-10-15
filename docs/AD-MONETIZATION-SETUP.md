@@ -5,6 +5,11 @@
 - Ödül yalnızca reklam gerçekten tamamlandığında verilir; tahmin olasılıklarını veya model sonuçlarını değiştirmez.
 - Reklam kimlikleri eksikse reklam alanları gösterilmez. Sahte reklam veya gelir verisi üretilmez.
 
+## Kamuya açık yasal bilgilendirme
+- `VITE_OPERATOR_NAME`: Gizlilik/kullanım ekranında gösterilecek gerçek işletmeci veya işletme unvanı.
+- `VITE_CONTACT_EMAIL`: Kullanıcıların gizlilik ve veri talepleri için kullanacağı, yayınlanmasına izin verilen iletişim adresi.
+- Bu iki değer doğrulanmadan siteyi reklam onayına hazır kabul etme. Ekran, eksik değerlerde yapılandırma uyarısı gösterir; uydurma kimlik veya iletişim bilgisi kullanmaz.
+
 ## Ortam değişkenleri
 - `VITE_ADSENSE_CLIENT_ID`: AdSense yayıncı kimliği (`ca-pub-...`)
 - `VITE_ADSENSE_BANNER_SLOT_ID`: AdSense banner birimi kimliği
