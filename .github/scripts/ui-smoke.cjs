@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1, timezoneId: "Europe/Istanbul" });
     page.on("pageerror", error => errors.push(error.message));
     const fixtureResponse = page.waitForResponse(response =>
-      response.url().includes("/api/football-test?date=2025-10-12") && response.status() === 200,
+      response.url().includes("/api/football-test?date=2025-10-12"),
       { timeout: 90000 }
     );
     await page.goto("http://127.0.0.1:4173/?date=2025-10-12", { waitUntil: "domcontentloaded" });
@@ -16,6 +16,7 @@ const { chromium } = require("playwright");
     await dateInput.waitFor({ state: "visible", timeout: 30000 });
     assert.equal(await dateInput.inputValue(), "2025-10-12", "deep-link date should be preserved");
     const response = await fixtureResponse;
+    assert.equal(response.status(), 200, "fixture API should return HTTP 200");
     const payload = await response.json();
     assert.equal(payload.success, true, "fixture API should return success");
     assert.ok(payload.results > 0, "real public-source fixtures should be shown for Turkey-local date 2025-10-12");
