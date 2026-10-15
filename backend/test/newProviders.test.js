@@ -203,3 +203,11 @@ test("weekly source audit discovers unmapped season files without mistaking regi
   assert.equal(candidates.some(candidate => candidate.path === "example/2025-26_ex1.txt"), false);
   assert.equal(candidates.some(candidate => candidate.path === "2025-26/region/1_Prov.txt"), false);
 });
+
+test("TheSportsDB cache windows respect the free API update cadence", () => {
+  assert.equal(theSportsDb.cacheTtl("searchteams.php"), 24 * 60 * 60 * 1000);
+  assert.equal(theSportsDb.cacheTtl("eventspastleague.php"), 15 * 60 * 1000);
+  assert.equal(theSportsDb.cacheTtl("eventslast.php"), 15 * 60 * 1000);
+  assert.equal(theSportsDb.cacheTtl("eventsday.php"), 30 * 60 * 1000);
+  assert.equal(theSportsDb.cacheTtl("lookupevent.php"), 5 * 60 * 1000);
+});
