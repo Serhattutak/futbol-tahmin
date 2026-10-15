@@ -62,7 +62,95 @@ async function getTeamForm(teamId, before = new Date().toISOString(), context = 
   const team = context.team || { name: TEAM_ALIASES.get(teamId) };
   return collectDivisionHistory({ team, before, fixtureId: context.fixtureId, league: context.league, catalog: HISTORICAL_LEAGUES, load: loadLeague });
 }
-async function getH2H() { return null; }
+function matchBeforeFixture(match, before) {
+  const matchDate = String(match?.fixture?.date || "").slice(0, 10);
+  const beforeDate = String(before || "").slice(0, 10);
+  if (!matchDate || !beforeDate) return false;
+  const dateOnly = match.fixture?.kickoffPrecision === "date" || /^\\d{4}-\\d{2}-\\d{2}$/.test(match.fixture?.date || "");
+  // A date-only result cannot prove it finished before another match on the same day.
+  if (dateOnly) return matchDate < beforeDate;
+  return Number.isFinite(Date.parse(match.fixture.date)) && Date.parse(match.fixture.date) < Date.parse(before);
+}
+
+function selectHeadToHead(fixtures, homeName, awayName, before) {
+  const home = normalizeName(homeName);
+  const away = normalizeName(awayName);
+  if (!home || !away) return [];
+  return (fixtures || []).filter((match) => {
+    const a = normalizeName(match.teams?.home?.name);
+    const b = normalizeName(match.teams?.away?.name);
+    return (a === home && b === away || a === away && b === home)
+      && matchBeforeFixture(match, before)
+      && match.fixture?.status?.short === "FINISHED"
+      && Number.isFinite(match.goals?.home) && Number.isFinite(match.goals?.away)
+      && match.goals.home >= 0 && match.goals.away >= 0;
+  }).sort((a, b) => Date.parse(b.fixture.date) - Date.parse(a.fixture.date)).slice(0, 10);
+}
+
+function calculateStandingsRows(fixtures, before) {
+  const table = new Map();
+  const ensure = (team) => {
+    const key = normalizeName(team?.name);
+    if (!key) return null;
+    if (!table.has(key)) table.set(key, { team: { id: team.id, name: team.name }, rank: 0, points: 0, all: { played: 0, win: 0, draw: 0, lose: 0, goals: { for: 0, against: 0, diff: 0 } } });
+    return table.get(key);
+  };
+  for (const match of fixtures || []) {
+    const home = ensure(match.teams?.home);
+    const away = ensure(match.teams?.away);
+    if (!home || !away || !matchBeforeFixture(match, before) || match.fixture?.status?.short !== "FINISHED"
+      || !Number.isFinite(match.goals?.home) || !Number.isFinite(match.goals?.away)
+      || match.goals.home < 0 || match.goals.away < 0) continue;
+    const hg = match.goals.home;
+    const ag = match.goals.away;
+    home.all.played++; away.all.played++;
+    home.all.goals.for += hg; home.all.goals.against += ag;
+    away.all.goals.for += ag; away.all.goals.against += hg;
+    if (hg > ag) { home.points += 3; home.all.win++; away.all.lose++; }
+    else if (hg < ag) { away.points += 3; away.all.win++; home.all.lose++; }
+    else { home.points++; away.points++; home.all.draw++; away.all.draw++; }
+  }
+  const rows = [...table.values()];
+  for (const row of rows) row.all.goals.diff = row.all.goals.for - row.all.goals.against;
+  rows.sort((a, b) => b.points - a.points || b.all.goals.diff - a.all.goals.diff || b.all.goals.for - a.all.goals.for || a.team.name.localeCompare(b.team.name));
+  rows.forEach((row, index) => { row.rank = index + 1; });
+  return rows;
+}
+
+function previousSeasonKey(meta, date) {
+  const current = seasonKeyFor(meta, date);
+  if (meta.calendarYear) return String(Number(current) - 1);
+  const start = Number(current.slice(0, 4)) - 1;
+  return `${start}-${String(start + 1).slice(-2)}`;
+}
+
+async function getH2H(homeId, awayId, context = {}) {
+  const leagueName = context.league?.name;
+  const meta = HISTORICAL_LEAGUES[leagueName];
+  const homeName = context.home?.name || TEAM_ALIASES.get(String(homeId));
+  const awayName = context.away?.name || TEAM_ALIASES.get(String(awayId));
+  const before = context.before;
+  if (!meta || !homeName || !awayName || !before) return [];
+  const date = String(before).slice(0, 10);
+  const seasons = [...new Set([seasonKeyFor(meta, date), previousSeasonKey(meta, date)])];
+  const fixtures = [];
+  for (const season of seasons) {
+    try { fixtures.push(...await loadLeague(leagueName, season)); } catch { /* Preserve results from any available season. */ }
+  }
+  return selectHeadToHead(fixtures, homeName, awayName, before);
+}
+
+async function getStandings(leagueId, season, context = {}) {
+  const leagueName = context.league?.name || Object.keys(HISTORICAL_LEAGUES).find((name) => `of-league-${normalizeName(name)}` === String(leagueId));
+  const meta = HISTORICAL_LEAGUES[leagueName];
+  const before = context.before;
+  if (!meta || !before) return [];
+  const seasonKeyValue = season || seasonKeyFor(meta, String(before).slice(0, 10));
+  let fixtures;
+  try { fixtures = await loadLeague(leagueName, seasonKeyValue); } catch { return []; }
+  const rows = calculateStandingsRows(fixtures, before);
+  return rows.length ? [{ league: { id: leagueId, name: leagueName, standings: [rows] } }] : [];
+}
+
 // Bulk historical replay shares the existing provider normalization and cache.
-async function getStandings() { return null; }
-module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(LEAGUES[name]) };
+module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, selectHeadToHead, calculateStandingsRows, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(LEAGUES[name]) };
