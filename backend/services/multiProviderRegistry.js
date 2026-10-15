@@ -183,11 +183,11 @@ class MultiProviderRegistry {
       if (!provider.capabilities?.some((capability) => ["historicalResults", "teamForm", "form"].includes(capability)) || !provider.getTeamForm) { historyAttempts.push({ provider: name, outcome: "history_not_supported" }); continue; }
       if (provider.supportsHistoricalLeague ? !provider.supportsHistoricalLeague(updated.league) : provider.supportsLeague && !provider.supportsLeague(updated.league.name)) { historyAttempts.push({ provider: name, outcome: "league_not_supported" }); continue; }
       let context = updated.providerTeams?.[name];
-      if (!context && name !== "openfootball") {
+      if (!context && name !== "openfootball" && !provider.historyLookupByName) {
         updated = await this.matchProvider(updated, provider);
         context = updated.providerTeams?.[name];
       }
-      if (!context && name !== "openfootball") { historyAttempts.push({ provider: name, outcome: "fixture_not_matched" }); continue; }
+      if (!context && name !== "openfootball" && !provider.historyLookupByName) { historyAttempts.push({ provider: name, outcome: "fixture_not_matched" }); continue; }
       const team = updated[side === "home" ? "homeTeam" : "awayTeam"];
       const league = context?.league || { ...updated.league, season: updated.season };
       try {
