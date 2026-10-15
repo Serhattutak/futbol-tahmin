@@ -28,6 +28,13 @@ const LEAGUES = {
 
 const cache = new Map();
 const normalized = (value) => String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+function turkeyDate(kickoff) {
+  const date = new Date(kickoff);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const part = (type) => parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
 function seasonFor(date) {
   const value = new Date(`${date}T00:00:00Z`);
   const year = value.getUTCFullYear();
@@ -114,7 +121,7 @@ async function getFixtures(date, league) {
   const season = seasonFor(date);
   const results = new Array(names.length);
   await forEachConcurrent(names, 4, async (name, index) => {
-    try { results[index] = (await loadLeague(name, season)).filter((fixture) => fixture.fixture.date.slice(0, 10) === date); }
+    try { results[index] = (await loadLeague(name, season)).filter((fixture) => (fixture.fixture.kickoffPrecision === "date" ? fixture.fixture.date.slice(0, 10) : turkeyDate(fixture.fixture.date)) === date); }
     catch { results[index] = []; }
   });
   return results.flat();
@@ -154,5 +161,5 @@ module.exports = {
   capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form"],
   getFixtures, getFixture, getTeamForm, supportsLeague: (name) => Boolean(LEAGUES[name]),
   supportsHistoricalLeague: (league) => Boolean(LEAGUES[league?.name]),
-  LEAGUES, seasonFor, seasonKeys, parseCsvLine, parseDate, toFixture,
+  LEAGUES, seasonFor, seasonKeys, parseCsvLine, parseDate, toFixture, turkeyDate,
 };
