@@ -50,6 +50,22 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: "artifacts/zeus-desktop.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "artifacts/zeus-mobile.png", fullPage: true });
+    await page.getByRole("button", { name: "Maçlar" }).click();
+    const leagueSelect = page.locator(".toolbar select");
+    await leagueSelect.waitFor({ state: "visible", timeout: 10000 });
+    const leagueOptions = await leagueSelect.locator("option").allTextContents();
+    const selectedLeague = leagueOptions.find(name => name.trim() && name.trim() !== "Tümü");
+    assert.ok(selectedLeague, "the real fixture list should expose at least one league filter option");
+    await leagueSelect.selectOption({ label: selectedLeague });
+    await page.waitForFunction(name => {
+      const rows = [...document.querySelectorAll(".match-row")];
+      return rows.length > 0 && rows.every(row => row.innerText.includes(name));
+    }, selectedLeague, { timeout: 10000 });
+    await page.locator(".match-row").first().click();
+    await page.locator(".detail-view").waitFor({ state: "visible", timeout: 15000 });
+    await page.getByRole("button", { name: "Geri dön" }).waitFor({ state: "visible", timeout: 15000 });
+    await page.screenshot({ path: "artifacts/zeus-match-detail-mobile.png", fullPage: true });
+    await page.getByRole("button", { name: "Geri dön" }).click();
     await todayButton.click();
     await page.waitForFunction(() => {
       const input = document.querySelector('input[aria-label="Maç analiz tarihi"]');
