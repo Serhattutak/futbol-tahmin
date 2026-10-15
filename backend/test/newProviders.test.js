@@ -178,3 +178,11 @@ test("OpenFootball text source preserves scoreless scheduled fixtures for live d
   assert.equal(fixtures[0].goals.home, null);
   assert.equal(fixtures[0].goals.away, null);
 });
+
+test("weekly OpenFootball source audit script is syntactically valid", () => {
+  const fs = require("node:fs");
+  const vm = require("node:vm");
+  const path = require("node:path");
+  const file = path.resolve(__dirname, "../scripts/auditOpenFootballTextSources.js");
+  assert.doesNotThrow(() => new vm.Script(fs.readFileSync(file, "utf8"), { filename: file }));
+});
