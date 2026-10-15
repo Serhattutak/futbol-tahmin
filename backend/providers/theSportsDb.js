@@ -37,4 +37,4 @@ async function getTeamForm(_teamId, before, context = {}) {
 }
 async function getH2H() { return null; }
 async function getStandings() { return null; }
-module.exports = { name: "thesportsdb", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, toFixture, selectTeamHistory };
+module.exports = { name: "thesportsdb", configured: true, enabled: true, historyLookupByName: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, toFixture, selectTeamHistory };
