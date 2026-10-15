@@ -68,7 +68,7 @@ async function reconcileFilesystemEvents({ sourceEvents, destinationStore } = {}
       // Equivalent conflict observations can share an identity by design;
       // duplicate non-conflict events in the source indicate corruption.
       const previous = sourceById.get(id);
-      if (event.type !== "conflict" && JSON.stringify(previous) !== JSON.stringify(event)) {
+      if (event.type !== "conflict" && canonicalJson(previous) !== canonicalJson(event)) {
         throw new Error("SOURCE_EVENT_ID_COLLISION");
       }
       continue;
