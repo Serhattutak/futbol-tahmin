@@ -17,7 +17,11 @@ function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
   // A date-only source cannot provide a reliable kickoff time. Merge it with a timed
   // source on the same calendar date rather than displaying the same match twice.
   if (a.kickoffPrecision === "date" || b.kickoffPrecision === "date") {
-    return a.kickoff.slice(0, 10) === b.kickoff.slice(0, 10);
+    const dayA = Date.parse(`${a.kickoff.slice(0, 10)}T00:00:00Z`);
+    const dayB = Date.parse(`${b.kickoff.slice(0, 10)}T00:00:00Z`);
+    // Date-only feeds omit kickoff time and may use the league's local match day.
+    // A timed source can therefore place the same real fixture on the adjacent UTC date.
+    return Number.isFinite(dayA) && Number.isFinite(dayB) && Math.abs(dayA - dayB) <= 24 * 60 * 60 * 1000;
   }
   return Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= tolerance;
 }
