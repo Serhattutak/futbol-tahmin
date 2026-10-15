@@ -112,6 +112,10 @@ test("OpenFootball text source parses dated results in both supported match-line
   assert.equal(finland[0].fixture.status.short, "FINISHED");
 });
 
+test("OpenFootball text history lookup does not require a fixture-feed match", () => {
+  assert.equal(openFootballText.historyLookupByName, true);
+});
+
 test("OpenFootball text catalogue contains additional verified country and division datasets", () => {
   for (const league of [
     { name: "Swiss Challenge League", country: "Switzerland" },
