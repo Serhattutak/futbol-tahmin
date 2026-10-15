@@ -268,7 +268,7 @@ function DateSelector({ selectedDate, onChange }) {
   return <section className="date-selector">
     <div className="date-nav">
       <button type="button" onClick={() => onChange(dateKey(new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() - 1)))}>← Önceki Gün</button>
-      <button className="today-button" type="button" onClick={() => onChange(dateKey(today))}>BUGÜN</button>
+      <button className={selectedDate === dateKey(today) ? "today-button active" : "today-button"} type="button" aria-pressed={selectedDate === dateKey(today)} onClick={() => onChange(dateKey(today))}>BUGÜN</button>
       <label className="date-picker-label">Tarih seç <input type="date" value={selectedDate} onChange={event => onChange(event.target.value)} aria-label="Maç analiz tarihi" /></label>
       <button type="button" onClick={() => onChange(dateKey(new Date(selected.getFullYear(), selected.getMonth(), selected.getDate() + 1)))}>Sonraki Gün →</button>
     </div>
