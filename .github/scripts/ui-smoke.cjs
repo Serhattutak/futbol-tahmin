@@ -50,6 +50,13 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: "artifacts/zeus-desktop.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "artifacts/zeus-mobile.png", fullPage: true });
+    await todayButton.click();
+    await page.waitForFunction(() => {
+      const input = document.querySelector('input[aria-label="Maç analiz tarihi"]');
+      const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+      const p = Object.fromEntries(parts.map(part => [part.type, part.value]));
+      return input?.value === `${p.year}-${p.month}-${p.day}` && document.querySelector(".today-button")?.getAttribute("aria-pressed") === "true";
+    }, null, { timeout: 5000 });
     const dateNavFits = await page.locator(".date-nav").evaluate(el => el.scrollWidth <= el.clientWidth + 1);
     assert.equal(dateNavFits, true, "date navigation must fit a 390px mobile viewport without horizontal overflow");
     await dateInput.fill("2025-10-13");
