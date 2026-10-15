@@ -123,11 +123,25 @@ test("Scheduler catches up immediately after cold start when no recent run exist
   s.capture.stopScheduler();
 });
 
+test("A recent attempt does not mask an old or missing successful run", async t => {
+  const s = setup(t);
+  fs.mkdirSync(s.args.config.directory, { recursive: true });
+  fs.writeFileSync(path.join(s.args.config.directory, "status.json"), JSON.stringify({
+    lastRunAt: new Date(NOW).toISOString(),
+    lastSuccessfulRunAt: "2026-09-17T00:00:00.000Z",
+    lastAttempts: {},
+  }));
+  const status = s.capture.status();
+  assert.equal(status.captureHealth, "stale");
+  assert.ok(status.lastRunAgeMs < s.args.config.intervalMs);
+  assert.ok(status.lastSuccessfulRunAgeMs > s.args.config.intervalMs * 2);
+});
+
 test("Capture status explicitly marks missing and stale runs", async t => {
   const s = setup(t);
-  assert.equal(s.capture.status().captureHealth, "never_run");
+  assert.equal(s.capture.status().captureHealth, "never_succeeded");
   fs.mkdirSync(s.args.config.directory, { recursive: true });
-  fs.writeFileSync(path.join(s.args.config.directory, "status.json"), JSON.stringify({ lastRunAt: "2026-09-17T00:00:00.000Z", lastAttempts: {} }));
+  fs.writeFileSync(path.join(s.args.config.directory, "status.json"), JSON.stringify({ lastRunAt: "2026-09-17T00:00:00.000Z", lastSuccessfulRunAt: "2026-09-17T00:00:00.000Z", lastAttempts: {} }));
   assert.equal(s.capture.status().captureHealth, "stale");
   assert.ok(s.capture.status().lastRunAgeMs > s.args.config.intervalMs * 2);
 });
