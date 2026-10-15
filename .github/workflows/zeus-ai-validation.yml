@@ -54,7 +54,9 @@ jobs:
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 7
+      # Keep production-provider quota use low: run the live check after a main-branch deployment.
       - name: Verify live Render API compatibility
+        if: github.event_name == 'push'
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: node .github/scripts/live-api-smoke.cjs
