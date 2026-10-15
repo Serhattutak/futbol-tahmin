@@ -113,7 +113,7 @@ class MultiProviderRegistry {
     this.cache.set(key, { value, expiresAt: this.now() + 5 * 60 * 1000 }); this.prune(); return value;
   }
   async matchProvider(fixture, provider, options = {}) {
-    if (fixture.providerTeams?.[provider.name]) return fixture;
+    if (fixture.providerTeams?.[provider.name] || !this.canRequest(provider)) return fixture;
     if (provider.supportsLeague && !provider.supportsLeague(fixture.league.name)) return fixture;
     const data = await this.providerRequest(provider, `match:${provider.name}:${fixture.kickoff.slice(0, 10)}:${normalize(fixture.league.name)}`, () => provider.getFixtures(fixture.kickoff.slice(0, 10), fixture.league.name), options);
     const matches = data.filter((candidate) => sameFixture(fixture, candidate));
@@ -131,7 +131,10 @@ class MultiProviderRegistry {
   }
   canRequest(provider) {
     const status = this.status.get(provider.name);
-    return provider.enabled && !(["quota", "authentication"].includes(status?.errorCategory) && this.now() - Date.parse(status.lastRetrievedAt) < 5 * 60 * 1000);
+    const elapsed = this.now() - Date.parse(status?.lastRetrievedAt);
+    if (status?.errorCategory === "quota" && elapsed < 15 * 60 * 1000) return false;
+    if (status?.errorCategory === "authentication" && elapsed < 60 * 60 * 1000) return false;
+    return Boolean(provider.enabled);
   }
   getTeamHistoricalMatches(team, beforeDate, options) { return this.historicalData.getTeamHistoricalMatches(team, beforeDate, options); }
   getHistoricalForm(fixture, side) { return this.getTeamHistoricalMatches(fixture[side === "home" ? "homeTeam" : "awayTeam"], fixture.kickoff, { fixture, side }); }
@@ -235,15 +238,23 @@ class MultiProviderRegistry {
   getBestAvailableProvider(capability) { return this.providers.find((provider) => provider.enabled && provider.capabilities?.includes(capability) && this.status.get(provider.name)?.available !== false) || null; }
   async getResults(providerFixtureIds = {}) {
     let ids = normalizeProviderIds(providerFixtureIds);
-    const results = []; let transient = null; let attempted = false;
+    const results = []; let transient = null; let attempted = false; let skippedError = null;
     for (const provider of this.providers) {
       const fixtureId = ids[provider.name]; if (!fixtureId || !provider.enabled) continue;
+      if (!this.canRequest(provider)) {
+        const category = this.status.get(provider.name)?.errorCategory;
+        if (["quota", "authentication"].includes(category)) skippedError ||= new ProviderError(category, `Provider ${provider.name} is cooling down after ${category}.`);
+        continue;
+      }
       attempted = true;
       try { results.push(...await provider.getFixture(fixtureId)); this.updateStatus(provider.name, true); }
       catch (error) { this.updateStatus(provider.name, false, error.category || "provider_unavailable"); if (!["no_data", "unsupported"].includes(error.category)) transient = error; }
     }
     if (transient) throw transient;
-    if (!attempted) throw new ProviderError("unsupported", "No enabled result provider.");
+    if (!attempted) {
+      if (skippedError) throw skippedError;
+      throw new ProviderError("unsupported", "No enabled result provider.");
+    }
     if (results.length === 1) {
       const enriched = await this.enrich(results[0], { strict: true });
       ids = enriched.providerFixtureIds;
