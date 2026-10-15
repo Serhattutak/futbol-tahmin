@@ -35,6 +35,7 @@ test("As-of history filter excludes future, same-day date-only, and unfinished r
   assert.equal(isCompletedBefore(completed, now), true);
   assert.equal(isCompletedBefore(future, now), false);
   assert.equal(isCompletedBefore(dateOnlySameDay, now), false);
+  assert.equal(isCompletedBefore({ ...dateOnlySameDay, fixture: { ...dateOnlySameDay.fixture, kickoffPrecision: "time" } }, now), false);
   assert.equal(isCompletedBefore(unfinished, now), false);
   const input = { fixture: {}, homeMatches: [completed, future, dateOnlySameDay, unfinished], awayMatches: [completed, future], h2hMatches: [future] };
   const safe = sanitizeHistoryAsOf(input, now);
@@ -96,7 +97,7 @@ test("Feature schema mismatch prevents Model 4.1 readiness", async () => {
 
 test("Shadow uses real inputs, calibrated probabilities, and preserves Model 4.0", async () => {
   const s = await service(); const result = await s.analyze("real-fixture");
-  const original = analyzeCollectedFixture(await realInput(), { now, persist: false });
+  const original = analyzeCollectedFixture(sanitizeHistoryAsOf(await realInput(), now), { now, persist: false });
   assert.equal(result.modelVersion, MODEL_4_0); assert.equal(result.MODEL_4_1_READY, true);
   assert.deepEqual(result.probabilities, original.probabilities);
   const advanced = result.models[MODEL_4_1];
