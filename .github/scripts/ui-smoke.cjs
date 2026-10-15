@@ -50,7 +50,7 @@ const { chromium } = require("playwright");
     await page.screenshot({ path: "artifacts/zeus-desktop.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "artifacts/zeus-mobile.png", fullPage: true });
-    await page.getByRole("button", { name: "Maçlar" }).click();
+    await page.locator(".bottom-nav .nav-item").filter({ hasText: "Maçlar" }).click();
     const leagueSelect = page.locator(".toolbar select");
     await leagueSelect.waitFor({ state: "visible", timeout: 10000 });
     const leagueOptions = await leagueSelect.locator("option").allTextContents();
