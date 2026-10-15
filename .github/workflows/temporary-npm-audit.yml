@@ -1,0 +1,32 @@
+name: Temporary npm audit diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/package.json"
+      - "backend/package-lock.json"
+      - ".github/workflows/temporary-npm-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies without lifecycle scripts
+        working-directory: backend
+        run: npm ci --ignore-scripts
+      - name: Report exact audit findings
+        working-directory: backend
+        shell: bash
+        run: |
+          npm audit --json > audit-report.json || true
+          node -e 'const a=require("./audit-report.json"); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities, vulnerabilities:Object.values(a.vulnerabilities||{}).map(v=>({name:v.name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:v.via.map(x=>typeof x==="string"?x:{name:x.name,title:x.title,url:x.url,range:x.range})}))},null,2))'
