@@ -180,7 +180,7 @@ class MultiProviderRegistry {
     const methods = { h2hMatches: "h2h", standingsResponse: "standings", oddsResponse: "odds", recentStats: "statistics" };
     for (const [field, capability] of Object.entries(methods)) {
       if (!includeMatchStatistics) continue;
-      if (Date.parse(fixture.kickoff) <= this.now() && ["standings", "odds"].includes(capability)) { data.sourceMetadata.unavailable[field] = "no_pre_match_snapshot"; continue; }
+      // Historical bookmaker odds require a timestamped archive, but historical standings can be reconstructed from completed fixtures before kickoff.\n      if (Date.parse(fixture.kickoff) <= this.now() && capability === "odds") { data.sourceMetadata.unavailable[field] = "no_pre_match_snapshot"; continue; }
       if (capability !== "teamForm" && (data.homeMatches.length < 5 || data.awayMatches.length < 5)) {
         data.sourceMetadata.unavailable[field] = this.providers.some(provider => provider.enabled && provider.capabilities?.includes(capability)) ? "unavailable" : "not_supported";
         continue;
@@ -194,8 +194,8 @@ class MultiProviderRegistry {
         try {
           let value;
           if (capability === "teamForm") value = await provider.getTeamForm(context[field === "homeMatches" ? "home" : "away"].id, fixture.kickoff);
-          if (capability === "h2h") value = await provider.getH2H(context.home.id, context.away.id);
-          if (capability === "standings") value = await provider.getStandings(context.league?.id, context.league?.season);
+          if (capability === "h2h") value = await provider.getH2H(context.home.id, context.away.id, { before: fixture.kickoff, league: context.league });
+          if (capability === "standings") value = await provider.getStandings(context.league?.id, context.league?.season, { before: fixture.kickoff, league: context.league });
           if (capability === "odds") value = await provider.getOdds(fixture.providerFixtureIds[provider.name]);
           if (capability === "statistics") {
             let matches = [...data.homeMatches.slice(0, 5), ...data.awayMatches.slice(0, 5)].filter((m) => m.provider === provider.name);
