@@ -257,7 +257,7 @@ class MultiProviderRegistry {
     }
     if (results.length === 1) {
       const enriched = await this.enrich(results[0], { strict: true });
-      ids = enriched.providerFixtureIds;
+      ids = normalizeProviderIds(enriched.providerFixtureIds || providerFixtureIds);
       for (const provider of this.providers) {
         if (!provider.enabled || !ids[provider.name] || results.some((item) => item.provider === provider.name) || !this.canRequest(provider)) continue;
         try { results.push(...await provider.getFixture(ids[provider.name])); } catch (error) { if (!["no_data", "unsupported"].includes(error.category)) throw error; }
