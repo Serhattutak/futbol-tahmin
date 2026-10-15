@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { ProductionAnalysis, validateInputs, STATISTICS_VERSION } = require("../services/productionAnalysis");
+const { ProductionAnalysis, validateInputs, STATISTICS_VERSION, isCompletedBefore, sanitizeHistoryAsOf } = require("../services/productionAnalysis");
 const { loadArtifact, createArtifactLoader, validateArtifact, MODEL_4_0, MODEL_4_1 } = require("../services/modelVersions");
 const { loadDataset } = require("../services/benchmarkDataset");
 const { replayInput } = require("../services/chronologicalBenchmark");
@@ -23,6 +23,48 @@ async function service(options = {}) {
   const input = await realInput();
   return new ProductionAnalysis({ collect: async () => input, calculate: analyzeCollectedFixture, now: () => now, file: null, logger: () => {}, ...options });
 }
+
+test("As-of history filter excludes future, same-day date-only, and unfinished results", async () => {
+  const completed = {
+    fixture: { id: "past", date: "2026-09-16T20:00:00.000Z", status: { short: "FT" }, kickoffPrecision: "time" },
+    goals: { home: 1, away: 0 },
+  };
+  const future = { ...structuredClone(completed), fixture: { ...completed.fixture, id: "future", date: "2026-09-17T01:00:00.000Z" } };
+  const dateOnlySameDay = { ...structuredClone(completed), fixture: { ...completed.fixture, id: "date-only", date: "2026-09-17", kickoffPrecision: "date" } };
+  const unfinished = { ...structuredClone(completed), fixture: { ...completed.fixture, id: "unfinished", date: "2026-09-16T21:00:00.000Z", status: { short: "NS" } } };
+  assert.equal(isCompletedBefore(completed, now), true);
+  assert.equal(isCompletedBefore(future, now), false);
+  assert.equal(isCompletedBefore(dateOnlySameDay, now), false);
+  assert.equal(isCompletedBefore(unfinished, now), false);
+  const input = { fixture: {}, homeMatches: [completed, future, dateOnlySameDay, unfinished], awayMatches: [completed, future], h2hMatches: [future] };
+  const safe = sanitizeHistoryAsOf(input, now);
+  assert.deepEqual(safe.homeMatches.map(m => m.fixture.id), ["past"]);
+  assert.deepEqual(safe.awayMatches.map(m => m.fixture.id), ["past"]);
+  assert.deepEqual(safe.h2hMatches, []);
+  assert.equal(input.homeMatches.length, 4, "sanitizing must not mutate cached provider data");
+});
+
+test("ProductionAnalysis passes only completed as-of histories into model calculation", async () => {
+  const input = await realInput();
+  const future = structuredClone(input.homeMatches[0]);
+  future.fixture = { ...future.fixture, id: "future-after-as-of", date: new Date(now + 60 * 60_000).toISOString(), status: { short: "FT" }, kickoffPrecision: "time" };
+  input.homeMatches = [...input.homeMatches, future];
+  input.awayMatches = [...input.awayMatches, structuredClone(future)];
+  input.h2hMatches = [...(input.h2hMatches || []), structuredClone(future)];
+  const seen = [];
+  const s = await service({ collect: async () => input, calculate: (collected, options) => {
+    seen.push(collected);
+    return analyzeCollectedFixture(collected, options);
+  } });
+  await s.analyze("as-of-filter");
+  assert.ok(seen.length >= 1);
+  for (const collected of seen) {
+    for (const rows of [collected.homeMatches, collected.awayMatches, collected.h2hMatches]) {
+      assert.ok(rows.every(row => isCompletedBefore(row, now)));
+      assert.ok(rows.every(row => row.fixture.id !== "future-after-as-of"));
+    }
+  }
+});
 
 test("Production loads and freezes the authentic locked artifact", () => {
   const a = loadArtifact(); const b = loadArtifact();
