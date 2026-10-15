@@ -159,6 +159,37 @@ test("best-predictions retains non-numeric discovery as explicit insufficient as
   } finally { providerRegistry.providers = original; providerRegistry.fixtureDiscovery = originalDiscovery; providerRegistry.known.clear(); providerRegistry.cache.clear(); }
 });
 
+test("best-predictions includes finished fixtures as historical analysis, never as a pick", async () => {
+  const { app, providerRegistry } = require("../server");
+  const originalProviders = providerRegistry.providers;
+  const originalDiscovery = providerRegistry.fixtureDiscovery;
+  const kickoff = "2026-09-20T18:00:00.000Z";
+  const past = fixture("sportmonks", "sm-finished-analysis-test", "Manchester United", kickoff);
+  past.status = "FINISHED";
+  past.result = { homeGoals: 2, awayGoals: 1, status: "FINISHED" };
+  providerRegistry.providers = [{
+    name: "sportmonks", enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "odds", "statistics"],
+    getFixtures: async () => [past], getFixture: async () => past,
+    getTeamForm: async () => [], getH2H: async () => [], getStandings: async () => [],
+    getOdds: async () => [], getStatistics: async () => []
+  }];
+  providerRegistry.fixtureDiscovery = { getFixturesByDate: async () => { providerRegistry.remember(past); return { fixtures: [past], source: "sportmonks", cached: false, stale: false, providerError: null }; } };
+  const layer = app.router.stack.find((entry) => entry.route?.path === "/api/best-predictions");
+  let body;
+  try {
+    await layer.route.stack.at(-1).handle({ query: { date: kickoff.slice(0, 10) } }, { json(value) { body = value; return this; }, status() { return this; } });
+    assert.equal(body.success, true);
+    assert.equal(body.assessments.length, 1);
+    assert.equal(body.assessments[0].status, "HISTORICAL_ANALYSIS");
+    assert.deepEqual(body.assessments[0].actualScore, { home: 2, away: 1 });
+    assert.equal(body.results.length, 0, "completed matches must not be offered as current predictions");
+  } finally {
+    providerRegistry.providers = originalProviders;
+    providerRegistry.fixtureDiscovery = originalDiscovery;
+    providerRegistry.known.clear(); providerRegistry.cache.clear(); providerRegistry.historicalData.cache.clear();
+  }
+});
+
 test("network/quota remain pending, unavailable retries, unsupported is terminal", async (t) => {
   for (const category of ["quota", "timeout_network", "unsupported"]) {
     const filePath = archivePath(t); saveSnapshot(archiveInput(), { filePath });
