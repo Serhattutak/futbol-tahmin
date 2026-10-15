@@ -15,6 +15,14 @@ test("football-data fixture response canonical legacy formuna normalize edilir",
   assert.equal(fixture.fixture.id, "fd-1"); assert.equal(fixture.teams.away.name, "Away"); assert.equal(fixture.goals.away, null);
 });
 
+test("football-data errors expose numeric HTTP status without leaking provider response body", () => {
+  const error = footballData.providerError({ response: { status: 400, data: { message: "sensitive response body" } } });
+  assert.equal(error.category, "unexpected_provider_response");
+  assert.equal(error.httpStatus, 400);
+  assert.equal(JSON.stringify(error).includes("sensitive response body"), false);
+  assert.equal(footballData.providerError({ response: { status: 403 } }).category, "authentication");
+});
+
 test("token gerektiren providerlar token yokken pasif kalir", () => { assert.equal(sportmonks.enabled, false); assert.equal(footballData.enabled, false); });
 test("OpenFootball historical lookup covers additional public-domain league datasets", () => {
   for (const league of [
