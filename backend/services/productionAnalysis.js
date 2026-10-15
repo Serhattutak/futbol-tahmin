@@ -11,7 +11,7 @@ const hash = value => crypto.createHash("sha256").update(JSON.stringify(value)).
 function isCompletedBefore(match, now) {
   const date = match?.fixture?.date;
   if (typeof date !== "string" || !Number.isFinite(Date.parse(date))) return false;
-  const dateOnly = match.fixture?.kickoffPrecision === "date" || /^\\d{4}-\\d{2}-\\d{2}$/.test(date);
+  const dateOnly = match.fixture?.kickoffPrecision === "date" || /^\d{4}-\d{2}-\d{2}$/.test(date);
   // A date-only result cannot be proven available until that UTC calendar day ends.
   const historicalTime = dateOnly ? Date.parse(`${date.slice(0, 10)}T23:59:59.999Z`) : Date.parse(date);
   return Number.isFinite(historicalTime) && historicalTime < now
