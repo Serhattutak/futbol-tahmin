@@ -65,8 +65,8 @@ const CATALOG = {
   "Kazakhstan Premier League": { country: "Kazakhstan", root: WORLD, path: "asia/kazakhstan", file: "{season}_kz1.txt", calendarYear: true, seasons: ["2025"] },
   "Brazilian Serie A": { country: "Brazil", root: SOUTH_AMERICA, path: "brazil", file: "{season}_br1.txt", calendarYear: true, seasons: ["2026", "2025", "2024", "2023"] },
   "Brazilian Serie B": { country: "Brazil", root: SOUTH_AMERICA, path: "brazil", file: "{season}_br2.txt", calendarYear: true, seasons: ["2025", "2024", "2023"] },
-  "Ecuadorian Serie A": { country: "Ecuador", root: SOUTH_AMERICA, path: "ecuador", file: "{season}_ec1.txt", calendarYear: true, seasons: ["2025", "2024", "2023"] },
-  "Paraguayan Primera División": { country: "Paraguay", root: SOUTH_AMERICA, path: "paraguay", file: "{season}_py1.txt", calendarYear: true, seasons: ["2025", "2024", "2023"] },
+  "Ecuadorian Serie A": { country: "Ecuador", root: SOUTH_AMERICA, path: "ecuador", file: "{season}_ec1.txt", calendarYear: true, seasons: ["2025"] },
+  "Paraguayan Primera División": { country: "Paraguay", root: SOUTH_AMERICA, path: "paraguay", file: "{season}_py1.txt", calendarYear: true, seasons: ["2025"] },
 };
 const MONTHS = new Map("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ").map((m, i) => [m, i]));
 const cache = new Map();
