@@ -1,8 +1,8 @@
 export const MODEL40 = "MODEL_4_0";
 export const MODEL41 = "MODEL_4_1";
 // User-facing product identity is intentionally unified. Version identifiers stay internal for auditability.
-export function modelLabel(analysis) {
-  return analysis?.modelVersion ? "ZEUS AI" : "ZEUS AI";
+export function modelLabel() {
+  return "ZEUS AI";
 }
 export function modelCacheKey(fixtureId, version, cache = {}) {
   return [fixtureId, version, cache.statisticsVersion || "legacy", version === MODEL41 ? cache.artifactVersion || "unavailable" : "4.0", cache.inputVersion || ""].join(":");
