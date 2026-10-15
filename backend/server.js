@@ -1256,7 +1256,7 @@ app.get("/api/match-context/:fixtureId", analyzeLimiter, concurrencyGuard(2), as
 
 const bestPredictionsCache = new Map();
 const BEST_PREDICTIONS_TTL_MS = 5 * 60 * 1000;
-const BEST_PREDICTIONS_LIMIT = 60;
+const BEST_PREDICTIONS_LIMIT = 200;
 const BEST_PREDICTIONS_MIN_QUALITY = 60;
 const BEST_PREDICTIONS_MIN_CONFIDENCE = 70;
 const BEST_PREDICTIONS_MIN_PROBABILITY = 65;
