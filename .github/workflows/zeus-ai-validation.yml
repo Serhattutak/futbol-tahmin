@@ -25,7 +25,14 @@ jobs:
         if: always()
         run: |
           npm audit --json > /tmp/frontend-npm-audit.json || true
-          node -e 'const a=require("/tmp/frontend-npm-audit.json"); const vulnerabilities=Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:(v.via||[]).map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range)}))})); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities,vulnerabilities},null,2))'
+          node <<'NODE'
+          const a = require("/tmp/frontend-npm-audit.json");
+          const vulnerabilities = Object.entries(a.vulnerabilities || {}).map(([name, v]) => ({
+            name, severity: v.severity, range: v.range, fixAvailable: v.fixAvailable,
+            via: (v.via || []).map(x => typeof x === "string" ? x : { title: x.title, url: x.url, range: x.range })
+          }));
+          console.log(JSON.stringify({ metadata: a.metadata?.vulnerabilities, vulnerabilities }, null, 2));
+          NODE
       - name: Build frontend
         env:
           VITE_API_BASE_URL: http://127.0.0.1:3001
@@ -38,7 +45,14 @@ jobs:
         working-directory: backend
         run: |
           npm audit --json > /tmp/backend-npm-audit.json || true
-          node -e 'const a=require("/tmp/backend-npm-audit.json"); const vulnerabilities=Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:(v.via||[]).map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range}))})); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities,vulnerabilities},null,2))'
+          node <<'NODE'
+          const a = require("/tmp/backend-npm-audit.json");
+          const vulnerabilities = Object.entries(a.vulnerabilities || {}).map(([name, v]) => ({
+            name, severity: v.severity, range: v.range, fixAvailable: v.fixAvailable,
+            via: (v.via || []).map(x => typeof x === "string" ? x : { title: x.title, url: x.url, range: x.range })
+          }));
+          console.log(JSON.stringify({ metadata: a.metadata?.vulnerabilities, vulnerabilities }, null, 2));
+          NODE
       - name: Install Playwright for browser smoke test
         run: |
           npm install --no-save playwright
