@@ -49,7 +49,8 @@ async function collectDivisionHistory({ team, before, fixtureId, league, catalog
   if (!team?.name || !league?.country) return [];
   const divisions = Object.keys(catalog).filter(name => catalog[name].country === league.country).sort((a, b) => Number(b === league.name) - Number(a === league.name) || a.localeCompare(b));
   if (!divisions.length) return [];
-  const current = Number(seasonOf(before).slice(0, 4));
+  const currentSeasonYear = Number(seasonOf(before).slice(0, 4));
+  const currentCalendarYear = Number(String(before).slice(0, 4));
   const options = { team, before, fixtureId, now };
   let rows = [];
   // Exhaust installed evidence before any remote request. This is especially
