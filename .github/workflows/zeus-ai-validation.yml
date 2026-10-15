@@ -22,10 +22,44 @@ jobs:
       - name: Lint frontend
         run: npm run lint
       - name: Build frontend
+        env:
+          VITE_API_BASE_URL: http://127.0.0.1:3001
         run: npm run build
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
+      - name: Install Playwright for browser smoke test
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local backend and built frontend
+        run: |
+          CORS_ORIGINS=http://127.0.0.1:4173 npm --prefix backend start > /tmp/zeus-backend.log 2>&1 &
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/zeus-frontend.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:3001/api/health > /dev/null && curl --silent --fail http://127.0.0.1:4173 > /dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl --silent --show-error --fail http://127.0.0.1:3001/api/health > /dev/null
+          curl --silent --show-error --fail http://127.0.0.1:4173 > /dev/null
+      - name: Run real-data browser and mobile-layout smoke test
+        run: node .github/scripts/ui-smoke.cjs
+      - name: Upload browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeus-ui-smoke-screenshots
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Keep production-provider quota use low: run the live check after a main-branch deployment.
+      - name: Verify live Render API compatibility
+        if: github.event_name == 'push'
+        env:
+          ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
+        run: node .github/scripts/live-api-smoke.cjs
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test

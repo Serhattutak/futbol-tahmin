@@ -50,7 +50,7 @@ class FixtureDiscovery {
   const errors = [];
   const collectedFixtures = [];
   const successfulProviders = [];
-    const order = ["sportmonks", "api-football", "football-data", "openfootball", "thesportsdb", "espn"];
+    const order = ["sportmonks", "api-football", "football-data", "openfootball", "espn", "thesportsdb"];
     const providers = [...this.registry.providers].sort((a, b) => {
       const rank = name => order.includes(name) ? order.indexOf(name) : order.length;
       return rank(a.name) - rank(b.name);

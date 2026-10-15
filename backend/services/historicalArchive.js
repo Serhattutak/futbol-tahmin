@@ -75,8 +75,20 @@ async function settlePending({ getFixture, getResults, filePath, limit = 10, now
       else if (!fixtures?.length) { record.result = { ...record.result, status: "unavailable", retryable: true, nextCheckAt: new Date(Date.parse(now()) + 15 * 60 * 1000).toISOString(), checkedAt: now() }; changed = true; }
     } catch (error) {
       const permanent = error.category === "unsupported";
-      record.result = { ...record.result, status: permanent ? "unavailable" : "pending", retryable: !permanent, errorCategory: error.category || "provider_unavailable", checkedAt: now(), nextCheckAt: new Date(Date.parse(now()) + 15 * 60 * 1000).toISOString() }; changed = true;
-      if (error instanceof ProviderError && error.category === "quota") { quotaStopped = true; break; }
+      const quota = error instanceof ProviderError && error.category === "quota";
+      const retryAt = new Date(Date.parse(now()) + (quota ? 60 : 15) * 60 * 1000).toISOString();
+      record.result = { ...record.result, status: permanent ? "unavailable" : "pending", retryable: !permanent, errorCategory: error.category || "provider_unavailable", checkedAt: now(), nextCheckAt: retryAt }; changed = true;
+      if (quota) {
+        // One quota response applies to the shared result provider, not just this fixture.
+        // Back off all pending archive checks so the next loop does not hammer the same endpoint.
+        quotaStopped = true;
+        for (const pending of records) {
+          if (!["pending", "unavailable"].includes(pending.result?.status) || pending.result?.retryable === false) continue;
+          pending.result = { ...pending.result, errorCategory: "quota", checkedAt: now(), nextCheckAt: retryAt };
+          changed = true;
+        }
+        break;
+      }
     }
   }
   if (changed) writeArchive(records, filePath);

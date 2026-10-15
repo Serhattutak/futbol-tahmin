@@ -221,3 +221,151 @@ input,select{border-radius:10px!important;border-color:var(--line)!important;bac
 .home-data-status{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px;padding:10px 12px;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:12px;background:rgba(16,31,48,.65)}
 .home-data-status span{display:inline-flex;gap:5px;align-items:center;color:var(--muted,#a8b7c9);font-size:11px}
 .home-data-status b{color:var(--text,#eef5fb);font-variant-numeric:tabular-nums}
+
+
+/* Full-date navigation and all-fixture list */
+.date-nav {
+  grid-template-columns: minmax(0, 1fr) auto minmax(150px, 1fr) minmax(0, 1fr);
+}
+.date-picker-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.date-picker-label input {
+  width: 135px;
+  min-width: 0;
+  min-height: 39px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: #101d19;
+  color-scheme: dark;
+  font: inherit;
+}
+.match-list {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.match-row {
+  grid-template-columns: 72px minmax(0, 1fr) minmax(90px, 135px) 24px 12px;
+  gap: 10px;
+  min-height: 68px;
+  padding: 11px 12px;
+}
+.row-time {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+.row-time small {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: .04em;
+}
+.row-time b {
+  color: var(--text);
+  font-size: 12px;
+}
+.row-teams small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.home-all-matches {
+  display: grid;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.home-all-matches > .primary-button {
+  justify-self: start;
+}
+.historical-result-panel {
+  border-color: rgba(196,255,118,.25);
+}
+@media (max-width: 560px) {
+  .date-nav {
+    grid-template-columns: 1fr auto 1fr;
+  }
+  .date-nav > button:last-child {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .date-picker-label {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: space-between;
+    padding: 2px 0;
+  }
+  .date-picker-label input {
+    width: min(62vw, 220px);
+  }
+  .match-row {
+    grid-template-columns: 60px minmax(0, 1fr) minmax(75px, 100px) 18px;
+    gap: 7px;
+    padding: 10px 8px;
+  }
+  .match-row .row-arrow {
+    display: none;
+  }
+  .row-prediction {
+    font-size: 8px;
+  }
+  .row-prediction strong {
+    font-size: 11px;
+  }
+}
+
+.data-coverage-list {
+  display: grid;
+  gap: 0;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.data-coverage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+.data-coverage-row:last-child {
+  border-bottom: 0;
+}
+.data-coverage-row > span {
+  color: var(--muted);
+}
+.data-coverage-row strong {
+  flex: 0 0 auto;
+  font-size: 10px;
+}
+.coverage-available {
+  color: var(--cyan);
+}
+.coverage-missing {
+  color: #f0b17d;
+}
+.data-coverage-meta {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.data-coverage-meta b {
+  color: var(--text);
+}

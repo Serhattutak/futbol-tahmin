@@ -1282,10 +1282,13 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
 
     const candidates = [...new Map(
       pool
-        .filter((match) => ["SCHEDULED", "LIVE"].includes(normalizeStatus(match.fixture?.status?.short)))
-        .sort((a, b) => Number(openFootball.supportsHistoricalLeague(b.league)) - Number(openFootball.supportsHistoricalLeague(a.league)))
+        .sort((a, b) => {
+          const active = match => ["SCHEDULED", "LIVE"].includes(normalizeStatus(match.fixture?.status?.short)) ? 1 : 0;
+          return active(b) - active(a) || Number(openFootball.supportsHistoricalLeague(b.league)) - Number(openFootball.supportsHistoricalLeague(a.league));
+        })
         .map((match) => [match.fixture?.id, match])
     ).values()].slice(0, BEST_PREDICTIONS_LIMIT);
+    const candidateById = new Map(candidates.map(match => [String(match.fixture?.id), match]));
     const evaluated = [];
     const diagnosticAnalyses = [];
     // Bound upstream work: the endpoint can see hundreds of fixtures, but must not
@@ -1307,6 +1310,8 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
           STANDINGS_DATA_OK: Boolean(availability.standings),
           XG_DATA_OK: Boolean(availability.apiXg),
         }));
+        // Finished fixtures still receive a historical assessment, but never enter the live recommendation list.
+        if (normalizeStatus(match.fixture?.status?.short) === "FINISHED") return;
         const bestMarket = analysis.recommendation?.bestMarket;
         if (!analysis.predictionEligible || !bestMarket || Number(analysis.dataQuality?.score) < BEST_PREDICTIONS_MIN_QUALITY || Number(analysis.model?.confidence) < BEST_PREDICTIONS_MIN_CONFIDENCE || Number(bestMarket.probability) < BEST_PREDICTIONS_MIN_PROBABILITY || ["NO_BET", "NO BET"].includes(bestMarket.market)) return;
         evaluated.push({
@@ -1364,7 +1369,23 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
       eligible: evaluated.length,
       poolSize: pool.length,
       results: evaluated,
-      assessments: diagnosticAnalyses.map((analysis) => ({ fixture: analysis.fixture, status: analysis.predictionEligible ? "PREDICTION" : "INSUFFICIENT_DATA", dataQuality: analysis.dataQuality, confidence: analysis.model?.confidence ?? 0, recommendation: analysis.predictionEligible ? analysis.recommendation : { eligible: false, main: "NO_BET", reason: "INSUFFICIENT_DATA" } })),
+      assessments: diagnosticAnalyses.map((analysis) => {
+        const match = candidateById.get(String(analysis.fixture?.id));
+        const fixtureStatus = normalizeStatus(match?.fixture?.status?.short);
+        const historical = fixtureStatus === "FINISHED";
+        const eligible = !historical && analysis.predictionEligible === true;
+        return {
+          fixture: analysis.fixture,
+          status: historical ? "HISTORICAL_ANALYSIS" : eligible ? "PREDICTION" : "INSUFFICIENT_DATA",
+          fixtureStatus,
+          actualScore: historical ? { home: match?.goals?.home ?? null, away: match?.goals?.away ?? null } : null,
+          note: historical ? "Retrospektif analiz; maç öncesi yayımlanmış tahmin kaydı değildir." : null,
+          dataQuality: analysis.dataQuality,
+          confidence: historical ? null : analysis.model?.confidence ?? 0,
+          availability: analysis.dataAvailability || {},
+          recommendation: eligible ? analysis.recommendation : { eligible: false, main: "NO_BET", reason: historical ? "HISTORICAL_FIXTURE" : "INSUFFICIENT_DATA" }
+        };
+      }),
       diagnostics,
       note: "Yetersiz veri etiketi taşıyan maçlar en iyi tahmin listesinde öneri olarak gösterilmez.",
     };

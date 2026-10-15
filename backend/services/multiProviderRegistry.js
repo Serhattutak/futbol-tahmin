@@ -10,9 +10,20 @@ const kickoffKey = (value) => normalizeKickoff(value)?.slice(0, 16);
 const LEAGUE_ALIASES = { primeradivision: "laliga" };
 const leagueKey = (name) => { const key = normalize(name); return LEAGUE_ALIASES[key] || key; };
 function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
-  return canonicalTeamId(a.homeTeam) === canonicalTeamId(b.homeTeam) && canonicalTeamId(a.awayTeam) === canonicalTeamId(b.awayTeam)
-    && leagueKey(a.league?.name) === leagueKey(b.league?.name) && Boolean(leagueKey(a.league?.name))
-    && Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= tolerance;
+  const sameTeamsAndLeague = canonicalTeamId(a.homeTeam) === canonicalTeamId(b.homeTeam)
+    && canonicalTeamId(a.awayTeam) === canonicalTeamId(b.awayTeam)
+    && leagueKey(a.league?.name) === leagueKey(b.league?.name) && Boolean(leagueKey(a.league?.name));
+  if (!sameTeamsAndLeague) return false;
+  // A date-only source cannot provide a reliable kickoff time. Merge it with a timed
+  // source on the same calendar date rather than displaying the same match twice.
+  if (a.kickoffPrecision === "date" || b.kickoffPrecision === "date") {
+    const dayA = Date.parse(`${a.kickoff.slice(0, 10)}T00:00:00Z`);
+    const dayB = Date.parse(`${b.kickoff.slice(0, 10)}T00:00:00Z`);
+    // Date-only feeds omit kickoff time and may use the league's local match day.
+    // A timed source can therefore place the same real fixture on the adjacent UTC date.
+    return Number.isFinite(dayA) && Number.isFinite(dayB) && Math.abs(dayA - dayB) <= 24 * 60 * 60 * 1000;
+  }
+  return Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= tolerance;
 }
 
 function canonicalFixture({ provider, fixture, league, homeTeam, awayTeam, status, result }) {
@@ -29,17 +40,39 @@ function reconcileFixtures(fixtures) {
   const merged = new Map();
   for (const fixture of fixtures.filter(Boolean)) {
     const existing = [...merged.values()].find((item) => sameFixture(item, fixture));
-    if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
+    if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
     merged.set(fixture.canonicalFixtureId, { ...fixture });
   }
   const values = [...merged.values()];
+  const reconciled = [];
   for (const fixture of values) {
-    for (const other of values) {
-      if (fixture === other) continue;
-      if (fixture.homeTeam.canonicalTeamId === other.homeTeam.canonicalTeamId && fixture.awayTeam.canonicalTeamId === other.awayTeam.canonicalTeamId && normalize(fixture.league.name) === normalize(other.league.name) && fixture.kickoff.slice(0, 10) === other.kickoff.slice(0, 10) && kickoffKey(fixture.kickoff) !== kickoffKey(other.kickoff)) fixture.dataConflict = true;
+    const sameDay = reconciled.find((other) =>
+      canonicalTeamId(other.homeTeam) === canonicalTeamId(fixture.homeTeam)
+      && canonicalTeamId(other.awayTeam) === canonicalTeamId(fixture.awayTeam)
+      && leagueKey(other.league?.name) === leagueKey(fixture.league?.name)
+      && other.kickoff.slice(0, 10) === fixture.kickoff.slice(0, 10)
+    );
+    if (!sameDay) { reconciled.push({ ...fixture }); continue; }
+    const kickoffConflict = kickoffKey(sameDay.kickoff) !== kickoffKey(fixture.kickoff);
+    if (kickoffConflict) sameDay.dataConflict = true;
+    sameDay.sources = [...new Set([...(sameDay.sources || []), ...(fixture.sources || [])])];
+    sameDay.providerTeams = { ...(sameDay.providerTeams || {}), ...(fixture.providerTeams || {}) };
+    sameDay.providerFixtureIds = { ...(sameDay.providerFixtureIds || {}), ...(fixture.providerFixtureIds || {}) };
+    if (sameDay.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") {
+      sameDay.kickoff = fixture.kickoff;
+      sameDay.kickoffPrecision = fixture.kickoffPrecision;
+      sameDay.canonicalFixtureId = fixture.canonicalFixtureId;
+    }
+    if (sameDay.result && fixture.result && (sameDay.result.homeGoals !== fixture.result.homeGoals || sameDay.result.awayGoals !== fixture.result.awayGoals)) {
+      sameDay.result = null;
+      sameDay.status = "UNKNOWN";
+      sameDay.dataConflict = true;
+    } else if (!sameDay.result && fixture.result && !sameDay.dataConflict) {
+      sameDay.result = fixture.result;
+      sameDay.status = fixture.status;
     }
   }
-  return values;
+  return reconciled;
 }
 
 function reconcileResults(results) {
@@ -113,7 +146,7 @@ class MultiProviderRegistry {
     this.cache.set(key, { value, expiresAt: this.now() + 5 * 60 * 1000 }); this.prune(); return value;
   }
   async matchProvider(fixture, provider, options = {}) {
-    if (fixture.providerTeams?.[provider.name]) return fixture;
+    if (fixture.providerTeams?.[provider.name] || !this.canRequest(provider)) return fixture;
     if (provider.supportsLeague && !provider.supportsLeague(fixture.league.name)) return fixture;
     const data = await this.providerRequest(provider, `match:${provider.name}:${fixture.kickoff.slice(0, 10)}:${normalize(fixture.league.name)}`, () => provider.getFixtures(fixture.kickoff.slice(0, 10), fixture.league.name), options);
     const matches = data.filter((candidate) => sameFixture(fixture, candidate));
@@ -131,7 +164,10 @@ class MultiProviderRegistry {
   }
   canRequest(provider) {
     const status = this.status.get(provider.name);
-    return provider.enabled && !(["quota", "authentication"].includes(status?.errorCategory) && this.now() - Date.parse(status.lastRetrievedAt) < 5 * 60 * 1000);
+    const elapsed = this.now() - Date.parse(status?.lastRetrievedAt);
+    if (status?.errorCategory === "quota" && elapsed < 15 * 60 * 1000) return false;
+    if (status?.errorCategory === "authentication" && elapsed < 60 * 60 * 1000) return false;
+    return Boolean(provider.enabled);
   }
   getTeamHistoricalMatches(team, beforeDate, options) { return this.historicalData.getTeamHistoricalMatches(team, beforeDate, options); }
   getHistoricalForm(fixture, side) { return this.getTeamHistoricalMatches(fixture[side === "home" ? "homeTeam" : "awayTeam"], fixture.kickoff, { fixture, side }); }
@@ -180,7 +216,7 @@ class MultiProviderRegistry {
     const methods = { h2hMatches: "h2h", standingsResponse: "standings", oddsResponse: "odds", recentStats: "statistics" };
     for (const [field, capability] of Object.entries(methods)) {
       if (!includeMatchStatistics) continue;
-      if (Date.parse(fixture.kickoff) <= this.now() && ["standings", "odds"].includes(capability)) { data.sourceMetadata.unavailable[field] = "no_pre_match_snapshot"; continue; }
+      // Historical bookmaker odds require a timestamped archive, but historical standings can be reconstructed from completed fixtures before kickoff.\n      if (Date.parse(fixture.kickoff) <= this.now() && capability === "odds") { data.sourceMetadata.unavailable[field] = "no_pre_match_snapshot"; continue; }
       if (capability !== "teamForm" && (data.homeMatches.length < 5 || data.awayMatches.length < 5)) {
         data.sourceMetadata.unavailable[field] = this.providers.some(provider => provider.enabled && provider.capabilities?.includes(capability)) ? "unavailable" : "not_supported";
         continue;
@@ -190,12 +226,23 @@ class MultiProviderRegistry {
         if (!this.canRequest(provider) || !provider.capabilities?.includes(capability)) continue;
         supported = true;
         if (!matchedProviders.has(provider.name)) { fixture = await this.matchProvider(fixture, provider); matchedProviders.add(provider.name); }
-        const context = fixture.providerTeams?.[provider.name]; if (!context) continue;
+        const matchedContext = fixture.providerTeams?.[provider.name];
+        const historicalContext = !matchedContext
+          && ["h2h", "standings"].includes(capability)
+          && provider.supportsHistoricalLeague?.(fixture.league)
+          ? {
+              home: { id: fixture.homeTeam.providerTeamId || fixture.homeTeam.canonicalTeamId, name: fixture.homeTeam.name },
+              away: { id: fixture.awayTeam.providerTeamId || fixture.awayTeam.canonicalTeamId, name: fixture.awayTeam.name },
+              league: fixture.league,
+            }
+          : null;
+        const context = matchedContext || historicalContext;
+        if (!context) continue;
         try {
           let value;
           if (capability === "teamForm") value = await provider.getTeamForm(context[field === "homeMatches" ? "home" : "away"].id, fixture.kickoff);
-          if (capability === "h2h") value = await provider.getH2H(context.home.id, context.away.id);
-          if (capability === "standings") value = await provider.getStandings(context.league?.id, context.league?.season);
+          if (capability === "h2h") value = await provider.getH2H(context.home.id, context.away.id, { before: fixture.kickoff, league: context.league, home: context.home, away: context.away });
+          if (capability === "standings") value = await provider.getStandings(context.league?.id, context.league?.season, { before: fixture.kickoff, league: context.league });
           if (capability === "odds") value = await provider.getOdds(fixture.providerFixtureIds[provider.name]);
           if (capability === "statistics") {
             let matches = [...data.homeMatches.slice(0, 5), ...data.awayMatches.slice(0, 5)].filter((m) => m.provider === provider.name);
@@ -235,20 +282,28 @@ class MultiProviderRegistry {
   getBestAvailableProvider(capability) { return this.providers.find((provider) => provider.enabled && provider.capabilities?.includes(capability) && this.status.get(provider.name)?.available !== false) || null; }
   async getResults(providerFixtureIds = {}) {
     let ids = normalizeProviderIds(providerFixtureIds);
-    const results = []; let transient = null; let attempted = false;
+    const results = []; let transient = null; let attempted = false; let skippedError = null;
     for (const provider of this.providers) {
       const fixtureId = ids[provider.name]; if (!fixtureId || !provider.enabled) continue;
+      if (!this.canRequest(provider)) {
+        const category = this.status.get(provider.name)?.errorCategory;
+        if (["quota", "authentication"].includes(category)) skippedError ||= new ProviderError(category, `Provider ${provider.name} is cooling down after ${category}.`);
+        continue;
+      }
       attempted = true;
       try { results.push(...await provider.getFixture(fixtureId)); this.updateStatus(provider.name, true); }
       catch (error) { this.updateStatus(provider.name, false, error.category || "provider_unavailable"); if (!["no_data", "unsupported"].includes(error.category)) transient = error; }
     }
-    if (transient) throw transient;
-    if (!attempted) throw new ProviderError("unsupported", "No enabled result provider.");
+    if (transient && !results.length) throw transient;
+    if (!attempted && !results.length) {
+      if (skippedError) throw skippedError;
+      throw new ProviderError("unsupported", "No enabled result provider.");
+    }
     if (results.length === 1) {
       const enriched = await this.enrich(results[0], { strict: true });
-      ids = enriched.providerFixtureIds;
+      ids = normalizeProviderIds(enriched.providerFixtureIds || providerFixtureIds);
       for (const provider of this.providers) {
-        if (!provider.enabled || !ids[provider.name] || results.some((item) => item.provider === provider.name)) continue;
+        if (!provider.enabled || !ids[provider.name] || results.some((item) => item.provider === provider.name) || !this.canRequest(provider)) continue;
         try { results.push(...await provider.getFixture(ids[provider.name])); } catch (error) { if (!["no_data", "unsupported"].includes(error.category)) throw error; }
       }
     }

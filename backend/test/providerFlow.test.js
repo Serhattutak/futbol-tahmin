@@ -8,6 +8,50 @@ const { normalizeStatus, normalizeKickoff } = require("../services/fixtureNormal
 const { canonicalFixture, canonicalTeamId, reconcileFixtures, MultiProviderRegistry, createLegacyAdapter } = require("../services/multiProviderRegistry");
 const { saveSnapshot, readArchive, settlePending, reconciledSettlement, summarizeArchive } = require("../services/historicalArchive");
 const { ProviderError } = require("../services/apiFootballClient");
+const { selectHeadToHead, calculateStandingsRows, historicalSeasonKeys } = require("../providers/openFootball");
+
+function openFootballMatch(home, away, date, homeGoals, awayGoals) {
+  const finished = Number.isFinite(homeGoals) && Number.isFinite(awayGoals);
+  const id = (name) => `of-team-${String(name).toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+  return { fixture: { id: `test-${date}-${home}-${away}`, date, kickoffPrecision: /^\d{4}-\d{2}-\d{2}$/.test(date) ? "date" : "time", status: { short: finished ? "FINISHED" : "SCHEDULED" } }, teams: { home: { id: id(home), name: home }, away: { id: id(away), name: away } }, goals: { home: homeGoals, away: awayGoals } };
+}
+
+test("OpenFootball historical H2H spans five correct season keys", () => {
+  assert.deepEqual(historicalSeasonKeys({ file: "en.1.json", country: "England" }, "2026-09-15", 5), ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23"]);
+  assert.deepEqual(historicalSeasonKeys({ file: "br.1.json", country: "Brazil", calendarYear: true }, "2026-09-15", 5), ["2026", "2025", "2024", "2023", "2022"]);
+});
+
+test("OpenFootball H2H uses only verified finished meetings before kickoff", () => {
+  const matches = [
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-01T12:00:00Z", 2, 1),
+    openFootballMatch("Chelsea", "Arsenal", "2026-09-08T12:00:00Z", 0, 0),
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-15", 1, 0),
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-16T12:00:00Z", 3, 0),
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-02T12:00:00Z", null, null),
+  ];
+  const selected = selectHeadToHead(matches, "Arsenal", "Chelsea", "2026-09-15T15:00:00Z");
+  assert.equal(selected.length, 2);
+  assert.deepEqual(selected.map((match) => match.goals.home), [0, 2]);
+});
+
+test("OpenFootball reconstructs standings only from completed results before kickoff", () => {
+  const matches = [
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-01T12:00:00Z", 2, 1),
+    openFootballMatch("Chelsea", "Spurs", "2026-09-10T12:00:00Z", 1, 0),
+    openFootballMatch("Arsenal", "Spurs", "2026-09-12T12:00:00Z", 1, 1),
+    openFootballMatch("Spurs", "Arsenal", "2026-09-16T12:00:00Z", 4, 0),
+    openFootballMatch("Future FC", "New Town", "2026-09-16T12:00:00Z", 2, 0),
+  ];
+  const rows = calculateStandingsRows(matches, "2026-09-15T15:00:00Z");
+  assert.equal(rows[0].team.name, "Arsenal");
+  assert.equal(rows[0].points, 4);
+  assert.equal(rows[1].team.name, "Chelsea");
+  assert.equal(rows[1].points, 3);
+  assert.equal(rows[2].team.name, "Spurs");
+  assert.equal(rows[2].points, 1);
+  assert.ok(rows.every((row) => row.all.played <= 2));
+  assert.ok(rows.every((row) => !["Future FC", "New Town"].includes(row.team.name)));
+});
 
 test.before(() => {
   const { providerRegistry } = require("../server");
@@ -157,6 +201,37 @@ test("best-predictions retains non-numeric discovery as explicit insufficient as
     assert.equal(body.assessments[0].recommendation.main, "NO_BET");
     assert.equal(oddsRequests, 0);
   } finally { providerRegistry.providers = original; providerRegistry.fixtureDiscovery = originalDiscovery; providerRegistry.known.clear(); providerRegistry.cache.clear(); }
+});
+
+test("best-predictions includes finished fixtures as historical analysis, never as a pick", async () => {
+  const { app, providerRegistry } = require("../server");
+  const originalProviders = providerRegistry.providers;
+  const originalDiscovery = providerRegistry.fixtureDiscovery;
+  const kickoff = "2026-09-20T18:00:00.000Z";
+  const past = fixture("sportmonks", "sm-finished-analysis-test", "Manchester United", kickoff);
+  past.status = "FINISHED";
+  past.result = { homeGoals: 2, awayGoals: 1, status: "FINISHED" };
+  providerRegistry.providers = [{
+    name: "sportmonks", enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "odds", "statistics"],
+    getFixtures: async () => [past], getFixture: async () => past,
+    getTeamForm: async () => [], getH2H: async () => [], getStandings: async () => [],
+    getOdds: async () => [], getStatistics: async () => []
+  }];
+  providerRegistry.fixtureDiscovery = { getFixturesByDate: async () => { providerRegistry.remember(past); return { fixtures: [past], source: "sportmonks", cached: false, stale: false, providerError: null }; } };
+  const layer = app.router.stack.find((entry) => entry.route?.path === "/api/best-predictions");
+  let body;
+  try {
+    await layer.route.stack.at(-1).handle({ query: { date: kickoff.slice(0, 10) } }, { json(value) { body = value; return this; }, status() { return this; } });
+    assert.equal(body.success, true);
+    assert.equal(body.assessments.length, 1);
+    assert.equal(body.assessments[0].status, "HISTORICAL_ANALYSIS");
+    assert.deepEqual(body.assessments[0].actualScore, { home: 2, away: 1 });
+    assert.equal(body.results.length, 0, "completed matches must not be offered as current predictions");
+  } finally {
+    providerRegistry.providers = originalProviders;
+    providerRegistry.fixtureDiscovery = originalDiscovery;
+    providerRegistry.known.clear(); providerRegistry.cache.clear(); providerRegistry.historicalData.cache.clear();
+  }
 });
 
 test("network/quota remain pending, unavailable retries, unsupported is terminal", async (t) => {
