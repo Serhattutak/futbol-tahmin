@@ -419,11 +419,43 @@ function ZeusInsightPanel({ analysis, home, away }) {
   </section>;
 }
 
+function MatchNewsPanel({ context, loading }) {
+  const articles = Array.isArray(context?.articles) ? context.articles : [];
+  return <section className="detail-section match-news-panel">
+    <SectionHeading eyebrow="DIŞ KAYNAK · ESPN" title="Takım haberleri ve son gelişmeler" />
+    {loading ? <p className="muted-note" role="status">Takımlarla ilişkili haberler kontrol ediliyor…</p>
+      : articles.length ? <div className="news-list">{articles.map((article, index) => {
+        const text = `${article.headline || ""} ${article.description || ""}`;
+        const injuryRelated = /injur|injured|suspend|suspension|ruled out|doubtful|fitness|sakat|ceza|kad.ro dışı|oynamayacak/i.test(text);
+        return <article className="news-item" key={article.url || `${article.headline}-${index}`}>
+          <div className="news-item-meta"><span>{injuryRelated ? "Sakatlık / kadro haberi olabilir" : "Takım haberi"}</span>{article.published && <time dateTime={article.published}>{new Date(article.published).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time>}</div>
+          <h3>{article.headline}</h3>
+          {article.description && <p>{article.description}</p>}
+          {article.url && <a href={article.url} target="_blank" rel="noreferrer">Kaynağı aç ↗</a>}
+        </article>;
+      })}</div>
+      : <p className="muted-note">{context?.available ? "ESPN'de bu iki takımla doğrudan eşleşen güncel haber bulunamadı." : "Bu lig için haber verisi alınamadı. Sakatlık veya ilk 11 bilgisi doğrulanmış kabul edilmiyor."}</p>}
+    <p className="muted-note">Haber başlığı tek başına oyuncunun maçta kesin oynayıp oynamayacağını kanıtlamaz. Resmî kadro ve sakatlık teyidi ayrı değerlendirilmelidir.</p>
+  </section>;
+}
+
 function MatchDetailV2({ analysis: response, match, loading, onBack, onFavorite, favoriteIds }) {
   const analysis = selectModelAnalysis(response);
   const fixture = analysis?.fixture; const home = fixture?.home?.name || getTeams(match).home; const away = fixture?.away?.name || getTeams(match).away;
   const best = analysis?.recommendation?.bestMarket;
-  return <div className="view-stack detail-view"><button className="back-button" type="button" onClick={onBack}>← Geri dön</button>{loading ? <div className="analysis-loading" role="status"><span className="loading-ring" /><h2>Analiz hazırlanıyor</h2><p>Gerçek geçmiş maçlar ve mevcut istatistikler değerlendiriliyor.</p></div> : analysis ? <><ModelSelector response={response} selected={analysis.modelVersion || MODEL40} /><section className="detail-hero"><div className="detail-league">{fixture.league} · {formatDate(fixture.date)} · {formatTime(fixture.date)}</div><div className="detail-teams"><div><span className="big-crest">{home.slice(0, 1)}</span><strong>{home}</strong></div><span className="detail-vs">VS</span><div><span className="big-crest">{away.slice(0, 1)}</span><strong>{away}</strong></div></div><button className={favoriteIds.includes(String(fixture.id)) ? "favorite-button saved large" : "favorite-button large"} aria-label="Favori durumunu değiştir" aria-pressed={favoriteIds.includes(String(fixture.id))} type="button" onClick={() => onFavorite?.(match)}>♥</button></section>{analysis.archived && <p className="muted-note">Kayıtlı maç öncesi tahmin gösteriliyor.</p>}<MatchNarrative analysis={analysis} home={home} away={away} /><DataQualityPanel dataQuality={analysis.dataQuality} modelVersion="ZEUS AI" />{analysis.predictionEligible === false ? <EmptyState title="Yetersiz Veri / Tahmin Yok" text="Bu maç için yeterli istatistik bulunamadı." /> : <section className="best-pick"><span className="eyebrow">EN GÜÇLÜ TAHMİN</span><h2>{best?.market || "Analiz henüz hazır değil."}</h2><div className="pick-metrics"><Metric label="Tahmin olasılığı" value={pct(best?.probability)} /><Metric label="Model güveni" value={pct(analysis.model?.confidence)} /><Metric label="Data Quality" value={analysis.dataQuality?.score == null ? "—" : `${analysis.dataQuality.score}/100`} /></div></section>}<ZeusInsightPanel analysis={analysis} home={home} away={away} /><ModelMarkets analysis={analysis} /><section className="detail-section"><SectionHeading eyebrow="GERÇEK ORANLAR" title="Bookmaker karşılaştırması" /><div className="offer-table"><div className="offer-head"><span>Market / Kaynak</span><span>Oran</span><span>Model</span><span>Adil</span><span>İma</span><span>Value</span></div>{MARKET_SECTIONS.map(([title, markets]) => <section className="offer-section" key={title}><h3>{title}</h3>{markets.map(name => <MarketOfferRow key={name} label={name} market={analysis.markets?.[name]} />)}</section>)}</div></section><HistoricalStatistics profile={analysis.statisticsProfile} home={home} away={away} statistics={analysis.statistics} /><TeamStats analysis={analysis} home={home} away={away} /><DataSources analysis={analysis} /></> : <EmptyState title="Analiz henüz hazır değil." text="Maçı yeniden açarak tekrar deneyebilirsiniz." />}</div>;
+  const [newsContext, setNewsContext] = useState(null);
+  const [newsLoading, setNewsLoading] = useState(false);
+  useEffect(() => {
+    if (!fixture?.id) { setNewsContext(null); return undefined; }
+    let cancelled = false;
+    setNewsLoading(true);
+    readFrontendJson(`${API_BASE}/api/match-context/${encodeURIComponent(fixture.id)}`)
+      .then(data => { if (!cancelled) setNewsContext(data?.context || null); })
+      .catch(() => { if (!cancelled) setNewsContext({ provider: "ESPN", available: false, reason: "provider_unavailable", articles: [] }); })
+      .finally(() => { if (!cancelled) setNewsLoading(false); });
+    return () => { cancelled = true; };
+  }, [fixture?.id]);
+  return <div className="view-stack detail-view"><button className="back-button" type="button" onClick={onBack}>← Geri dön</button>{loading ? <div className="analysis-loading" role="status"><span className="loading-ring" /><h2>Analiz hazırlanıyor</h2><p>Gerçek geçmiş maçlar ve mevcut istatistikler değerlendiriliyor.</p></div> : analysis ? <><ModelSelector response={response} selected={analysis.modelVersion || MODEL40} /><section className="detail-hero"><div className="detail-league">{fixture.league} · {formatDate(fixture.date)} · {formatTime(fixture.date)}</div><div className="detail-teams"><div><span className="big-crest">{home.slice(0, 1)}</span><strong>{home}</strong></div><span className="detail-vs">VS</span><div><span className="big-crest">{away.slice(0, 1)}</span><strong>{away}</strong></div></div><button className={favoriteIds.includes(String(fixture.id)) ? "favorite-button saved large" : "favorite-button large"} aria-label="Favori durumunu değiştir" aria-pressed={favoriteIds.includes(String(fixture.id))} type="button" onClick={() => onFavorite?.(match)}>♥</button></section>{analysis.archived && <p className="muted-note">Kayıtlı maç öncesi tahmin gösteriliyor.</p>}<MatchNarrative analysis={analysis} home={home} away={away} /><MatchNewsPanel context={newsContext} loading={newsLoading} /><DataQualityPanel dataQuality={analysis.dataQuality} modelVersion="ZEUS AI" />{analysis.predictionEligible === false ? <EmptyState title="Yetersiz Veri / Tahmin Yok" text="Bu maç için yeterli istatistik bulunamadı." /> : <section className="best-pick"><span className="eyebrow">EN GÜÇLÜ TAHMİN</span><h2>{best?.market || "Analiz henüz hazır değil."}</h2><div className="pick-metrics"><Metric label="Tahmin olasılığı" value={pct(best?.probability)} /><Metric label="Model güveni" value={pct(analysis.model?.confidence)} /><Metric label="Data Quality" value={analysis.dataQuality?.score == null ? "—" : `${analysis.dataQuality.score}/100`} /></div></section>}<ZeusInsightPanel analysis={analysis} home={home} away={away} /><ModelMarkets analysis={analysis} /><section className="detail-section"><SectionHeading eyebrow="GERÇEK ORANLAR" title="Bookmaker karşılaştırması" /><div className="offer-table"><div className="offer-head"><span>Market / Kaynak</span><span>Oran</span><span>Model</span><span>Adil</span><span>İma</span><span>Value</span></div>{MARKET_SECTIONS.map(([title, markets]) => <section className="offer-section" key={title}><h3>{title}</h3>{markets.map(name => <MarketOfferRow key={name} label={name} market={analysis.markets?.[name]} />)}</section>)}</div></section><HistoricalStatistics profile={analysis.statisticsProfile} home={home} away={away} statistics={analysis.statistics} /><TeamStats analysis={analysis} home={home} away={away} /><DataSources analysis={analysis} /></> : <EmptyState title="Analiz henüz hazır değil." text="Maçı yeniden açarak tekrar deneyebilirsiniz." />}</div>;
 }
 
 function PredictionsViewV2({ onFavorite, favoriteIds, matches, analysisCache, market, setMarket, minConfidence, setMinConfidence, onOpen }) {
