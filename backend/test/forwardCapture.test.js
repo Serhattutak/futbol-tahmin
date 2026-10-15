@@ -68,6 +68,13 @@ test("Invalid fixture diagnostics distinguish missing IDs, team names, precision
   assert.equal(fixtureShapeReason({ ...base, dataConflict: true }), "DATA_CONFLICT");
 });
 
+test("ESPN ISO kickoff timestamps are trusted for scheduled fixtures without results", () => {
+  const base = fixture();
+  const espn = { ...base, provider: "espn", providerFixtureId: "espn-401880798", providerFixtureIds: { espn: "espn-401880798" }, sources: ["espn"] };
+  assert.equal(windowReason(espn, NOW), null);
+  assert.equal(windowReason({ ...espn, dataConflict: true }, NOW), "INVALID_FIXTURE");
+});
+
 test("Unknown precision, conflicting and OpenFootball-only kickoff are rejected", () => {
   for (const changes of [{ kickoffPrecision: "date" }, { dataConflict: true }, { status: "LIVE" }, { result: { homeGoals: 0 } }]) assert.equal(windowReason({ ...fixture(), ...changes }, NOW), "INVALID_FIXTURE");
   assert.equal(windowReason({ ...fixture(), sources: ["openfootball"] }, NOW), "UNVERIFIED_KICKOFF_SOURCE");
