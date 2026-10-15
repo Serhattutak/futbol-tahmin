@@ -9,9 +9,10 @@ export function modelCacheKey(fixtureId, version, cache = {}) {
 }
 export function selectModelAnalysis(response, requested) {
   if (!response) return null;
-  // Automatically prefer the calibrated model when it is ready for this fixture.
-  // Fall back safely to the baseline when the locked artifact or history is unavailable.
-  const version = requested || (response.model41Available && response.models?.[MODEL41] ? MODEL41 : response.modelVersion || MODEL40);
+  // Keep the detail view aligned with the prediction already shown on the match card.
+  // The API-selected production model is authoritative; 4.1 remains an internal candidate
+  // until an untouched chronological forward test justifies promotion.
+  const version = requested || response.modelVersion || MODEL40;
   const selected = response.models?.[version];
   if (selected && (version !== MODEL41 || response.model41Available)) return { ...selected, cache: response.cache };
   return response.models?.[MODEL40] ? { ...response.models[MODEL40], cache: response.cache } : response;
