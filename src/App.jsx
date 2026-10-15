@@ -315,7 +315,7 @@ function PerformanceCard({ performance }) {
 
 function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCache, onOpen, onFavorite, onShowMatches, favoriteIds }) {
   const strongest = bestPredictions
-    .filter((item) => item.eligible === true && item.dataQuality?.score >= 60 && item.confidence >= 60 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market))
+    .filter((item) => item.eligible === true && Number.isFinite(Number(item.dataQuality?.score)) && Number(item.dataQuality.score) >= 45 && Number.isFinite(Number(item.confidence)) && Number(item.confidence) >= 50 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market))
     .slice(0, 3);
   const bestById = new Map(bestPredictions.map((item) => [String(item.fixture?.id), item]));
   const selectedLabel = formatDate(parseDateKey(selectedDate));
