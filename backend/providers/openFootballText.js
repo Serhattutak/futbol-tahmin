@@ -52,7 +52,7 @@ const CATALOG = {
   "Segunda División": { country: "Spain", root: SPAIN, path: "{season}", file: "2-liga2.txt", seasons: ["2025-26"] },
   "Austrian Bundesliga": { country: "Austria", root: AUSTRIA, path: "{season}", file: "1-bundesliga.txt", seasons: ["2026-27", "2025-26"] },
   "2. Liga": { country: "Austria", root: AUSTRIA, path: "{season}", file: "2-liga2.txt", seasons: ["2025-26"] },
-  "Pro League": { country: "Belgium", root: BELGIUM, path: "{season}", file: "be1.txt", seasons: ["2025-26"] },
+  "Pro League": { country: "Belgium", root: BELGIUM, path: "{season}", file: "be1.txt", seasons: ["2026-27", "2025-26"] },
   "Ligue 1": { country: "France", root: EUROPE, path: "france", file: "{season}_fr1.txt", seasons: ["2026-27", "2025-26", "2024-25"] },
   "Ligue 2": { country: "France", root: EUROPE, path: "france", file: "{season}_fr2.txt", seasons: ["2025-26", "2024-25"] },
   Eredivisie: { country: "Netherlands", root: EUROPE, path: "netherlands", file: "{season}_nl1.txt", seasons: ["2026-27", "2025-26", "2024-25"] },
