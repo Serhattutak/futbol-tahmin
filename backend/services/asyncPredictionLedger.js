@@ -27,6 +27,7 @@ class AsyncPredictionLedger {
     if (this.initialized) return this.status();
     if (this.initializing) return this.initializing;
     this.initializing = (async () => {
+      if (typeof this.store.validateSchema === "function") await this.store.validateSchema();
       const events = await this.store.loadEvents();
       const next = new Map();
       for (const event of events) {
