@@ -7,6 +7,12 @@ const { localKickoffToUtc, TIMEZONES } = require("../services/localKickoff");
 const EUROPE = "https://raw.githubusercontent.com/openfootball/europe/master";
 const WORLD = "https://raw.githubusercontent.com/openfootball/world/master";
 const SOUTH_AMERICA = "https://raw.githubusercontent.com/openfootball/south-america/master";
+const ENGLAND = "https://raw.githubusercontent.com/openfootball/england/master";
+const GERMANY = "https://raw.githubusercontent.com/openfootball/deutschland/master";
+const ITALY = "https://raw.githubusercontent.com/openfootball/italy/master";
+const SPAIN = "https://raw.githubusercontent.com/openfootball/espana/master";
+const AUSTRIA = "https://raw.githubusercontent.com/openfootball/austria/master";
+const BELGIUM = "https://raw.githubusercontent.com/openfootball/belgium/master";
 const CATALOG = {
   "Süper Lig": { country: "Turkey", root: EUROPE, path: "turkey", file: "{season}_tr1.txt", seasons: ["2026-27", "2025-26", "2024-25", "2023-24", "2020-21"] },
   "1. Lig": { country: "Turkey", root: EUROPE, path: "turkey", file: "{season}_tr2.txt", seasons: ["2019-20"] },
@@ -32,6 +38,21 @@ const CATALOG = {
   "I Liga": { country: "Poland", root: EUROPE, path: "poland", file: "{season}_pl2.txt", seasons: ["2024-25"] },
   "Liga I": { country: "Romania", root: EUROPE, path: "romania", file: "{season}_ro1.txt", seasons: ["2024-25", "2023-24"] },
   "Major League Soccer": { country: "USA", root: WORLD, path: "north-america/major-league-soccer", file: "{season}_mls.txt", calendarYear: true, seasons: ["2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010"] },
+  "Premier League": { country: "England", root: ENGLAND, path: "{season}", file: "1-premierleague.txt", seasons: ["2026-27", "2025-26"] },
+  Championship: { country: "England", root: ENGLAND, path: "{season}", file: "2-championship.txt", seasons: ["2026-27", "2025-26"] },
+  "League One": { country: "England", root: ENGLAND, path: "{season}", file: "3-league1.txt", seasons: ["2025-26"] },
+  "League Two": { country: "England", root: ENGLAND, path: "{season}", file: "4-league2.txt", seasons: ["2025-26"] },
+  "National League": { country: "England", root: ENGLAND, path: "{season}", file: "5-nationalleague.txt", seasons: ["2025-26"] },
+  Bundesliga: { country: "Germany", root: GERMANY, path: "openliga", file: "{season}_de.1.txt", seasons: ["2026-27", "2025-26"] },
+  "2. Bundesliga": { country: "Germany", root: GERMANY, path: "openliga", file: "{season}_de.2.txt", seasons: ["2026-27", "2025-26"] },
+  "3. Liga": { country: "Germany", root: GERMANY, path: "openliga", file: "{season}_de.3.txt", seasons: ["2026-27", "2025-26"] },
+  "Serie A": { country: "Italy", root: ITALY, path: "{season}", file: "1-seriea.txt", seasons: ["2026-27", "2025-26"] },
+  "Serie B": { country: "Italy", root: ITALY, path: "{season}", file: "2-serieb.txt", seasons: ["2025-26"] },
+  "La Liga": { country: "Spain", root: SPAIN, path: "{season}", file: "1-liga.txt", seasons: ["2026-27", "2025-26"] },
+  "Segunda División": { country: "Spain", root: SPAIN, path: "{season}", file: "2-liga2.txt", seasons: ["2025-26"] },
+  "Austrian Bundesliga": { country: "Austria", root: AUSTRIA, path: "{season}", file: "1-bundesliga.txt", seasons: ["2026-27", "2025-26"] },
+  "2. Liga": { country: "Austria", root: AUSTRIA, path: "{season}", file: "2-liga2.txt", seasons: ["2025-26"] },
+  "Pro League": { country: "Belgium", root: BELGIUM, path: "{season}", file: "be1.txt", seasons: ["2025-26"] },
   "Ligue 1": { country: "France", root: EUROPE, path: "france", file: "{season}_fr1.txt", seasons: ["2026-27", "2025-26", "2024-25"] },
   "Ligue 2": { country: "France", root: EUROPE, path: "france", file: "{season}_fr2.txt", seasons: ["2025-26", "2024-25"] },
   Eredivisie: { country: "Netherlands", root: EUROPE, path: "netherlands", file: "{season}_nl1.txt", seasons: ["2026-27", "2025-26", "2024-25"] },
@@ -160,7 +181,8 @@ async function loadLeague(leagueName, season) {
   const key = leagueName + ":" + season;
   const cached = cache.get(key);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
-  const url = meta.root + "/" + meta.path + "/" + meta.file.replace("{season}", String(season));
+  const sourcePath = meta.path.replace("{season}", String(season));
+  const url = meta.root + "/" + sourcePath + "/" + meta.file.replace("{season}", String(season));
   const promise = axios.get(url, { timeout: 15000, responseType: "text" })
     .then(response => parseTextResults(response.data, leagueName, String(season)))
     .catch(error => {
