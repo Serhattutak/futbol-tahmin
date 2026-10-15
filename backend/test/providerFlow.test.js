@@ -8,6 +8,43 @@ const { normalizeStatus, normalizeKickoff } = require("../services/fixtureNormal
 const { canonicalFixture, canonicalTeamId, reconcileFixtures, MultiProviderRegistry, createLegacyAdapter } = require("../services/multiProviderRegistry");
 const { saveSnapshot, readArchive, settlePending, reconciledSettlement, summarizeArchive } = require("../services/historicalArchive");
 const { ProviderError } = require("../services/apiFootballClient");
+const { selectHeadToHead, calculateStandingsRows } = require("../providers/openFootball");
+
+function openFootballMatch(home, away, date, homeGoals, awayGoals) {
+  const finished = Number.isFinite(homeGoals) && Number.isFinite(awayGoals);
+  const id = (name) => `of-team-${String(name).toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+  return { fixture: { id: `test-${date}-${home}-${away}`, date, kickoffPrecision: /^\\d{4}-\\d{2}-\\d{2}$/.test(date) ? "date" : "time", status: { short: finished ? "FINISHED" : "SCHEDULED" } }, teams: { home: { id: id(home), name: home }, away: { id: id(away), name: away } }, goals: { home: homeGoals, away: awayGoals } };
+}
+
+test("OpenFootball H2H uses only verified finished meetings before kickoff", () => {
+  const matches = [
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-01T12:00:00Z", 2, 1),
+    openFootballMatch("Chelsea", "Arsenal", "2026-09-08T12:00:00Z", 0, 0),
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-15", 1, 0),
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-16T12:00:00Z", 3, 0),
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-02T12:00:00Z", null, null),
+  ];
+  const selected = selectHeadToHead(matches, "Arsenal", "Chelsea", "2026-09-15T15:00:00Z");
+  assert.equal(selected.length, 2);
+  assert.deepEqual(selected.map((match) => match.goals.home), [0, 2]);
+});
+
+test("OpenFootball reconstructs standings only from completed results before kickoff", () => {
+  const matches = [
+    openFootballMatch("Arsenal", "Chelsea", "2026-09-01T12:00:00Z", 2, 1),
+    openFootballMatch("Chelsea", "Spurs", "2026-09-10T12:00:00Z", 1, 0),
+    openFootballMatch("Arsenal", "Spurs", "2026-09-12T12:00:00Z", 1, 1),
+    openFootballMatch("Spurs", "Arsenal", "2026-09-16T12:00:00Z", 4, 0),
+  ];
+  const rows = calculateStandingsRows(matches, "2026-09-15T15:00:00Z");
+  assert.equal(rows[0].team.name, "Arsenal");
+  assert.equal(rows[0].points, 4);
+  assert.equal(rows[1].team.name, "Chelsea");
+  assert.equal(rows[1].points, 3);
+  assert.equal(rows[2].team.name, "Spurs");
+  assert.equal(rows[2].points, 1);
+  assert.ok(rows.every((row) => row.all.played <= 2));
+});
 
 test.before(() => {
   const { providerRegistry } = require("../server");
