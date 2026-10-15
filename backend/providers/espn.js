@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { createProviderError } = require("../services/apiFootballClient");
 const { normalizeStatus, normalizeKickoff } = require("../services/fixtureNormalization");
+const { forEachConcurrent } = require("../services/forEachConcurrent");
 const BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer";
 const LEAGUES = {
   "Premier League": { code: "eng.1", country: "England" },
@@ -93,10 +94,18 @@ async function request(path, params) {
 }
 async function getFixtures(date) {
   const day = date.replace(/-/g, "");
-  const results = await Promise.allSettled(Object.entries(LEAGUES).map(([leagueName, meta]) => request(`${meta.code}/scoreboard`, { dates: day }).then((data) => (data.events || []).map((event) => toFixture(event, leagueName, meta)).filter(Boolean))));
-  const fixtures = [];
-  for (const result of results) if (result.status === "fulfilled") fixtures.push(...result.value);
-  return fixtures;
+  const entries = Object.entries(LEAGUES);
+  const results = new Array(entries.length);
+  // ESPN is a public upstream. Avoid launching dozens of requests at once on a free instance.
+  await forEachConcurrent(entries, 5, async ([leagueName, meta], index) => {
+    try {
+      const data = await request(`${meta.code}/scoreboard`, { dates: day });
+      results[index] = (data.events || []).map((event) => toFixture(event, leagueName, meta)).filter(Boolean);
+    } catch {
+      results[index] = [];
+    }
+  });
+  return results.flat();
 }
 async function getFixture(fixtureId) {
   const id = String(fixtureId).replace(/^espn-/, "");
