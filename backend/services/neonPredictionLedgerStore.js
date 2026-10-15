@@ -58,11 +58,11 @@ class NeonPredictionLedgerStore {
         throw new Error("LEDGER_SCHEMA_INVALID");
       }
     }
-    const constraintResult = await this.pool.query(
-      "SELECT tc.constraint_type FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name AND tc.table_name = kcu.table_name WHERE tc.table_schema = $1 AND tc.table_name = $2 AND kcu.column_name = $3",
-      ["public", tableName, "event_id"]
+    const indexResult = await this.pool.query(
+      "SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2",
+      ["public", tableName]
     );
-    if (!(constraintResult.rows || []).some(row => row.constraint_type === "PRIMARY KEY" || row.constraint_type === "UNIQUE")) {
+    if (!(indexResult.rows || []).some(row => /CREATE UNIQUE INDEX\\b/i.test(row.indexdef || "") && /\\(event_id\\)/i.test(row.indexdef || ""))) {
       throw new Error("LEDGER_SCHEMA_IDEMPOTENCY_CONSTRAINT_MISSING");
     }
     return { valid: true, table: this.table };
