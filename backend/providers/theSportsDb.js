@@ -10,7 +10,7 @@ function cacheTtl(path) {
   if (path === "eventsday.php") return 30 * 60 * 1000;
   return 5 * 60 * 1000;
 }
-function normalized(value) { return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+function normalized(value) { return String(value || "").toLowerCase().replace(/ı/g, "i").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]/g, ""); }
 function toFixture(event) { if (!event?.idEvent || !event.strHomeTeam || !event.strAwayTeam) return null; const date = event.dateEvent || event.strTimestamp?.slice(0, 10); if (!date) return null; return { provider: "thesportsdb", providers: ["thesportsdb"], fixture: { id: `tsdb-${event.idEvent}`, date: event.strTimestamp ? normalizeKickoff(event.strTimestamp) : event.strTime ? normalizeKickoff(`${date}T${event.strTime}`) : date, kickoffPrecision: event.strTimestamp || event.strTime ? "time" : "date", status: { short: normalizeStatus(event.strStatus) } }, league: { id: event.idLeague || null, name: event.strLeague || null, country: event.strCountry || null }, teams: { home: { id: `tsdb-team-${normalized(event.strHomeTeam)}`, name: event.strHomeTeam }, away: { id: `tsdb-team-${normalized(event.strAwayTeam)}`, name: event.strAwayTeam } }, goals: { home: event.intHomeScore == null || event.intHomeScore === "" ? null : Number(event.intHomeScore), away: event.intAwayScore == null || event.intAwayScore === "" ? null : Number(event.intAwayScore) } }; }
 async function request(path, params) { const key = `${path}?${new URLSearchParams(params || {})}`; if (cache.get(key)?.expiresAt > Date.now()) return cache.get(key).value; const promise = axios.get(`${BASE_URL}/${path}`, { params, timeout: 8000 }).then((response) => response.data).catch((error) => { cache.delete(key); if (error.response?.status === 404) return null; throw createProviderError(error); }); cache.set(key, { value: promise, expiresAt: Date.now() + cacheTtl(path) }); if (cache.size > 200) cache.delete(cache.keys().next().value); return promise; }
 async function getFixtures(date) { const data = await request("eventsday.php", { d: date, s: "Soccer" }); return (data?.events || []).map(toFixture).filter(Boolean); }
@@ -36,10 +36,10 @@ async function getTeamForm(_teamId, before, context = {}) {
   const team = (found?.teams || []).find(row => normalized(row.strTeam) === normalized(teamName));
   if (!team?.idTeam) return [];
   const leagueEvents = team.idLeague ? await request("eventspastleague.php", { id: team.idLeague }) : null;
-  const selected = selectTeamHistory(leagueEvents?.events, teamName, before);
+  const selected = selectTeamHistory(leagueEvents?.events, team.strTeam, before);
   if (selected.length) return selected;
   const teamEvents = await request("eventslast.php", { id: team.idTeam });
-  return selectTeamHistory(teamEvents?.results || teamEvents?.events, teamName, before);
+  return selectTeamHistory(teamEvents?.results || teamEvents?.events, team.strTeam, before);
 }
 async function getH2H() { return null; }
 async function getStandings() { return null; }
