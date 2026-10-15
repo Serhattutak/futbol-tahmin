@@ -157,7 +157,7 @@ function getStatistics(fixtureId) {
     const prefix = side === "home" ? "H" : "A";
     return {
       team: { id: `fdu-team-${normalized(side === "home" ? entry.homeName : entry.awayName)}` },
-      statistics: fields.map(([field, type]) => ({ type, value: numberField(entry.row, side === "home" ? field : field.replace(/^H/, prefix) })).filter((stat) => stat.value !== null),
+      statistics: fields.map(([field, type]) => { const sourceField = side === "home" ? field : field.replace(/^H/, prefix); return { type, value: numberField(entry.row, sourceField) }; }).filter((stat) => stat.value !== null),
     };
   };
   return [make("home"), make("away")].filter((row) => row.statistics.length);
