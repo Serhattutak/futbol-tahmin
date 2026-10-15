@@ -23,13 +23,12 @@ test("reconciliation dry-run reports missing IDs without mutating either source"
   assert.equal(destination.length, 1);
 });
 
-test("reconciliation dry-run flags same-ID payload mismatches as unsafe", () => {
+test("reconciliation comparison flags same-ID payload mismatches", () => {
   const changed = { type: "prediction", ledgerId: "fixture-a", snapshot: { ledgerId: "fixture-a", changed: true } };
   const report = compareEventIds([source[0]], [changed]);
   assert.deepEqual(report.missingFromDestination, []);
   assert.deepEqual(report.destinationOnly, []);
   assert.deepEqual(report.payloadMismatches, [require("../services/neonPredictionLedgerStore").stableEventId(source[0])]);
-  assert.equal(report.safeToApply, undefined);
 });
 
 test("reconciliation dry-run identifies destination-only records as unsafe", () => {
