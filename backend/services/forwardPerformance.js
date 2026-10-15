@@ -39,18 +39,48 @@ function report(entries) {
     comparison: { sampleSize: pairs.length, smallSample: pairs.length < 100, models: Object.fromEntries(MODELS.map((m, i) => [m, metrics(pairs.map(r => r.pair[i]))])) } };
 }
 function mountLedgerRoutes(app, ledger) {
-  const safe = handler => (req, res) => { try { handler(req, res); } catch (error) { console.error(JSON.stringify({ type: "LEDGER_READ_FAILED", error: error.message })); res.status(503).json({ success: false, error: "Ledger kayıtları şu anda okunamıyor." }); } };
-  app.get("/api/ledger/status", safe((_req, res) => {
-    const rows = ledger.entries();
-    res.json({ success: true, total: rows.length, pending: rows.filter(r => !r.resultStatus).length, settled: rows.filter(r => r.resultStatus === "settled").length, conflicts: rows.filter(r => r.conflicts.length).length });
+  // Async-safe boundary for both the current filesystem ledger and the future
+  // initialized async facade. Promise rejections must become explicit 503s.
+  const safe = handler => async (req, res) => {
+    try {
+      await handler(req, res);
+    } catch (error) {
+      console.error(JSON.stringify({ type: "LEDGER_READ_FAILED", error: error.message }));
+      if (!res.headersSent) res.status(503).json({ success: false, error: "Ledger kayıtları şu anda okunamıyor." });
+    }
+  };
+
+  app.get("/api/ledger/status", safe(async (_req, res) => {
+    const rows = await ledger.entries();
+    res.json({
+      success: true,
+      total: rows.length,
+      pending: rows.filter(r => !r.resultStatus).length,
+      settled: rows.filter(r => r.resultStatus === "settled").length,
+      conflicts: rows.filter(r => r.conflicts.length).length,
+    });
   }));
-  for (const status of ["entries", "pending", "settled"]) app.get(`/api/ledger/${status}`, safe((req, res) => {
-    const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 50));
-    const offset = Math.max(0, Number.parseInt(req.query.offset, 10) || 0);
-    const rows = ledger.entries().filter(r => status === "entries" || (status === "pending" ? !r.resultStatus : r.resultStatus === "settled")).reverse();
-    res.json({ success: true, total: rows.length, limit, offset, entries: rows.slice(offset, offset + limit) });
+
+  for (const status of ["entries", "pending", "settled"]) {
+    app.get(`/api/ledger/${status}`, safe(async (req, res) => {
+      const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 50));
+      const offset = Math.max(0, Number.parseInt(req.query.offset, 10) || 0);
+      const allRows = await ledger.entries();
+      const rows = allRows
+        .filter(r => status === "entries" || (status === "pending" ? !r.resultStatus : r.resultStatus === "settled"))
+        .reverse();
+      res.json({ success: true, total: rows.length, limit, offset, entries: rows.slice(offset, offset + limit) });
+    }));
+  }
+
+  app.get("/api/ledger/performance", safe(async (_req, res) => {
+    const rows = await ledger.entries();
+    res.json({ success: true, report: report(rows) });
   }));
-  app.get("/api/ledger/performance", safe((_req, res) => res.json({ success: true, report: report(ledger.entries()) })));
-  app.get("/api/ledger/comparison", safe((_req, res) => res.json({ success: true, comparison: report(ledger.entries()).comparison })));
+
+  app.get("/api/ledger/comparison", safe(async (_req, res) => {
+    const rows = await ledger.entries();
+    res.json({ success: true, comparison: report(rows).comparison });
+  }));
 }
 module.exports = { report, metrics, mountLedgerRoutes };
