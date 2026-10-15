@@ -157,3 +157,15 @@ test("TheSportsDB history accepts only finished, scored, pre-cutoff matches invo
   assert.equal(matches[0].goals.home, 2);
   assert.equal(matches[0].goals.away, 1);
 });
+
+test("OpenFootball text source preserves scoreless scheduled fixtures for live discovery", () => {
+  const fixtures = openFootballText.parseTextResults([
+    "= Turkey | Süper Lig 2026/27",
+    "Fri Oct 16 2026",
+    "  21:30 Galatasaray v Fenerbahçe",
+  ].join("\n"), "Süper Lig", "2026-27");
+  assert.equal(fixtures.length, 1);
+  assert.equal(fixtures[0].fixture.status.short, "SCHEDULED");
+  assert.equal(fixtures[0].goals.home, null);
+  assert.equal(fixtures[0].goals.away, null);
+});
