@@ -17,7 +17,24 @@ const LEAGUES = {
   "Campeonato Brasileiro Série A": { file: "br.1.json", country: "Brazil", calendarYear: true },
 };
 const cache = new Map();
-const HISTORICAL_LEAGUES = { ...LEAGUES, "Segunda División": { file: "es.2.json", country: "Spain" } };
+// Historical fixtures/results use OpenFootball's CC0/public-domain datasets.
+ // Keep historical-only leagues out of live discovery unless the current season file is present.
+const HISTORICAL_LEAGUES = {
+  ...LEAGUES,
+  "Segunda División": { file: "es.2.json", country: "Spain" },
+  "League One": { file: "en.3.json", country: "England" },
+  "League Two": { file: "en.4.json", country: "England" },
+  "2. Bundesliga": { file: "de.2.json", country: "Germany" },
+  "Serie B": { file: "it.2.json", country: "Italy" },
+  "Ligue 2": { file: "fr.2.json", country: "France" },
+  "Pro League": { file: "be.1.json", country: "Belgium" },
+  "Süper Lig": { file: "tr.1.json", country: "Turkey" },
+  "Austrian Bundesliga": { file: "at.1.json", country: "Austria" },
+  "Super League Greece": { file: "gr.1.json", country: "Greece" },
+  "Liga MX": { file: "mx.1.json", country: "Mexico" },
+  "Egyptian Premier League": { file: "eg.1.json", country: "Egypt" },
+  "A-League": { file: "au.1.json", country: "Australia" },
+};
 const TEAM_ALIASES = new Map();
 
 function seasonKey(date) {
