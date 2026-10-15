@@ -8,11 +8,25 @@ const { normalize, teamKey, normalizeStatus, normalizeKickoff, normalizeProvider
 const canonicalTeamId = (team) => `team:${teamKey(team?.name)}`;
 const kickoffKey = (value) => normalizeKickoff(value)?.slice(0, 16);
 const LEAGUE_ALIASES = { primeradivision: "laliga" };
-const leagueKey = (name) => { const key = normalize(name); return LEAGUE_ALIASES[key] || key; };
+function leagueKey(name, country) {
+  const key = normalize(name), c = normalize(country);
+  if (c === "switzerland" && ["swisssuperleague", "superleague"].includes(key)) return "swisssuperleague";
+  if (c === "usa" && ["majorleaguesoccer", "mls"].includes(key)) return "mls";
+  if (c === "denmark" && ["danishsuperliga", "superliga"].includes(key)) return "danishsuperliga";
+  if (c === "hungary" && ["hungariannbi", "nbi"].includes(key)) return "hungariannbi";
+  if (c === "brazil" && ["brazilianseriea", "campeonatobrasileiroseriea"].includes(key)) return "brazilianseriea";
+  if (c === "croatia" && ["croatianfirstfootballleague", "hnl"].includes(key)) return "croatianfirstfootballleague";
+  if (c === "bulgaria" && ["bulgarianfirstleague", "firstleague"].includes(key)) return "bulgarianfirstleague";
+  if (c === "wales" && ["welshcymrupremier", "cymrupremier"].includes(key)) return "welshcymrupremier";
+  if (c === "argentina" && ["primeradivisionargentina", "primeradivision", "ligaprofesional", "ligaprofesionalargentina"].includes(key)) return "argentinaprimera";
+  return LEAGUE_ALIASES[key] || key;
+}
 function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
   const sameTeamsAndLeague = canonicalTeamId(a.homeTeam) === canonicalTeamId(b.homeTeam)
     && canonicalTeamId(a.awayTeam) === canonicalTeamId(b.awayTeam)
-    && leagueKey(a.league?.name) === leagueKey(b.league?.name) && Boolean(leagueKey(a.league?.name));
+    && (!a.league?.country || !b.league?.country || normalize(a.league.country) === normalize(b.league.country))
+    && leagueKey(a.league?.name, a.league?.country) === leagueKey(b.league?.name, b.league?.country)
+    && Boolean(leagueKey(a.league?.name, a.league?.country));
   if (!sameTeamsAndLeague) return false;
   // A date-only source cannot provide a reliable kickoff time. Merge it with a timed
   // source on the same calendar date rather than displaying the same match twice.
@@ -41,7 +55,9 @@ function reconcileFixtures(fixtures) {
   for (const fixture of fixtures.filter(Boolean)) {
     const existing = [...merged.values()].find((item) => sameFixture(item, fixture));
     if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
-    merged.set(fixture.canonicalFixtureId, { ...fixture });
+    // Canonical IDs predate country-aware league matching. Keep distinct countries separate internally without changing persisted public IDs.
+    const mergeKey = `${normalize(fixture.league?.country)}:${fixture.canonicalFixtureId || `${fixture.provider}:${fixture.providerFixtureId}`}`;
+    merged.set(mergeKey, { ...fixture });
   }
   const values = [...merged.values()];
   const reconciled = [];
@@ -49,7 +65,8 @@ function reconcileFixtures(fixtures) {
     const sameDay = reconciled.find((other) =>
       canonicalTeamId(other.homeTeam) === canonicalTeamId(fixture.homeTeam)
       && canonicalTeamId(other.awayTeam) === canonicalTeamId(fixture.awayTeam)
-      && leagueKey(other.league?.name) === leagueKey(fixture.league?.name)
+      && (!other.league?.country || !fixture.league?.country || normalize(other.league.country) === normalize(fixture.league.country))
+      && leagueKey(other.league?.name, other.league?.country) === leagueKey(fixture.league?.name, fixture.league?.country)
       && other.kickoff.slice(0, 10) === fixture.kickoff.slice(0, 10)
     );
     if (!sameDay) { reconciled.push({ ...fixture }); continue; }
@@ -172,7 +189,7 @@ class MultiProviderRegistry {
   getTeamHistoricalMatches(team, beforeDate, options) { return this.historicalData.getTeamHistoricalMatches(team, beforeDate, options); }
   getHistoricalForm(fixture, side) { return this.getTeamHistoricalMatches(fixture[side === "home" ? "homeTeam" : "awayTeam"], fixture.kickoff, { fixture, side }); }
   async loadHistoricalForm(fixture, side) {
-    const order = ["openfootball", "sportmonks", "football-data", "api-football", "thesportsdb", "espn"];
+    const order = ["openfootball", "openfootball-text", "sportmonks", "football-data", "api-football", "thesportsdb", "espn"];
     let best = { matches: [], provider: null }; let updated = fixture;
     const historyCandidates = [];
     const historyAttempts = [];
@@ -183,11 +200,11 @@ class MultiProviderRegistry {
       if (!provider.capabilities?.some((capability) => ["historicalResults", "teamForm", "form"].includes(capability)) || !provider.getTeamForm) { historyAttempts.push({ provider: name, outcome: "history_not_supported" }); continue; }
       if (provider.supportsHistoricalLeague ? !provider.supportsHistoricalLeague(updated.league) : provider.supportsLeague && !provider.supportsLeague(updated.league.name)) { historyAttempts.push({ provider: name, outcome: "league_not_supported" }); continue; }
       let context = updated.providerTeams?.[name];
-      if (!context && name !== "openfootball") {
+      if (!context && name !== "openfootball" && !provider.historyLookupByName) {
         updated = await this.matchProvider(updated, provider);
         context = updated.providerTeams?.[name];
       }
-      if (!context && name !== "openfootball") { historyAttempts.push({ provider: name, outcome: "fixture_not_matched" }); continue; }
+      if (!context && name !== "openfootball" && !provider.historyLookupByName) { historyAttempts.push({ provider: name, outcome: "fixture_not_matched" }); continue; }
       const team = updated[side === "home" ? "homeTeam" : "awayTeam"];
       const league = context?.league || { ...updated.league, season: updated.season };
       try {
@@ -197,7 +214,10 @@ class MultiProviderRegistry {
         historyAttempts.push({ provider: name, outcome: matches.length ? "history_found" : "no_usable_history", matchCount: matches.length });
         historyCandidates.push(...matches);
         best = { matches: mergeHistory(historyCandidates, { team, before: updated.kickoff, now: this.now() }), provider: best.provider || (matches.length ? name : null) };
-        if (best.matches.length >= 10) break;
+        const sourceFamily = source => String(source || "").startsWith("openfootball") ? "openfootball" : source;
+        const independentSources = new Set(historyCandidates.map(match => sourceFamily(match.provider)));
+        // Keep checking independent providers even after ten matches from OpenFootball. The text and JSON mirrors are one source family, not two independent confirmations.
+        if (best.matches.length >= 10 && independentSources.size >= 2) break;
       } catch (error) { historyAttempts.push({ provider: name, outcome: "request_failed", category: error.category || "provider_unavailable", ...(Number.isInteger(error.httpStatus) ? { httpStatus: error.httpStatus } : {}) }); this.updateStatus(name, false, error.category || "provider_unavailable"); }
     }
     return { ...best, fixture: updated, historyAttempts };

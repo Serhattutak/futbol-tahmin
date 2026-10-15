@@ -42,3 +42,47 @@ test("historical fallback does not require secondary to list upcoming fixture", 
   assert.equal(history.matches.length, 10); assert.equal(history.provider, "openfootball"); assert.equal(secondaryCalls, 1);
 });
 
+
+test("Name-addressable history providers can enrich a fixture without matching the live fixture feed", async () => {
+  const { MultiProviderRegistry, createLegacyAdapter, canonicalFixture } = require("../services/multiProviderRegistry");
+  const fixture = canonicalFixture({
+    provider: "espn",
+    fixture: { id: "fixture-1", date: "2026-10-20T18:00:00Z" },
+    league: { id: "league-1", name: "League", country: "England", season: 2026 },
+    homeTeam: { id: "home-1", name: "Home FC" },
+    awayTeam: { id: "away-1", name: "Away FC" },
+    status: "SCHEDULED",
+  });
+  let lookups = 0;
+  const provider = createLegacyAdapter({
+    name: "thesportsdb",
+    enabled: true,
+    configured: true,
+    historyLookupByName: true,
+    capabilities: ["historicalResults", "teamForm"],
+    getTeamForm: async (_id, _before, context) => {
+      lookups++;
+      assert.equal(context.team.name, "Home FC");
+      return [];
+    },
+    getFixtures: async () => { throw new Error("Should not require a live fixture match"); },
+  });
+  const registry = new MultiProviderRegistry([provider], { now: () => Date.parse("2026-10-15T12:00:00Z") });
+  await registry.loadHistoricalForm(fixture, "home");
+  assert.equal(lookups, 1);
+});
+
+test("History lookup checks an independent provider even after OpenFootball already has ten matches", async () => {
+  const dates = Array.from({ length: 10 }, (_, i) => new Date(Date.UTC(2026, 4, 10 - i)).toISOString().slice(0, 10));
+  const firstSource = dates.map((date, i) => row(i + 1, date));
+  let independentCalls = 0;
+  const fixture = canonicalFixture({ provider: "thesportsdb", fixture: { id: "tsdb-200", date: before }, homeTeam: team, awayTeam: { id: 2, name: "Getafe" }, league: { id: 140, name: "La Liga", country: "Spain", season: 2026 }, status: "NS" });
+  const registry = new MultiProviderRegistry([
+    createLegacyAdapter({ name: "openfootball", enabled: true, capabilities: ["teamForm", "historicalResults"], getTeamForm: async () => firstSource, getFixtures: async () => [] }),
+    createLegacyAdapter({ name: "thesportsdb", enabled: true, capabilities: ["teamForm", "historicalResults"], getTeamForm: async () => { independentCalls++; return [row(1, dates[0])]; }, getFixtures: async () => [{ provider: "thesportsdb", fixture: { id: "tsdb-200", date: before, status: { short: "SCHEDULED" } }, league: { id: 140, name: "La Liga", country: "Spain", season: 2026 }, teams: { home: { id: "tsdb-team-realbetis", name: "Real Betis" }, away: { id: "tsdb-team-getafe", name: "Getafe" } }, goals: { home: null, away: null } }] }),
+  ]);
+  const history = await registry.getHistoricalForm(fixture, "home");
+  assert.equal(history.matches.length, 10);
+  assert.equal(independentCalls, 1);
+  assert.ok(history.historyAttempts.some(attempt => attempt.provider === "thesportsdb" && attempt.outcome === "history_found"));
+});

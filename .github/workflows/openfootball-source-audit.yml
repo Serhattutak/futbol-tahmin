@@ -1,0 +1,37 @@
+name: OpenFootball Source Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 8 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Audit latest listed season files
+        working-directory: backend
+        run: node scripts/auditOpenFootballTextSources.js
+      - name: Upload source coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openfootball-text-source-audit
+          path: docs/openfootball-text-source-audit.json
+          if-no-files-found: ignore
+          retention-days: 30

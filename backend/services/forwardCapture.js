@@ -96,7 +96,7 @@ class ForwardCapture {
           if (batch.stale) throw Object.assign(Error("Stale fixture list"), { code: "STALE_FIXTURES" });
           if (!batch.fixtures.length && batch.providerError?.some(e => e.category !== "no_data")) throw Object.assign(Error("Discovery providers unavailable"), { code: "provider_unavailable" });
           summary.discovery.push({ date, source: batch.source || null, count: batch.fixtures.length, providerError: batch.providerError || null });
-          for (const f of batch.fixtures) fixtures.set(f.canonicalFixtureId || `${f.provider}:${f.providerFixtureId}`, f);
+          for (const f of batch.fixtures) fixtures.set(`${String(f.league?.country || "").toLowerCase()}:${f.canonicalFixtureId || `${f.provider}:${f.providerFixtureId}`}`, f);
         } catch (error) { summary.errors++; summary.discovery.push({ date, error: safeError(error) }); }
       }
       summary.discoveredFixtures = fixtures.size;

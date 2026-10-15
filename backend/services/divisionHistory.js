@@ -49,7 +49,8 @@ async function collectDivisionHistory({ team, before, fixtureId, league, catalog
   if (!team?.name || !league?.country) return [];
   const divisions = Object.keys(catalog).filter(name => catalog[name].country === league.country).sort((a, b) => Number(b === league.name) - Number(a === league.name) || a.localeCompare(b));
   if (!divisions.length) return [];
-  const current = Number(seasonOf(before).slice(0, 4));
+  const currentSeasonYear = Number(seasonOf(before).slice(0, 4));
+  const currentCalendarYear = Number(String(before).slice(0, 4));
   const options = { team, before, fixtureId, now };
   let rows = [];
   // Exhaust installed evidence before any remote request. This is especially
@@ -58,8 +59,8 @@ async function collectDivisionHistory({ team, before, fixtureId, league, catalog
   if (remote && !load) break;
   rows = [];
   for (let offset = 0; offset < 3; offset++) {
-    const year = current - offset;
     for (const division of divisions) {
+      const year = (catalog[division]?.calendarYear ? currentCalendarYear : currentSeasonYear) - offset;
       const season = catalog[division]?.calendarYear ? String(year) : `${year}-${String(year + 1).slice(-2)}`;
       // Completed prior seasons are reusable; current snapshots have a bounded age.
       const installed = datasets.find(s => s.league === division && s.season === season);
