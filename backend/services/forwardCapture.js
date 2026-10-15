@@ -81,9 +81,11 @@ class ForwardCapture {
     const rows = this.ledger.entries();
     const { lastAttempts: _attempts, ...publicState } = state;
     const lastRunMs = Date.parse(state.lastRunAt || "");
+    const lastSuccessfulRunMs = Date.parse(state.lastSuccessfulRunAt || "");
     const lastRunAgeMs = Number.isFinite(lastRunMs) ? Math.max(0, this.now() - lastRunMs) : null;
-    const captureHealth = lastRunAgeMs === null ? "never_run" : lastRunAgeMs > this.config.intervalMs * 2 ? "stale" : "fresh";
-    return { ...publicState, lastRunAgeMs, captureHealth,
+    const lastSuccessfulRunAgeMs = Number.isFinite(lastSuccessfulRunMs) ? Math.max(0, this.now() - lastSuccessfulRunMs) : null;
+    const captureHealth = lastSuccessfulRunAgeMs === null ? "never_succeeded" : lastSuccessfulRunAgeMs > this.config.intervalMs * 2 ? "stale" : "fresh";
+    return { ...publicState, lastRunAgeMs, lastSuccessfulRunAgeMs, captureHealth,
       isRunning: Boolean(this.running) || fs.existsSync(path.join(this.config.directory, "run.lock")), schedulerActive: Boolean(this.timer), nextRunAt: this.nextRunAt || null,
       recordedPredictions: rows.length, recordedFixtures: new Set(rows.map(r => r.fixtureId)).size,
       window: { minLeadMinutes: this.config.minLeadMinutes, maxLeadMinutes: this.config.maxLeadMinutes } };
