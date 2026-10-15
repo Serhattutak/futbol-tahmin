@@ -1487,6 +1487,11 @@ if (require.main === module) {
     if (ledgerMode === "filesystem") {
       predictionLedgerHandle.markReady();
     } else if (ledgerMode === "neon") {
+      if (process.env.ZEUS_LEDGER_STAGING_SMOKE === "true") {
+        const { runStagingSmoke } = require("./scripts/neonStagingSmoke");
+        const smoke = await runStagingSmoke();
+        console.log(JSON.stringify(smoke));
+      }
       // Optional staging preflight: run a read-only reconciliation comparison on
       // this exact source/target pair. Refuse startup if any source event is missing
       // from Neon or any destination-only event exists; no writes happen here.
