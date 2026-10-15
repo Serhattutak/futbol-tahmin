@@ -8,6 +8,21 @@ test("hata veya quota sonrasi fallback provider kullanilir", async () => { const
 test("ayni fixture tek canonical fixture olur, farkli kickoff conflict olur", () => { assert.equal(reconcileFixtures([fixture("a"), fixture("b")]).length, 1); const conflicts = reconcileFixtures([fixture("a"), fixture("b", "2026-09-16T13:00:00Z")]); assert.ok(conflicts.every((item) => item.dataConflict)); });
 test("sonuc uzlasmasi verified veya conflict doner", () => { assert.equal(reconcileResults([{ homeGoals: 2, awayGoals: 1 }, { homeGoals: 2, awayGoals: 1 }]).resultVerificationStatus, "verified"); assert.equal(reconcileResults([{ homeGoals: 2, awayGoals: 1 }, { homeGoals: 1, awayGoals: 1 }]).resultVerificationStatus, "conflict"); });
 test("provider team idleri stable canonical team kimligine baglanir", () => { assert.equal(canonicalTeamId({ name: "Team Name", id: 1 }), canonicalTeamId({ name: "Team Name", id: 2 })); });
+test("bilinen Ispanyol takim adi varyantlari ayni canonical takima eslenir", () => {
+  assert.equal(canonicalTeamId({ name: "Albacete Balompié" }), canonicalTeamId({ name: "Albacete" }));
+  assert.equal(canonicalTeamId({ name: "AD Ceuta FC" }), canonicalTeamId({ name: "Ceuta" }));
+  assert.equal(canonicalTeamId({ name: "Real Sporting de Gijón" }), canonicalTeamId({ name: "Sporting Gijón" }));
+});
+test("date-only fixture and timed fixture merge into one row and retain exact kickoff", () => {
+  const dateOnly = { ...fixture("openfootball", "2025-10-12T00:00:00Z"), kickoffPrecision: "date", league: { name: "Segunda División", country: "Spain" }, homeTeam: { canonicalTeamId: "team:burgos", name: "Burgos CF" }, awayTeam: { canonicalTeamId: "team:valladolid", name: "Real Valladolid" }, providerFixtureIds: { openfootball: "of-match" } };
+  const timed = { ...fixture("espn", "2025-10-12T15:00:00Z"), kickoffPrecision: "time", league: { name: "Segunda División", country: "Spain" }, homeTeam: { canonicalTeamId: "team:burgos2", name: "Burgos" }, awayTeam: { canonicalTeamId: "team:valladolid2", name: "Real Valladolid CF" }, providerFixtureIds: { espn: "espn-match" } };
+  const merged = reconcileFixtures([dateOnly, timed]);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].kickoffPrecision, "time");
+  assert.equal(merged[0].kickoff, "2025-10-12T15:00:00Z");
+  assert.deepEqual(merged[0].sources, ["openfootball", "espn"]);
+});
+
 test("source agreement sadece mevcut sayisal kaynaklari uzlastirir", () => { assert.equal(numericAgreement([1.42, 1.39]).status, "high"); assert.equal(numericAgreement([1.42, 2.31]).conflict, true); assert.equal(numericAgreement([]).value, null); });
 test("sonuc kaynaklari quota ile bitince hata saklanmaz", async () => { const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixture: async () => { throw new ProviderError("quota", "quota"); } }]); await assert.rejects(registry.getResults({ a: "fixture-1" }), (error) => error.category === "quota"); });
 test("quota yaniti sonrasi ayni provider cooldown suresinde tekrar cagrilmaz", async () => { let calls = 0; const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixture: async () => { calls++; throw new ProviderError("quota", "quota"); } }]); await assert.rejects(registry.getResults({ a: "fixture-1" }), (error) => error.category === "quota"); await assert.rejects(registry.getResults({ a: "fixture-1" }), (error) => error.category === "quota"); assert.equal(calls, 1); });
