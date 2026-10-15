@@ -168,7 +168,10 @@ async function loadLeague(leagueName, season) {
       if (error.response?.status === 404) { cache.set(key, { value: [], expiresAt: Date.now() + 6 * 60 * 60 * 1000 }); return []; }
       throw createProviderError(error);
     });
-  cache.set(key, { value: promise, expiresAt: Date.now() + 5 * 60 * 1000 });
+  // Upstream season files change far less often than live scoreboards: refresh current-season data every 30 minutes and completed seasons daily.
+  const currentDate = new Date().toISOString().slice(0, 10);
+  const ttl = seasonForDate(meta, currentDate) === String(season) ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000;
+  cache.set(key, { value: promise, expiresAt: Date.now() + ttl });
   return promise;
 }
 
