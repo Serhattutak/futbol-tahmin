@@ -198,7 +198,7 @@ class MultiProviderRegistry {
         historyCandidates.push(...matches);
         best = { matches: mergeHistory(historyCandidates, { team, before: updated.kickoff, now: this.now() }), provider: best.provider || (matches.length ? name : null) };
         if (best.matches.length >= 10) break;
-      } catch (error) { historyAttempts.push({ provider: name, outcome: "request_failed", category: error.category || "provider_unavailable" }); this.updateStatus(name, false, error.category || "provider_unavailable"); }
+      } catch (error) { historyAttempts.push({ provider: name, outcome: "request_failed", category: error.category || "provider_unavailable", ...(Number.isInteger(error.httpStatus) ? { httpStatus: error.httpStatus } : {}) }); this.updateStatus(name, false, error.category || "provider_unavailable"); }
     }
     return { ...best, fixture: updated, historyAttempts };
   }
