@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { localKickoffToUtc } = require("../services/localKickoff");
 const { createProviderError } = require("../services/apiFootballClient");
+const { forEachConcurrent } = require("../services/forEachConcurrent");
 
 const BASE_URL = "https://www.football-data.co.uk/mmz4281";
 const LEAGUES = {
@@ -111,10 +112,11 @@ async function loadLeague(leagueName, season) {
 async function getFixtures(date, league) {
   const names = league && LEAGUES[league] ? [league] : Object.keys(LEAGUES);
   const season = seasonFor(date);
-  const results = await Promise.all(names.map(async (name) => {
-    try { return (await loadLeague(name, season)).filter((fixture) => fixture.fixture.date.slice(0, 10) === date); }
-    catch { return []; }
-  }));
+  const results = new Array(names.length);
+  await forEachConcurrent(names, 4, async (name, index) => {
+    try { results[index] = (await loadLeague(name, season)).filter((fixture) => fixture.fixture.date.slice(0, 10) === date); }
+    catch { results[index] = []; }
+  });
   return results.flat();
 }
 async function getFixture(fixtureId) {
