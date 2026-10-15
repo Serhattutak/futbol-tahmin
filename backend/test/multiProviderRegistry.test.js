@@ -6,6 +6,14 @@ const fixture = (provider, kickoff = "2026-09-16T12:00:00Z", homeGoals = null, a
 test("fixture discovery tum uygun providerlari birlestirir ve cache tekrar cagirmaz", async () => { let first = 0; let second = 0; const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixtures: async () => { first += 1; return [fixture("a")]; } }, { name: "b", enabled: true, getFixtures: async () => { second += 1; return [fixture("b")]; } }]); await registry.getFixtures("2026-09-16"); await registry.getFixtures("2026-09-16"); assert.equal(first, 1); assert.equal(second, 1); });
 test("hata veya quota sonrasi fallback provider kullanilir", async () => { const fallback = { name: "b", enabled: true, getFixtures: async () => [fixture("b")] }; for (const error of [new ProviderError("timeout_network", "timeout"), new ProviderError("quota", "quota")]) { const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixtures: async () => { throw error; } }, fallback]); assert.equal((await registry.getFixtures("2026-09-16"))[0].provider, "b"); } });
 test("ayni fixture tek canonical fixture olur, farkli kickoff conflict olur", () => { assert.equal(reconcileFixtures([fixture("a"), fixture("b")]).length, 1); const conflicts = reconcileFixtures([fixture("a"), fixture("b", "2026-09-16T13:00:00Z")]); assert.ok(conflicts.every((item) => item.dataConflict)); });
+test("date-only and timed sources for the same Turkey-local fixture merge across UTC date boundary", () => {
+  const dateOnly = { ...fixture("openfootball", "2025-10-11T00:00:00Z"), kickoffPrecision: "date" };
+  const timed = { ...fixture("espn", "2025-10-12T01:00:00Z"), kickoffPrecision: "time" };
+  const merged = reconcileFixtures([dateOnly, timed]);
+  assert.equal(merged.length, 1);
+  assert.deepEqual(Object.keys(merged[0].providerFixtureIds).sort(), ["espn", "openfootball"]);
+});
+
 test("same-day cross-provider duplicates collapse and conflicting scores are hidden", () => {
   const first = { ...fixture("openfootball", "2026-09-16T12:00:00Z", 2, 1), kickoffPrecision: "time", providerFixtureIds: { openfootball: "of-1" } };
   const second = { ...fixture("espn", "2026-09-16T13:00:00Z", 1, 0), kickoffPrecision: "time", providerFixtureIds: { espn: "espn-1" } };
