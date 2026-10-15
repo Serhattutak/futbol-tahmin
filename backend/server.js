@@ -1471,23 +1471,25 @@ app.use((error, req, res, next) => {
 });
 
 if (require.main === module) {
-forwardCapture.startScheduler();
-const resultCheckTimer = setInterval(() => {
-  predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
-    .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
-  checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
-  settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
-    .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
-    .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
-}, 15 * 60 * 1000);
-resultCheckTimer.unref();
+  // CI's local server must not start scheduled provider requests or mutate runtime ledgers.
+  if (process.env.ZEUS_DISABLE_CAPTURE_SCHEDULER !== "1") {
+    forwardCapture.startScheduler();
+    const resultCheckTimer = setInterval(() => {
+      predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
+        .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
+      checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
+      settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
+        .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
+        .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
+    }, 15 * 60 * 1000);
+    resultCheckTimer.unref();
+  }
 
-app.listen(PORT, () => {
-  console.log(
-    `Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`
-  );
-});
-
+  app.listen(PORT, () => {
+    console.log(
+      `Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`
+    );
+  });
 }
 // Vercel serverless (@vercel/node), modülün dışa aktardığı isteği karşılayan bir
 // handler fonksiyonu bekler. Express uygulaması (`app`) böyle bir fonksiyondur; bu
