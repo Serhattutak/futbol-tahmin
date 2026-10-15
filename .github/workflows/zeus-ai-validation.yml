@@ -91,7 +91,7 @@ jobs:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: |
           node <<'NODE'
-          const base = process.env.ZEUS_API_BASE_URL.replace(/\\/$/, "");
+          const base = process.env.ZEUS_API_BASE_URL.replace(/\/$/, "");
           const paths = ["/api/health", "/api/providers/status", "/api/ledger/status", "/api/ledger/performance", "/api/ledger/comparison", "/api/capture/status"];
           (async () => {
             for (const path of paths) {
