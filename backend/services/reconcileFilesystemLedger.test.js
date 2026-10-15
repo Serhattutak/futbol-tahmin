@@ -57,6 +57,20 @@ test("does not report a verified cutover when destination has extra events", asy
   assert.deepEqual(report.destinationOnly, [stableEventId(extra)]);
 });
 
+test("does not verify matching IDs when prediction payloads differ", async () => {
+  const changed = {
+    type: "prediction",
+    ledgerId: prediction.ledgerId,
+    snapshot: { ledgerId: prediction.ledgerId, homeProbability: 0.99 },
+  };
+  const destinationStore = storeWith([changed]);
+  const report = await reconcileFilesystemEvents({ sourceEvents: [prediction], destinationStore });
+  assert.equal(report.verified, false);
+  assert.deepEqual(report.missingFromDestination, []);
+  assert.deepEqual(report.destinationOnly, []);
+  assert.deepEqual(report.payloadMismatches, [stableEventId(prediction)]);
+});
+
 test("rejects conflicting source records that reuse a stable event identity", async () => {
   const changedPrediction = { type: "prediction", ledgerId: "reconcile-1", snapshot: { ledgerId: "reconcile-1", value: "different" } };
   await assert.rejects(
