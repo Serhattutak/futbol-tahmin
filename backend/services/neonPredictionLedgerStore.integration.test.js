@@ -7,10 +7,14 @@ const { NeonPredictionLedgerStore } = require("./neonPredictionLedgerStore");
 test("real PostgreSQL round-trip, idempotency, and restart restore", {
   skip: !process.env.ZEUS_TEST_DATABASE_URL
 }, async () => {
-  // Load the driver only when the explicit isolated-test URL is supplied.
+  const connectionString = process.env.ZEUS_TEST_DATABASE_URL;
+  const host = new URL(connectionString).hostname;
+  // This destructive test creates/drops a fixed table; only allow an explicitly
+  // isolated local CI PostgreSQL service, never a production or remote Neon URL.
+  assert.ok(["localhost", "127.0.0.1", "::1"].includes(host), "integration tests require local isolated PostgreSQL");
   const { Pool } = require("pg");
   const pool = new Pool({
-    connectionString: process.env.ZEUS_TEST_DATABASE_URL,
+    connectionString,
     max: 2,
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 1000
