@@ -1474,6 +1474,11 @@ app.use((error, req, res, next) => {
   return res.status(status).json({ success: false, error: status === 413 ? "İstek gövdesi çok büyük." : status === 403 ? "Origin izinli değil." : "Sunucu hatası." });
 });
 
+if (require.main !== module && process.env.ZEUS_LEDGER_MODE && process.env.ZEUS_LEDGER_MODE !== "filesystem") {
+  // Serverless imports cannot await the restore gate; never silently serve filesystem data in Neon mode.
+  throw new Error("NEON_MODE_REQUIRES_ASYNC_SERVER_BOOTSTRAP");
+}
+
 if (require.main === module) {
   (async () => {
     const ledgerMode = process.env.ZEUS_LEDGER_MODE || "filesystem";
