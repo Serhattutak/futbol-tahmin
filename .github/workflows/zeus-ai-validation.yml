@@ -99,7 +99,7 @@ jobs:
         run: |
           node <<'NODE'
           const base = process.env.ZEUS_API_BASE_URL.replace(/\/$/, "");
-          const paths = ["/api/health", "/api/providers/status", "/api/ledger/status", "/api/ledger/performance", "/api/ledger/comparison", "/api/capture/status"];
+          const paths = ["/api/health", "/api/providers/status", "/api/capture/status", "/api/ledger/status", "/api/ledger/performance", "/api/ledger/comparison"];
           (async () => {
             for (const path of paths) {
               try {
