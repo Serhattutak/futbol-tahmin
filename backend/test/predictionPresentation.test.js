@@ -21,6 +21,13 @@ test("Market heading follows the selected actual model, including 4.0 fallback",
   assert.match(marketSection, /eyebrow=\{modelLabel\(analysis\)\}/);
 });
 
+test("match cards show only valid 1X2 probabilities that sum to 100%", async () => {
+  const { oneXTwoSummary } = await import("../../src/predictionPresentation.js");
+  assert.deepEqual(oneXTwoSummary({ homeWin: 48.2, draw: 27.4, awayWin: 24.4 }), { home: 48.2, draw: 27.4, away: 24.4 });
+  assert.equal(oneXTwoSummary({ homeWin: 50, draw: 25, awayWin: 20 }), null);
+  assert.equal(oneXTwoSummary({ homeWin: null, draw: 30, awayWin: 70 }), null);
+});
+
 test("frontend market sunumu oran, adil oran, implied probability ve value hesaplar", async () => {
   const { marketMetrics } = await import("../../src/predictionPresentation.js");
   assert.deepEqual(marketMetrics(50, 2.2), { fairOdds: 2, impliedProbability: 45.45, value: 10 });
