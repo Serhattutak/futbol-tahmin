@@ -60,7 +60,7 @@ function toFixture(match, leagueName, meta, season) {
 async function loadLeague(leagueName, season) {
   const meta = HISTORICAL_LEAGUES[leagueName]; if (!meta) return [];
   const key = `${leagueName}:${season}`; if (cache.get(key)?.expiresAt > Date.now()) return cache.get(key).value;
-  const promise = axios.get(`${BASE_URL}/${season}/${meta.file}`, { timeout: 15000 }).then((response) => (response.data.matches || []).map((match) => toFixture(match, leagueName, meta, season))).catch((error) => { cache.delete(key); if (error.response?.status === 404) return []; throw createProviderError(error); });
+  const promise = axios.get(`${BASE_URL}/${season}/${meta.file}`, { timeout: 15000 }).then((response) => (response.data.matches || []).map((match) => toFixture(match, leagueName, meta, season))).catch((error) => { if (error.response?.status === 404) { cache.set(key, { value: [], expiresAt: Date.now() + 5 * 60 * 1000 }); return []; } cache.delete(key); throw createProviderError(error); });
   cache.set(key, { value: promise, expiresAt: Date.now() + 5 * 60 * 1000 }); return promise;
 }
 async function getFixtures(date, league) {
