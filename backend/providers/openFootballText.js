@@ -16,7 +16,7 @@ const CATALOG = {
   Veikkausliiga: { country: "Finland", root: EUROPE, path: "finland", file: "{season}_fi1.txt", calendarYear: true, seasons: ["2025", "2024", "2023"] },
   "Úrvalsdeild": { country: "Iceland", root: EUROPE, path: "iceland", file: "{season}_is1.txt", calendarYear: true, seasons: ["2025", "2024", "2023"] },
   "League of Ireland Premier Division": { country: "Ireland", root: EUROPE, path: "ireland", file: "{season}_ie1.txt", calendarYear: true, seasons: ["2025", "2024", "2023"] },
-  "Primera División Argentina": { country: "Argentina", root: SOUTH_AMERICA, path: "argentina", file: "{season}_ar1.txt", calendarYear: true, seasons: ["2025", "2024", "2023", "2022", "2021", "2020", "2019-20", "2018-19"] },
+  "Primera División Argentina": { country: "Argentina", root: SOUTH_AMERICA, path: "argentina", file: "{season}_ar1.txt", calendarYear: true, seasons: ["2025", "2024", "2023", "2022", "2021", "2020"] },
   "Categoría Primera A": { country: "Colombia", root: SOUTH_AMERICA, path: "colombia", file: "{season}_co1.txt", calendarYear: true, seasons: ["2025", "2024", "2023"] },
   "J1 League": { country: "Japan", root: WORLD, path: "asia/japan", file: "{season}_jp1.txt", calendarYear: true, seasons: ["2025", "2024", "2023", "2022", "2021", "2020", "2019"] },
   "Chinese Super League": { country: "China", root: WORLD, path: "asia/china", file: "{season}_cn1.txt", calendarYear: true, seasons: ["2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018"] },
@@ -116,6 +116,8 @@ async function getTeamForm(_teamId, before, context = {}) {
   });
 }
 
+const LEAGUE_ALIASES = { "Super League": ["Switzerland"], "NB I": ["Hungary"], "Primera División": ["Argentina"], Superliga: ["Denmark"], MLS: ["USA"] };
+
 module.exports = {
   name: "openfootball-text",
   configured: true,
@@ -125,5 +127,5 @@ module.exports = {
   getSeasonFixtures: loadLeague,
   getTeamForm,
   parseTextResults,
-  supportsHistoricalLeague: league => Boolean(CATALOG[league?.name]) && (!league.country || CATALOG[league.name].country === league.country),
+  supportsHistoricalLeague: league => (Boolean(CATALOG[league?.name]) && (!league.country || CATALOG[league.name].country === league.country)) || Boolean(LEAGUE_ALIASES[league?.name]?.includes(league.country)),
 };
