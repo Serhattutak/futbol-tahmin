@@ -1254,8 +1254,9 @@ app.get("/api/match-context/:fixtureId", analyzeLimiter, concurrencyGuard(2), as
     const fixtures = await providerRegistry.getFixture(fixtureId);
     const fixture = fixtures?.[0];
     if (!fixture) return res.status(404).json({ success: false, error: "Maç veri sağlayıcılarında bulunamadı." });
-    const context = await espn.getNewsForFixture(fixture);
-    return res.json({ success: true, fixture: { id: fixture.fixture?.id, league: fixture.league?.name, home: fixture.teams?.home?.name, away: fixture.teams?.away?.name }, context });
+    const newsFixture = { league: fixture.league, teams: { home: fixture.homeTeam, away: fixture.awayTeam } };
+    const context = await espn.getNewsForFixture(newsFixture);
+    return res.json({ success: true, fixture: { id: fixture.fixtureId || fixture.canonicalFixtureId, league: fixture.league?.name, home: fixture.homeTeam?.name, away: fixture.awayTeam?.name }, context });
   } catch (error) {
     console.warn(JSON.stringify({ type: "MATCH_CONTEXT_UNAVAILABLE", fixtureId, category: error.category || "provider_unavailable" }));
     return res.json({ success: true, context: { provider: "ESPN", available: false, reason: error.category || "provider_unavailable", articles: [] } });
