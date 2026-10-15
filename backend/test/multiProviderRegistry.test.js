@@ -7,8 +7,8 @@ test("fixture discovery tum uygun providerlari birlestirir ve cache tekrar cagir
 test("hata veya quota sonrasi fallback provider kullanilir", async () => { const fallback = { name: "b", enabled: true, getFixtures: async () => [fixture("b")] }; for (const error of [new ProviderError("timeout_network", "timeout"), new ProviderError("quota", "quota")]) { const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixtures: async () => { throw error; } }, fallback]); assert.equal((await registry.getFixtures("2026-09-16"))[0].provider, "b"); } });
 test("ayni fixture tek canonical fixture olur, farkli kickoff conflict olur", () => { assert.equal(reconcileFixtures([fixture("a"), fixture("b")]).length, 1); const conflicts = reconcileFixtures([fixture("a"), fixture("b", "2026-09-16T13:00:00Z")]); assert.ok(conflicts.every((item) => item.dataConflict)); });
 test("date-only and timed sources for the same Turkey-local fixture merge across UTC date boundary", () => {
-  const dateOnly = { ...fixture("openfootball", "2025-10-11T00:00:00Z"), kickoffPrecision: "date" };
-  const timed = { ...fixture("espn", "2025-10-12T01:00:00Z"), kickoffPrecision: "time" };
+  const dateOnly = { ...fixture("openfootball", "2025-10-11T00:00:00Z"), kickoffPrecision: "date", providerFixtureIds: { openfootball: "of-boundary" } };
+  const timed = { ...fixture("espn", "2025-10-12T01:00:00Z"), kickoffPrecision: "time", providerFixtureIds: { espn: "espn-boundary" } };
   const merged = reconcileFixtures([dateOnly, timed]);
   assert.equal(merged.length, 1);
   assert.deepEqual(Object.keys(merged[0].providerFixtureIds).sort(), ["espn", "openfootball"]);
