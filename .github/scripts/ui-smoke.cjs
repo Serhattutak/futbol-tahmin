@@ -38,7 +38,7 @@ const { chromium } = require("playwright");
       String(match.league?.name || "").toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]/g, ""),
       normalizeTeamName(match.teams?.home?.name),
       normalizeTeamName(match.teams?.away?.name),
-      String(match.fixture?.date || "").slice(0, 10),
+      // All returned fixtures are already filtered to the requested Turkey-local day.
     ].join("|"));
     const duplicateKeys = fixtureKeys.filter((key, index) => fixtureKeys.indexOf(key) !== index);
     if (duplicateKeys.length) console.log("Duplicate fixture diagnostics:", JSON.stringify(payload.matches.filter(match => match.league?.name === "Segunda División").map(match => ({ date: match.fixture?.date, id: match.fixture?.id, home: match.teams?.home?.name, homeId: match.teams?.home?.id, away: match.teams?.away?.name, awayId: match.teams?.away?.id, league: match.league?.name, providers: match.providers }))));
