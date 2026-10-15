@@ -67,7 +67,7 @@ async function collectDivisionHistory({ team, before, fixtureId, league, catalog
       // asking for nonexistent year-offset files and silently losing history.
       const available = Array.isArray(meta.seasons)
         ? meta.seasons.map(String)
-          .filter(season => Number(season.match(/^\\d{4}/)?.[0]) <= targetYear)
+          .filter(season => Number(season.slice(0, 4)) <= targetYear)
           .sort((a, b) => Number(b.slice(0, 4)) - Number(a.slice(0, 4)) || b.localeCompare(a))
         : null;
       const year = targetYear - offset;
