@@ -82,14 +82,16 @@ async function getFixtures(date, league) {
   return all;
 }
 async function getFixture(fixtureId) {
-  const date = String(fixtureId).match(/\d{4}-\d{2}-\d{2}/)?.[0] || new Date().toISOString().slice(0, 10);
-  for (const leagueName of Object.keys(HISTORICAL_LEAGUES)) {
-    const meta = HISTORICAL_LEAGUES[leagueName];
-    const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date));
-    const found = fixtures.find((fixture) => fixture.fixture.id === fixtureId);
-    if (found) return found;
-  }
-  return null;
+  const id = String(fixtureId);
+  const leagueName = Object.keys(HISTORICAL_LEAGUES)
+    .sort((a, b) => normalizeName(b).length - normalizeName(a).length)
+    .find((name) => id.startsWith(`of-${normalizeName(name)}-`));
+  if (!leagueName) return null;
+  const date = id.match(/\d{4}-\d{2}-\d{2}/)?.[0];
+  if (!date) return null;
+  const meta = HISTORICAL_LEAGUES[leagueName];
+  const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date));
+  return fixtures.find((fixture) => fixture.fixture.id === id) || null;
 }
 async function getTeamForm(teamId, before = new Date().toISOString(), context = {}) {
   const team = context.team || { name: TEAM_ALIASES.get(teamId) };
