@@ -44,6 +44,22 @@ test("Ledger rejects ambiguous kickoff, live/finished status and future history"
   const v = input(); v.collected.homeMatches = [{ fixture: { date: "2026-09-20T11:00:00Z" } }];
   assert.equal(save(ledger, v)[0].reason, "HISTORY_AFTER_PREDICTION");
 });
+test("Ledger accepts date-only history only after the full day has ended", t => {
+  const { ledger } = setup(t);
+  const previousDay = input("date-only-prior-day");
+  previousDay.collected.homeMatches = [{ fixture: { date: "2026-09-19", kickoffPrecision: "date" } }];
+  assert.ok(save(ledger, previousDay).every(r => r.saved));
+
+  const sameDay = input("date-only-same-day");
+  sameDay.collected.homeMatches = [{ fixture: { date: "2026-09-20", kickoffPrecision: "date" } }];
+  assert.ok(save(ledger, sameDay).every(r => r.reason === "HISTORY_AFTER_PREDICTION"));
+
+  const timedFuture = input("timed-future-history");
+  timedFuture.collected.homeMatches = [{ fixture: { date: "2026-09-20T10:00:01Z", kickoffPrecision: "time" } }];
+  assert.ok(save(ledger, timedFuture).every(r => r.reason === "HISTORY_AFTER_PREDICTION"));
+  assert.equal(ledger.entries().length, 2);
+});
+
 test("Ledger deduplicates repeats and persists across instances", t => {
   const { ledger, directory } = setup(t); save(ledger);
   for (let i = 0; i < 20; i++) assert.ok(save(ledger).every(r => r.reason === "DUPLICATE"));

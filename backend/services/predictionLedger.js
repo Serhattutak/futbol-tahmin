@@ -8,6 +8,20 @@ const hash = value => crypto.createHash("sha256").update(JSON.stringify(value)).
 const clone = value => JSON.parse(JSON.stringify(value));
 const probability = p => Number.isFinite(p) && p >= 0 && p <= 1;
 const instant = value => typeof value === "string" && /T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(value) && Number.isFinite(Date.parse(value));
+function historyPrecedesPrediction(row, now) {
+  const value = row?.fixture?.date;
+  if (typeof value !== "string") return false;
+  const dateOnly = row.fixture.kickoffPrecision === "date" || /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (dateOnly) {
+    const day = value.slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
+    const start = Date.parse(`${day}T00:00:00.000Z`);
+    if (!Number.isFinite(start) || new Date(start).toISOString().slice(0, 10) !== day) return false;
+    // A date-only result is safely historical only after that whole UTC day ended.
+    return start + 86_400_000 - 1 < now;
+  }
+  return instant(value) && Date.parse(value) < now;
+}
 const RESULT_FIELDS = ["resultStatus", "actualHomeGoals", "actualAwayGoals", "actual1X2", "actualOver15", "actualOver25", "actualOver35", "actualBTTS", "settledAt", "predictionCorrect1X2", "brier1X2", "logLoss1X2", "predictionCorrectOver15", "predictionCorrectOver25", "predictionCorrectOver35", "predictionCorrectBTTS"];
 function snapshot(analysis, response, collected, now) {
   const fixture = collected?.fixture;
@@ -15,7 +29,7 @@ function snapshot(analysis, response, collected, now) {
   if (!Number.isFinite(now) || now >= Date.parse(fixture.kickoff)) return { reason: "KICKOFF_REACHED" };
   if (normalizeStatus(fixture.status) !== "SCHEDULED" || fixture.dataConflict || fixture.result) return { reason: "NOT_PRE_MATCH" };
   const histories = [collected.homeMatches, collected.awayMatches, collected.h2hMatches].flatMap(rows => rows || []);
-  if (histories.some(row => !instant(row.fixture?.date) || Date.parse(row.fixture.date) >= now)) return { reason: "HISTORY_AFTER_PREDICTION" };
+  if (histories.some(row => !historyPrecedesPrediction(row, now))) return { reason: "HISTORY_AFTER_PREDICTION" };
   if (!analysis?.eligible) return { reason: "INELIGIBLE" };
   const p = analysis.probabilities;
   if (!p || ["home", "draw", "away", "over15", "over25", "over35", "bttsYes"].some(k => !probability(p[k])) || Math.abs(p.home + p.draw + p.away - 1) > 1e-8 || p.over15 < p.over25 || p.over25 < p.over35) return { reason: "INVALID_PROBABILITIES" };
