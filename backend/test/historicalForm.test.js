@@ -28,6 +28,7 @@ test("team suffix normalization and ambiguous IDs fail closed", () => {
   assert.equal(teamKey("  Getafe C.F. "), teamKey("Getafe"));
   assert.equal(teamKey("Fenerbahçe SK"), teamKey("Fenerbahce"));
   assert.equal(teamKey("Real Betis Balompié"), teamKey("Real Betis"));
+  assert.equal(teamKey("Gimnasia y Esgrima de La Plata"), teamKey("Gimnasia La Plata"));
   const other = row(2); other.teams = { ...other.teams, home: { id: 99, name: "Real Betis FC" } };
   assert.equal(selectHistory([row(1), other], { team, before }).length, 0);
 });
