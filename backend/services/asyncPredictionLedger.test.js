@@ -133,6 +133,41 @@ test("settles verified final results idempotently and records contradictory scor
   assert.equal(ledger.entries()[0].conflicts.length, 1);
 });
 
+test("settleFromProviders settles expired fixtures using the supplied provider results", async () => {
+  const prediction = {
+    type: "prediction", ledgerId: "settle-provider-1",
+    snapshot: {
+      ledgerId: "settle-provider-1",
+      predictionCreatedAt: "2026-10-01T10:00:00.000Z",
+      kickoffTime: "2026-10-01T12:00:00.000Z",
+      fixtureId: "fixture-provider-driven",
+      providerFixtureIds: { alpha: "alpha-id-1" },
+      homeProbability: 0.6, drawProbability: 0.25, awayProbability: 0.15,
+      over15: 0.7, over25: 0.5, over35: 0.3, bttsYes: 0.4,
+    },
+  };
+  const ledger = new AsyncPredictionLedger({
+    store: fakeStore([prediction]),
+    now: () => Date.parse("2026-10-02T00:00:00.000Z"),
+  });
+  await ledger.initialize();
+  let providerCallCount = 0;
+  const results = await ledger.settleFromProviders(async providerFixtureIds => {
+    providerCallCount++;
+    assert.deepEqual(providerFixtureIds, { alpha: "alpha-id-1" });
+    return [{
+      provider: "alpha",
+      providerFixtureId: "alpha-id-1",
+      status: "FINISHED",
+      result: { status: "FINISHED", homeGoals: 2, awayGoals: 1 },
+    }];
+  }, 10);
+  assert.equal(providerCallCount, 1);
+  assert.deepEqual(results, [{ saved: true, reason: null }]);
+  assert.equal(ledger.entries()[0].resultStatus, "settled");
+  assert.equal(ledger.status().settlementCount, 1);
+});
+
 test("settlement refuses unverified provider fixture IDs and pre-kickoff outcomes", async () => {
   const prediction = {
     type: "prediction", ledgerId: "settle-2",
