@@ -39,6 +39,7 @@ Consumers that must be migrated together:
 
 - [x] Adapter uses parameterized inserts and idempotent event IDs.
 - [x] Adapter validates event payload against indexed DB columns.
+- [x] Startup facade validates required table columns and the event-ID unique index before restoring persisted events.
 - [x] Isolated PostgreSQL CI verifies append, idempotency, fresh-pool recovery, event types, status counts, and malformed-row rejection.
 - [x] Existing frontend/backend regression and historical replay checks pass on the latest tested adapter commit.
 - [ ] Async ledger facade has full unit coverage for restore, append, entries projection, settlement, and failure propagation. The isolated facade and tests cover initialization gating, restore/projection, idempotent append, duplicate-ID rejection, DB read/write error propagation, final-result settlement, duplicate settlement, and contradictory-score auditing. A separate reconciliation helper now copies supplied source events idempotently, validates the resulting event-ID set, detects destination-only records, and supports safe retry after partial failure. Reading the existing filesystem ledger and invoking reconciliation during a real migration remain unwired.
