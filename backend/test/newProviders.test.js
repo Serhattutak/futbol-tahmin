@@ -211,3 +211,16 @@ test("TheSportsDB cache windows respect the free API update cadence", () => {
   assert.equal(theSportsDb.cacheTtl("eventsday.php"), 30 * 60 * 1000);
   assert.equal(theSportsDb.cacheTtl("lookupevent.php"), 5 * 60 * 1000);
 });
+
+test("TheSportsDB team history matches accent and Turkish dotted/dotless-I variants safely", () => {
+  const events = [
+    { idEvent: "accent-1", dateEvent: "2026-09-01", strStatus: "Match Finished", strHomeTeam: "Málaga CF", strAwayTeam: "Sevilla FC", intHomeScore: "2", intAwayScore: "1" },
+    { idEvent: "turkish-1", dateEvent: "2026-08-28", strStatus: "Match Finished", strHomeTeam: "İstanbul Başakşehir", strAwayTeam: "Konyaspor", intHomeScore: "1", intAwayScore: "0" },
+  ];
+  const malaga = theSportsDb.selectTeamHistory(events, "Malaga CF", "2026-09-02T12:00:00Z");
+  assert.equal(malaga.length, 1);
+  assert.equal(malaga[0].teams.home.name, "Málaga CF");
+  const istanbul = theSportsDb.selectTeamHistory(events, "Istanbul Basaksehir", "2026-08-29T12:00:00Z");
+  assert.equal(istanbul.length, 1);
+  assert.equal(istanbul[0].teams.home.name, "İstanbul Başakşehir");
+});
