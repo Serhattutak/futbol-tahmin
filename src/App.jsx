@@ -426,7 +426,7 @@ function MatchNewsPanel({ context, loading }) {
     {loading ? <p className="muted-note" role="status">Takımlarla ilişkili haberler kontrol ediliyor…</p>
       : articles.length ? <div className="news-list">{articles.map((article, index) => {
         const text = `${article.headline || ""} ${article.description || ""}`;
-        const injuryRelated = /injur|injured|suspend|suspension|ruled out|doubtful|fitness|sakat|ceza|kad.ro dışı|oynamayacak/i.test(text);
+        const injuryRelated = /injur|injured|suspend|suspension|ruled out|doubtful|fitness|sakat|ceza|kadro dışı|oynamayacak/i.test(text);
         return <article className="news-item" key={article.url || `${article.headline}-${index}`}>
           <div className="news-item-meta"><span>{injuryRelated ? "Sakatlık / kadro haberi olabilir" : "Takım haberi"}</span>{article.published && <time dateTime={article.published}>{new Date(article.published).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</time>}</div>
           <h3>{article.headline}</h3>
