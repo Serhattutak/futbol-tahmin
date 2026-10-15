@@ -97,3 +97,33 @@ test("rejects persisted rows whose indexed columns disagree with the payload", a
   const store = new NeonPredictionLedgerStore({ pool });
   await assert.rejects(store.loadEvents(), /LEDGER_EVENT_COLUMN_MISMATCH/);
 });
+
+function schemaPool({ missingColumn = null, missingUnique = false } = {}) {
+  const columns = [
+    ["event_id", "text", "NO"],
+    ["ledger_id", "text", "NO"],
+    ["event_type", "text", "NO"],
+    ["payload", "jsonb", "NO"],
+    ["created_at", "timestamp with time zone", "NO"],
+  ].filter(([name]) => name !== missingColumn).map(([column_name, data_type, is_nullable]) => ({ column_name, data_type, is_nullable }));
+  return {
+    async query(sql) {
+      if (sql.includes("information_schema.columns")) return { rows: columns };
+      if (sql.includes("information_schema.table_constraints")) return { rows: missingUnique ? [] : [{ constraint_type: "PRIMARY KEY" }] };
+      throw new Error("UNEXPECTED_QUERY");
+    },
+  };
+}
+
+test("validates the complete schema and event idempotency constraint", async () => {
+  const store = new NeonPredictionLedgerStore({ pool: schemaPool() });
+  assert.deepEqual(await store.validateSchema(), { valid: true, table: "public.zeus_prediction_ledger_events" });
+  await assert.rejects(
+    new NeonPredictionLedgerStore({ pool: schemaPool({ missingColumn: "payload" }) }).validateSchema(),
+    /LEDGER_SCHEMA_INVALID/,
+  );
+  await assert.rejects(
+    new NeonPredictionLedgerStore({ pool: schemaPool({ missingUnique: true }) }).validateSchema(),
+    /LEDGER_SCHEMA_IDEMPOTENCY_CONSTRAINT_MISSING/,
+  );
+});
