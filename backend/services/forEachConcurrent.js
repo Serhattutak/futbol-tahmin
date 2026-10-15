@@ -4,17 +4,22 @@ async function forEachConcurrent(items, concurrency, worker) {
   if (typeof worker !== "function") throw new TypeError("worker must be a function");
 
   let cursor = 0;
-  let firstError = null;
+  let hasError = false;
+  let firstError;
 
   async function runWorker() {
-    while (cursor < items.length && firstError === null) {
+    while (cursor < items.length && !hasError) {
       const index = cursor++;
       try {
         await worker(items[index], index);
       } catch (error) {
         // Stop scheduling new work on the first failure, but let already-running
-        // workers settle before rejecting the overall operation.
-        if (firstError === null) firstError = error;
+        // workers settle before rejecting the overall operation. Track the
+        // failure separately because JavaScript permits throwing null/undefined.
+        if (!hasError) {
+          hasError = true;
+          firstError = error;
+        }
       }
     }
   }
@@ -23,7 +28,7 @@ async function forEachConcurrent(items, concurrency, worker) {
     Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()),
   );
 
-  if (firstError !== null) throw firstError;
+  if (hasError) throw firstError;
 }
 
 module.exports = { forEachConcurrent };
