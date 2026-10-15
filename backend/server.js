@@ -1206,8 +1206,12 @@ let over25 = 0;
 
 const { ProductionAnalysis } = require("./services/productionAnalysis");
 const { PredictionLedger } = require("./services/predictionLedger");
+const { createPredictionLedgerHandle } = require("./services/createPredictionLedgerHandle");
 const { mountLedgerRoutes } = require("./services/forwardPerformance");
-const predictionLedger = new PredictionLedger();
+const filesystemPredictionLedger = new PredictionLedger();
+const predictionLedgerHandle = createPredictionLedgerHandle(filesystemPredictionLedger);
+// Services retain this stable reference while startup chooses and validates the active store.
+const predictionLedger = predictionLedgerHandle.ledger;
 const productionAnalysis = new ProductionAnalysis({
   ledger: predictionLedger,
   collect: async fixtureId => {
@@ -1471,24 +1475,35 @@ app.use((error, req, res, next) => {
 });
 
 if (require.main === module) {
-  // CI's local server must not start scheduled provider requests or mutate runtime ledgers.
-  if (process.env.ZEUS_DISABLE_CAPTURE_SCHEDULER !== "1") {
-    forwardCapture.startScheduler();
-    const resultCheckTimer = setInterval(() => {
-      predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
-        .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
-      checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
-      settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
-        .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
-        .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
-    }, 15 * 60 * 1000);
-    resultCheckTimer.unref();
-  }
+  (async () => {
+    const ledgerMode = process.env.ZEUS_LEDGER_MODE || "filesystem";
+    // Fail closed rather than silently using the filesystem if Neon is selected
+    // before source reconciliation, runtime dependency, and staging gates are complete.
+    if (ledgerMode !== "filesystem") {
+      throw new Error("NEON_CUTOVER_BLOCKED: filesystem reconciliation, PostgreSQL runtime dependency, and staging verification are required before enabling Neon.");
+    }
+    predictionLedgerHandle.markReady();
 
-  app.listen(PORT, () => {
-    console.log(
-      `Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`
-    );
+    // CI's local server must not start scheduled provider requests or mutate runtime ledgers.
+    if (process.env.ZEUS_DISABLE_CAPTURE_SCHEDULER !== "1") {
+      forwardCapture.startScheduler();
+      const resultCheckTimer = setInterval(() => {
+        predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
+          .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
+        checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
+        settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
+          .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
+          .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
+      }, 15 * 60 * 1000);
+      resultCheckTimer.unref();
+    }
+
+    app.listen(PORT, () => {
+      console.log(`Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`);
+    });
+  })().catch(error => {
+    console.error(JSON.stringify({ type: "LEDGER_STARTUP_BLOCKED", message: error.message }));
+    process.exitCode = 1;
   });
 }
 // Vercel serverless (@vercel/node), modülün dışa aktardığı isteği karşılayan bir
@@ -1497,6 +1512,6 @@ if (require.main === module) {
 // dışa aktarımlar (testlerin ve diğer modüllerin kullandığı) fonksiyona özellik
 // olarak eklenerek korunur; hiçbir mevcut import kırılmaz.
 module.exports = app;
-Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
+Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger, predictionLedgerHandle });
 
 
