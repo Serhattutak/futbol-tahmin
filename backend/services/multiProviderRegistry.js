@@ -18,7 +18,7 @@ function leagueKey(name, country) {
   if (c === "croatia" && ["croatianfirstfootballleague", "hnl"].includes(key)) return "croatianfirstfootballleague";
   if (c === "bulgaria" && ["bulgarianfirstleague", "firstleague"].includes(key)) return "bulgarianfirstleague";
   if (c === "wales" && ["welshcymrupremier", "cymrupremier"].includes(key)) return "welshcymrupremier";
-  if (c === "argentina" && ["primeradivisionargentina", "primeradivision", "ligaprofesional", "ligaprofesionalargentina"].includes(key)) return "argentinaprimera";
+  if (c === "argentina" && ["primeradivisionargentina", "argentinianprimeradivision", "primeradivision", "ligaprofesional", "ligaprofesionalargentina"].includes(key)) return "argentinaprimera";
   return LEAGUE_ALIASES[key] || key;
 }
 function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
