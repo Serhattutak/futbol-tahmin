@@ -23,3 +23,22 @@ test("historical collection explains providers that are absent or do not support
   assert.equal(byProvider["football-data"], "not_installed");
   assert.equal(byProvider.espn, "not_installed");
 });
+
+test("historical H2H and standings can use league history without a live provider fixture match", async () => {
+  const calls = [];
+  const provider = {
+    name: "openfootball", enabled: true, capabilities: ["h2h", "standings"],
+    supportsLeague: () => false,
+    supportsHistoricalLeague: (league) => league?.name === "League",
+    getFixtures: async () => [],
+    getH2H: async (_home, _away, context) => { calls.push(["h2h", context.home.name, context.away.name]); return [{ provider: "openfootball", fixture: { id: "old-1", date: "2026-08-01T12:00:00Z", status: { short: "FINISHED" } }, league: { name: "League", country: "Country" }, teams: { home: { id: "old-home", name: "Home" }, away: { id: "old-away", name: "Away" } }, goals: { home: 2, away: 1 } }]; },
+    getStandings: async (_id, _season, context) => { calls.push(["standings", context.league.name]); return [{ league: { id: "league", name: "League", standings: [[{ team: { id: "old-home", name: "Home" }, rank: 1, points: 3 }]] } }]; },
+  };
+  const registry = new MultiProviderRegistry([provider]);
+  registry.getHistoricalForm = async (match, side) => ({ matches: Array.from({ length: 5 }, (_, i) => ({ provider: "openfootball", fixture: { id: `form-${side}-${i}`, date: `2026-08-${String(10 - i).padStart(2, "0")}T12:00:00Z`, status: { short: "FINISHED" } }, league: { name: "League", country: "Country" }, teams: { home: { id: "home", name: "Home" }, away: { id: "away", name: "Away" } }, goals: { home: 1, away: 0 } })), provider: "openfootball", fixture: match, historyAttempts: [] });
+  const match = { ...fixture("origin"), league: { id: "league", name: "League", country: "Country" }, homeTeam: { canonicalTeamId: "team:home", providerTeamId: "home", name: "Home" }, awayTeam: { canonicalTeamId: "team:away", providerTeamId: "away", name: "Away" }, kickoff: "2026-09-16T12:00:00Z", sources: ["espn"], providerTeams: {} };
+  const result = await registry.collectAnalysis(match);
+  assert.deepEqual(calls.map((call) => call[0]), ["h2h", "standings"]);
+  assert.equal(result.h2hMatches.length, 1);
+  assert.equal(result.standingsResponse.length, 1);
+});
