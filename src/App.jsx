@@ -15,7 +15,7 @@ import { dataQualityReasons, dataQualityText, marketMetrics, matchesMarketFilter
 // Production'da (Vercel) frontend ve backend aynı origin'de çalışır; bu yüzden
 // API istekleri göreli "/api/..." yoluyla gider (boş API_BASE). Geliştirmede ise
 // yerel backend'e (localhost:3001) yönlendirilir. VITE_API_BASE_URL tanımlıysa o kullanılır.
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:3001" : "");
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:3001" : window.location.hostname === "zeus-one-betting.onrender.com" ? "https://zeus-one-betting-api.onrender.com" : "");
 const NAV_ITEMS = [
   { id: "home", label: "Ana Sayfa", icon: "⌂" },
   { id: "matches", label: "Maçlar", icon: "▦" },
