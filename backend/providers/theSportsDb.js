@@ -30,8 +30,10 @@ async function getTeamForm(_teamId, before, context = {}) {
   const team = (found?.teams || []).find(row => normalized(row.strTeam) === normalized(teamName));
   if (!team?.idTeam) return [];
   const leagueEvents = team.idLeague ? await request("eventspastleague.php", { id: team.idLeague }) : null;
+  const selected = selectTeamHistory(leagueEvents?.events, teamName, before);
+  if (selected.length) return selected;
   const teamEvents = await request("eventslast.php", { id: team.idTeam });
-  return selectTeamHistory([...(leagueEvents?.events || []), ...(teamEvents?.results || teamEvents?.events || [])], teamName, before);
+  return selectTeamHistory(teamEvents?.results || teamEvents?.events, teamName, before);
 }
 async function getH2H() { return null; }
 async function getStandings() { return null; }
