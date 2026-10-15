@@ -25,6 +25,12 @@ test("football-data errors expose numeric HTTP status without leaking provider r
   assert.equal(footballData.providerError({ response: { status: 403 } }).category, "authentication");
 });
 
+test("football-data team-history HTTP 400 is treated as a source miss while other errors still propagate", () => {
+  assert.equal(footballData.isUnavailableHistoryQuery({ httpStatus: 400 }), true);
+  assert.equal(footballData.isUnavailableHistoryQuery({ httpStatus: 403 }), false);
+  assert.equal(footballData.isUnavailableHistoryQuery({ category: "timeout_network" }), false);
+});
+
 test("token gerektiren providerlar token yokken pasif kalir", () => { assert.equal(sportmonks.enabled, false); assert.equal(footballData.enabled, false); });
 test("OpenFootball historical lookup covers additional public-domain league datasets", () => {
   for (const league of [
