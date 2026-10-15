@@ -22,7 +22,7 @@ export default function LegalCenter() {
       <div className={OPERATOR && CONTACT_EMAIL ? "legal-config-status ready" : "legal-config-status"}>
         {OPERATOR && CONTACT_EMAIL
           ? "İşletmeci ve iletişim bilgileri yapılandırılmış."
-          : "Yayın öncesi işletmeci ve iletişim bilgileri tamamlanmalı."}
+          : "Bireysel işletmeci · iletişim bilgisi yayın öncesi tamamlanmalı."}
       </div>
     </section>
 
@@ -34,8 +34,8 @@ export default function LegalCenter() {
       <h2>{section.title}</h2>
       {active === "privacy" && <>
         <h3>İşletmeci ve iletişim</h3>
-        <p><strong>İşletmeci:</strong> {OPERATOR || "Henüz yapılandırılmadı"}</p>
-        <p><strong>İletişim:</strong> {CONTACT_EMAIL || "Henüz yapılandırılmadı"}</p>
+        <p><strong>İşletmeci:</strong> {OPERATOR || "Bireysel işletmeci (şirket yok)"}</p>
+        <p><strong>İletişim:</strong> {CONTACT_EMAIL || "Yayın öncesi tamamlanmalı"}</p>
         <p>İşletmeci ve iletişim alanları yayın öncesinde doğru bilgilerle doldurulmalıdır. Bu alanlar tamamlanmadan bu metin tek başına nihai hukuki bildirim sayılmaz.</p>
         <h3>Hangi veriler kullanılır?</h3>
         <p>ZEUS AI; fikstür, takım formu, istatistikler, oranlar ve sonuçlar gibi futbol verilerini ilgili veri sağlayıcılarından alarak analiz ekranlarında sunabilir. Sağlayıcıların kullanılabilirliği ve kapsamı lige, zamana ve hizmet koşullarına göre değişebilir.</p>
