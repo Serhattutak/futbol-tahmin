@@ -2,6 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { spawnSync } = require("node:child_process");
+const path = require("node:path");
 const { compareEventIds } = require("./reconcileFilesystemLedgerToNeon");
 
 const source = [
@@ -25,4 +27,20 @@ test("reconciliation dry-run identifies destination-only records as unsafe", () 
   const report = compareEventIds(source, [source[0], extra]);
   assert.deepEqual(report.missingFromDestination, [require("../services/neonPredictionLedgerStore").stableEventId(source[1])]);
   assert.deepEqual(report.destinationOnly, [require("../services/neonPredictionLedgerStore").stableEventId(extra)]);
+});
+
+test("apply mode refuses an implicit/default filesystem source directory", () => {
+  const script = path.join(__dirname, "reconcileFilesystemLedgerToNeon.js");
+  const result = spawnSync(process.execPath, [script, "--apply"], {
+    encoding: "utf8",
+    timeout: 10000,
+    env: {
+      ...process.env,
+      DATABASE_URL: "postgres://example.invalid/never-connect",
+      ZEUS_LEDGER_DIR: "",
+      ZEUS_RECONCILE_CONFIRM: "I_HAVE_VERIFIED_SOURCE_AND_TARGET",
+    },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /ZEUS_LEDGER_DIR_REQUIRED_FOR_APPLY/);
 });
