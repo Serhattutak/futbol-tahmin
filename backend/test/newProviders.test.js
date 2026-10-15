@@ -32,6 +32,7 @@ test("OpenFootball historical lookup covers additional public-domain league data
     { name: "Ligue 2", country: "France" },
     { name: "Süper Lig", country: "Turkey" },
     { name: "Pro League", country: "Belgium" },
+    { name: "2. Liga", country: "Austria" },
   ]) assert.equal(openFootball.supportsHistoricalLeague(league), true, league.name);
 });
 
