@@ -19,7 +19,6 @@ const theSportsDb = require("./providers/theSportsDb");
 const sportmonks = require("./providers/sportmonks");
 const footballData = require("./providers/footballData");
 const espn = require("./providers/espn");
-const footballDataUk = require("./providers/footballDataUk");
 const { normalizeStatus } = require("./services/fixtureNormalization");
 const { MultiProviderRegistry, createLegacyAdapter, toFrontendFixture } = require("./services/multiProviderRegistry");
 
@@ -113,7 +112,6 @@ const providerRegistry = new MultiProviderRegistry([
   createLegacyAdapter(openFootball),
   createLegacyAdapter(theSportsDb),
   createLegacyAdapter(espn),
-  createLegacyAdapter(footballDataUk),
 ], { fixtureCacheFile: path.join(__dirname, "data", "fixture-cache.json"), historicalCacheFile: path.join(__dirname, "data", "historical-cache.json") });
 
 async function optionalApiGet(pathname, params) {
