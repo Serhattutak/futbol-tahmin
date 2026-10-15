@@ -41,7 +41,7 @@ Consumers that must be migrated together:
 - [x] Adapter validates event payload against indexed DB columns.
 - [x] Isolated PostgreSQL CI verifies append, idempotency, fresh-pool recovery, event types, status counts, and malformed-row rejection.
 - [x] Existing frontend/backend regression and historical replay checks pass on the latest tested adapter commit.
-- [ ] Async ledger facade has full unit coverage for restore, append, entries projection, settlement, and failure propagation. A first isolated facade and tests now cover initialization gating, restore/projection, idempotent append, duplicate-ID rejection, and DB read/write error propagation; settlement logic and app wiring remain intentionally unfinished.
+- [ ] Async ledger facade has full unit coverage for restore, append, entries projection, settlement, and failure propagation. The isolated facade and tests cover initialization gating, restore/projection, idempotent append, duplicate-ID rejection, DB read/write error propagation, final-result settlement, duplicate settlement, and contradictory-score auditing. Full app wiring and filesystem reconciliation remain intentionally unfinished.
 - [ ] All synchronous consumers and routes are migrated to awaited operations.
 - [ ] Filesystem-to-Neon reconciliation is implemented and tested against duplicate and partial-migration cases.
 - [ ] Startup ordering guarantees restore completes before listen/schedulers.
@@ -50,4 +50,4 @@ Consumers that must be migrated together:
 
 ## Current validation
 
-The isolated PostgreSQL test and main CI passed on commit `8e521ff23408ca8c4b454edaff64f4b859483b36` (workflow run #259). The PR run intentionally skips live Render diagnostics; this does not establish production readiness. The Neon adapter and new async facade are not wired into the application and no production data has been written to Neon. The facade is an isolated migration step only; it does not yet implement async settlement or filesystem-to-Neon reconciliation.
+The isolated PostgreSQL test and main CI passed on commit `8e521ff23408ca8c4b454edaff64f4b859483b36` (workflow run #259). The PR run intentionally skips live Render diagnostics; this does not establish production readiness. The Neon adapter and async facade are not wired into the application and no production data has been written to Neon. The facade remains an isolated migration step; filesystem-to-Neon reconciliation, consumer/route migration, and startup ordering are still outstanding.
