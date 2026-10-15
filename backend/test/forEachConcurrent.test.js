@@ -28,3 +28,18 @@ test("an empty fixture pool does not start workers", async () => {
 test("rejects invalid concurrency rather than silently running unbounded", async () => {
   await assert.rejects(forEachConcurrent([1], 0, async () => {}), RangeError);
 });
+
+test("a provider failure handled per item does not prevent later fixtures from being analyzed", async () => {
+  const results = [];
+  await forEachConcurrent([1, 2, 3, 4, 5], 2, async (item) => {
+    try {
+      if (item === 2) throw new Error("provider unavailable");
+      results.push({ item, status: "ok" });
+    } catch {
+      results.push({ item, status: "unavailable" });
+    }
+  });
+  assert.equal(results.length, 5);
+  assert.equal(results.find(result => result.item === 2).status, "unavailable");
+  assert.equal(results.filter(result => result.status === "ok").length, 4);
+});
