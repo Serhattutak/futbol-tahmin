@@ -30,6 +30,10 @@ function dateKey(offsetDays = 0) {
   const health = await getJson("/api/health");
   assert.equal(health.status, "ok", "production health endpoint should report ok");
   assert.ok(health.providers && typeof health.providers === "object", "provider status should be exposed");
+  const providerNames = Array.isArray(health.providers)
+    ? health.providers.map(provider => provider.name).filter(Boolean)
+    : Object.keys(health.providers);
+  assert.ok(providerNames.length > 0, "at least one provider status should be exposed");
 
   const checks = [];
   for (const date of ["2026-10-11", dateKey(0), dateKey(1)]) {
@@ -41,7 +45,7 @@ function dateKey(offsetDays = 0) {
     checks.push({ date, results: body.results, source: body.source || null, stale: Boolean(body.stale), providerError: body.providerError || null });
   }
   assert.ok(checks[0].results > 0, "known historical date 2026-10-11 should include real completed fixtures");
-  console.log(JSON.stringify({ ok: true, health: health.status, providerNames: Object.keys(health.providers), dateChecks: checks }));
+  console.log(JSON.stringify({ ok: true, health: health.status, providerNames, dateChecks: checks }));
 })().catch(error => {
   console.error("Production API compatibility smoke test failed:", error.message);
   process.exitCode = 1;
