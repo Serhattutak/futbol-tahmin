@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const provider = require("../providers/footballDataUk");
+const { MultiProviderRegistry, createLegacyAdapter } = require("../services/multiProviderRegistry");
 
 test("football-data.co.uk parses quoted CSV fields and commas", () => {
   assert.deepEqual(provider.parseCsvLine('"Date","HomeTeam","AwayTeam","Notes"'), ["Date", "HomeTeam", "AwayTeam", "Notes"]);
@@ -27,4 +28,15 @@ test("football-data.co.uk fixtures preserve verified scores and never invent the
   assert.equal(upcoming.fixture.status.short, "SCHEDULED");
   assert.deepEqual(upcoming.goals, { home: null, away: null });
   assert.equal(provider.toFixture({ Date: "bad", HomeTeam: "A", AwayTeam: "B" }, "Premier League", meta, "2627"), null);
+});
+
+test("registry resolves historical provider fixture IDs back to real results", async () => {
+  const raw = provider.toFixture({ Date: "15/10/26", Time: "19:45", HomeTeam: "Arsenal", AwayTeam: "Chelsea", FTHG: "2", FTAG: "1", FTR: "H" }, "Premier League", provider.LEAGUES["Premier League"], "2627");
+  const adapter = createLegacyAdapter({ ...provider, getFixture: async () => raw, getFixtures: async () => [raw] });
+  const registry = new MultiProviderRegistry([adapter]);
+  const found = await registry.getFixture(raw.fixture.id);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].provider, "football-data-uk");
+  assert.equal(found[0].result.homeGoals, 2);
+  assert.equal(found[0].result.awayGoals, 1);
 });
