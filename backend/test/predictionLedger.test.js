@@ -150,6 +150,22 @@ test("A single settled side cannot enter paired metrics and revisions cannot hid
 test("Empty forward performance exposes null metrics, not invented results", () => {
   const data = report([]); assert.equal(data.comparison.sampleSize, 0); assert.equal(data.models[MODELS[0]]["1X2"].accuracy, null); assert.equal(data.models[MODELS[1]].smallSample, true);
 });
+test("ZEUS_LEDGER_DIR relocates both prediction ledger and capture status directories", () => {
+  const { spawnSync } = require("node:child_process");
+  const root = path.join(os.tmpdir(), "zeus-ledger-root-test");
+  const code = `const { PredictionLedger } = require("./services/predictionLedger"); const config = require("./services/forwardCaptureConfig"); console.log(JSON.stringify({ ledger: new PredictionLedger().directory, capture: config.directory }));`;
+  const child = spawnSync(process.execPath, ["-e", code], {
+    cwd: path.join(__dirname, ".."),
+    env: { ...process.env, ZEUS_LEDGER_DIR: root },
+    encoding: "utf8",
+  });
+  assert.equal(child.status, 0, child.stderr);
+  assert.deepEqual(JSON.parse(child.stdout), {
+    ledger: path.join(root, "prediction-ledger"),
+    capture: path.join(root, "forward-capture"),
+  });
+});
+
 test("Atomic publication failure leaves existing JSON intact and no partial event", t => {
   const { ledger, directory } = setup(t); save(ledger); const before = ledger.events();
   const io = Object.create(fs); io.linkSync = () => { throw Error("simulated disk error"); };
