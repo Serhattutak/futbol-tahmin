@@ -10,9 +10,16 @@ const kickoffKey = (value) => normalizeKickoff(value)?.slice(0, 16);
 const LEAGUE_ALIASES = { primeradivision: "laliga" };
 const leagueKey = (name) => { const key = normalize(name); return LEAGUE_ALIASES[key] || key; };
 function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
-  return canonicalTeamId(a.homeTeam) === canonicalTeamId(b.homeTeam) && canonicalTeamId(a.awayTeam) === canonicalTeamId(b.awayTeam)
-    && leagueKey(a.league?.name) === leagueKey(b.league?.name) && Boolean(leagueKey(a.league?.name))
-    && Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= tolerance;
+  const sameTeamsAndLeague = canonicalTeamId(a.homeTeam) === canonicalTeamId(b.homeTeam)
+    && canonicalTeamId(a.awayTeam) === canonicalTeamId(b.awayTeam)
+    && leagueKey(a.league?.name) === leagueKey(b.league?.name) && Boolean(leagueKey(a.league?.name));
+  if (!sameTeamsAndLeague) return false;
+  // A date-only source cannot provide a reliable kickoff time. Merge it with a timed
+  // source on the same calendar date rather than displaying the same match twice.
+  if (a.kickoffPrecision === "date" || b.kickoffPrecision === "date") {
+    return a.kickoff.slice(0, 10) === b.kickoff.slice(0, 10);
+  }
+  return Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= tolerance;
 }
 
 function canonicalFixture({ provider, fixture, league, homeTeam, awayTeam, status, result }) {
@@ -29,7 +36,7 @@ function reconcileFixtures(fixtures) {
   const merged = new Map();
   for (const fixture of fixtures.filter(Boolean)) {
     const existing = [...merged.values()].find((item) => sameFixture(item, fixture));
-    if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
+    if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
     merged.set(fixture.canonicalFixtureId, { ...fixture });
   }
   const values = [...merged.values()];
