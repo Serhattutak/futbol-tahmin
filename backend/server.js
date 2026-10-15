@@ -1273,7 +1273,7 @@ const BEST_PREDICTIONS_MIN_QUALITY = 60;
 const BEST_PREDICTIONS_MIN_CONFIDENCE = 70;
 const BEST_PREDICTIONS_MIN_PROBABILITY = 65;
 
-app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, res) => {
+app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
     return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
   }
@@ -1367,7 +1367,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(1), async (req, 
   }
 });
 
-app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(1), async (req, res) => {
+app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   if (isProduction) return res.status(404).json({ success: false, error: "Endpoint bulunamadÄ±." });
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
     return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
@@ -1383,7 +1383,7 @@ app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(1), async (req, 
   }
 });
 
-app.get("/api/performance", heavyLimiter, concurrencyGuard(1), async (req, res) => {
+app.get("/api/performance", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   try {
     const records = await checkPendingPredictions(10);
     const archive = await settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 });
@@ -1394,12 +1394,12 @@ app.get("/api/performance", heavyLimiter, concurrencyGuard(1), async (req, res) 
   }
 });
 
-app.get("/api/archive/status", heavyLimiter, concurrencyGuard(1), (req, res) => {
+app.get("/api/archive/status", heavyLimiter, concurrencyGuard(3), (req, res) => {
   const summary = summarizeArchive(readArchive(historicalArchivePath));
   return res.json({ success: true, totalPredictions: summary.totalPredictions, completed: summary.completed, verified: summary.verified, unverified: summary.unverified, conflict: summary.conflict, pending: summary.pending, unavailable: summary.unavailable, noBet: summary.noBet, coverage: summary.coverage, modelVersions: summary.modelVersions });
 });
 
-app.get("/api/archive/performance", heavyLimiter, concurrencyGuard(1), (req, res) => {
+app.get("/api/archive/performance", heavyLimiter, concurrencyGuard(3), (req, res) => {
   return res.json({ success: true, ...summarizeArchive(readArchive(historicalArchivePath)) });
 });
 
