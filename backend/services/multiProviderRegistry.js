@@ -8,11 +8,21 @@ const { normalize, teamKey, normalizeStatus, normalizeKickoff, normalizeProvider
 const canonicalTeamId = (team) => `team:${teamKey(team?.name)}`;
 const kickoffKey = (value) => normalizeKickoff(value)?.slice(0, 16);
 const LEAGUE_ALIASES = { primeradivision: "laliga" };
-const leagueKey = (name) => { const key = normalize(name); return LEAGUE_ALIASES[key] || key; };
+function leagueKey(name, country) {
+  const key = normalize(name), c = normalize(country);
+  if (c === "switzerland" && ["swisssuperleague", "superleague"].includes(key)) return "swisssuperleague";
+  if (c === "usa" && ["majorleaguesoccer", "mls"].includes(key)) return "mls";
+  if (c === "denmark" && ["danishsuperliga", "superliga"].includes(key)) return "danishsuperliga";
+  if (c === "hungary" && ["hungariannbi", "nbi"].includes(key)) return "hungariannbi";
+  if (c === "argentina" && ["primeradivisionargentina", "primeradivision", "ligaprofesional", "ligaprofesionalargentina"].includes(key)) return "argentinaprimera";
+  return LEAGUE_ALIASES[key] || key;
+}
 function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
   const sameTeamsAndLeague = canonicalTeamId(a.homeTeam) === canonicalTeamId(b.homeTeam)
     && canonicalTeamId(a.awayTeam) === canonicalTeamId(b.awayTeam)
-    && leagueKey(a.league?.name) === leagueKey(b.league?.name) && Boolean(leagueKey(a.league?.name));
+    && (!a.league?.country || !b.league?.country || normalize(a.league.country) === normalize(b.league.country))
+    && leagueKey(a.league?.name, a.league?.country) === leagueKey(b.league?.name, b.league?.country)
+    && Boolean(leagueKey(a.league?.name, a.league?.country));
   if (!sameTeamsAndLeague) return false;
   // A date-only source cannot provide a reliable kickoff time. Merge it with a timed
   // source on the same calendar date rather than displaying the same match twice.
