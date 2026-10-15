@@ -194,7 +194,7 @@ class MultiProviderRegistry {
         try {
           let value;
           if (capability === "teamForm") value = await provider.getTeamForm(context[field === "homeMatches" ? "home" : "away"].id, fixture.kickoff);
-          if (capability === "h2h") value = await provider.getH2H(context.home.id, context.away.id, { before: fixture.kickoff, league: context.league });
+          if (capability === "h2h") value = await provider.getH2H(context.home.id, context.away.id, { before: fixture.kickoff, league: context.league, home: context.home, away: context.away });
           if (capability === "standings") value = await provider.getStandings(context.league?.id, context.league?.season, { before: fixture.kickoff, league: context.league });
           if (capability === "odds") value = await provider.getOdds(fixture.providerFixtureIds[provider.name]);
           if (capability === "statistics") {
