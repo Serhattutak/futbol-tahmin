@@ -91,6 +91,7 @@ class ProductionAnalysis {
       sourceMetadata: collected.sourceMetadata ? {
         fields: collected.sourceMetadata.fields || {},
         unavailable: collected.sourceMetadata.unavailable || {},
+        historyAttempts: collected.sourceMetadata.historyAttempts || [],
       } : null,
     });
     if (!base.value && !advanced) throw Object.assign(new Error("No production model available"), { code: "NO_PRODUCTION_MODEL" });
