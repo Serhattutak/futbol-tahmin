@@ -50,21 +50,8 @@ app.use((req, res, next) => {
 const generalApiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Ã‡ok fazla istek gÃ¶nderildi. LÃ¼tfen daha sonra tekrar deneyin." } });
 const analyzeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Analiz istek limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
 const heavyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "AÄŸÄ±r iÅŸlem limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
-const activeByIp = new Map();
-function concurrencyGuard(limit = 2) {
-  return (req, res, next) => {
-    const key = req.ip || "unknown";
-    const active = activeByIp.get(key) || 0;
-    if (active >= limit) return res.status(429).json({ success: false, error: "Ã‡ok fazla eÅŸzamanlÄ± istek." });
-    activeByIp.set(key, active + 1);
-    res.on("finish", () => {
-      const nextActive = (activeByIp.get(key) || 1) - 1;
-      if (nextActive > 0) activeByIp.set(key, nextActive);
-      else activeByIp.delete(key);
-    });
-    next();
-  };
-}
+const { createConcurrencyGuard } = require("./services/concurrencyGuard");
+const concurrencyGuard = createConcurrencyGuard();
 app.use("/api", generalApiLimiter);
 
 const api = axios.create({ baseURL: API_URL, timeout: 10000, headers: { "x-apisports-key": process.env.API_FOOTBALL_KEY } });
