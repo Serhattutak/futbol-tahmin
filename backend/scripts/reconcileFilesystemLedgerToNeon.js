@@ -44,7 +44,7 @@ async function main() {
     }
 
     if (!apply) {
-      process.stdout.write(JSON.stringify({
+      const report = {
         mode: "dry-run",
         source: "filesystem",
         destination: "neon",
@@ -52,13 +52,15 @@ async function main() {
         wouldAppend: initial.missingFromDestination.length,
         sourceDirectoryConfigured: Boolean(process.env.ZEUS_LEDGER_DIR?.trim()),
         safeToApply: Boolean(process.env.ZEUS_LEDGER_DIR?.trim()) && initial.destinationOnly.length === 0,
-      }, null, 2) + "\n");
-      return;
+      };
+      process.stdout.write(JSON.stringify(report, null, 2) + "\n");
+      return report;
     }
 
     const report = await reconcileFilesystemEvents({ sourceEvents, destinationStore });
     process.stdout.write(JSON.stringify({ mode: "apply", ...report }, null, 2) + "\n");
     if (!report.verified) process.exitCode = 2;
+    return { mode: "apply", ...report };
   } finally {
     await pool.end();
   }
