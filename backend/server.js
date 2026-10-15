@@ -47,9 +47,9 @@ app.use((req, res, next) => {
   next();
 });
 
-const generalApiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Ã‡ok fazla istek gÃ¶nderildi. LÃ¼tfen daha sonra tekrar deneyin." } });
-const analyzeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Analiz istek limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
-const heavyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "AÄŸÄ±r iÅŸlem limiti aÅŸÄ±ldÄ±. LÃ¼tfen daha sonra tekrar deneyin." } });
+const generalApiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Çok fazla istek gönderildi. Lütfen daha sonra tekrar deneyin." } });
+const analyzeLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 150, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Analiz istek limiti aşıldı. Lütfen daha sonra tekrar deneyin." } });
+const heavyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false, message: { success: false, error: "Ağır işlem limiti aşıldı. Lütfen daha sonra tekrar deneyin." } });
 const { createConcurrencyGuard } = require("./services/concurrencyGuard");
 const concurrencyGuard = createConcurrencyGuard();
 app.use("/api", generalApiLimiter);
@@ -121,12 +121,12 @@ async function optionalApiGet(pathname, params) {
 function getPublicErrorMessage(error, fallback) {
   if (!(error instanceof ProviderError)) return fallback;
   return {
-    quota: "Veri saÄŸlayÄ±cÄ±sÄ± kotasÄ± ÅŸu an yetersiz. LÃ¼tfen daha sonra tekrar deneyin.",
-    authentication: "Veri saÄŸlayÄ±cÄ±sÄ± yapÄ±landÄ±rmasÄ± kullanÄ±lamÄ±yor.",
-    timeout_network: "Veri saÄŸlayÄ±cÄ±sÄ±na ÅŸu an ulaÅŸÄ±lamÄ±yor. LÃ¼tfen daha sonra tekrar deneyin.",
-    provider_unavailable: "Veri saÄŸlayÄ±cÄ±sÄ± geÃ§ici olarak kullanÄ±lamÄ±yor.",
-    no_data: "Ä°stenen maÃ§ veya istatistik iÃ§in veri bulunamadÄ±.",
-    unexpected_provider_response: "Veri saÄŸlayÄ±cÄ±sÄ±ndan doÄŸrulanabilir veri alÄ±namadÄ±.",
+    quota: "Veri sağlayıcısı kotası şu an yetersiz. Lütfen daha sonra tekrar deneyin.",
+    authentication: "Veri sağlayıcısı yapılandırması kullanılamıyor.",
+    timeout_network: "Veri sağlayıcısına şu an ulaşılamıyor. Lütfen daha sonra tekrar deneyin.",
+    provider_unavailable: "Veri sağlayıcısı geçici olarak kullanılamıyor.",
+    no_data: "İstenen maç veya istatistik için veri bulunamadı.",
+    unexpected_provider_response: "Veri sağlayıcısından doğrulanabilir veri alınamadı.",
   }[error.category] || fallback;
 }
 
@@ -144,7 +144,7 @@ function getProviderErrorStatus(error, fallback = 500) {
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Futbol Analiz AI Backend Ã§alÄ±ÅŸÄ±yor.",
+    message: "Futbol Analiz AI Backend çalışıyor.",
     status: "active",
   });
 });
@@ -156,7 +156,7 @@ app.get("/", (req, res) => {
 app.get("/api/test", (req, res) => {
   res.json({
     success: true,
-    message: "API baÄŸlantÄ±sÄ± hazÄ±r.",
+    message: "API bağlantısı hazır.",
   });
 });
 
@@ -195,10 +195,10 @@ function getRequestedDate(value) {
 app.get("/api/football-test", async (req, res) => {
   try {
     if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
-      return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
+      return res.status(400).json({ success: false, error: "Geçersiz tarih formatı. YYYY-MM-DD bekleniyor." });
     }
     const dateString = getRequestedDate(req.query.date);
-    console.log(`MaÃ§lar Ã§ekiliyor: ${dateString}`);
+    console.log(`Maçlar çekiliyor: ${dateString}`);
     const discovery = await providerRegistry.getFixturesByDate(dateString);
     const matches = discovery.fixtures.map(toFrontendFixture);
 
@@ -214,7 +214,7 @@ app.get("/api/football-test", async (req, res) => {
       dailyResults: [{ date: dateString, results: matches.length }],
     });
   } catch (error) {
-    console.error("MAÃ‡ API HATASI:");
+    console.error("MAÇ API HATASI:");
 
     if (error.response) {
       console.error(error.category || "provider_unavailable");
@@ -224,7 +224,7 @@ app.get("/api/football-test", async (req, res) => {
 
     res.status(getProviderErrorStatus(error)).json({
       success: false,
-      error: getPublicErrorMessage(error, "MaÃ§ verileri alÄ±namadÄ±."),
+      error: getPublicErrorMessage(error, "Maç verileri alınamadı."),
     });
   }
 });
@@ -236,7 +236,7 @@ app.get("/api/football-test", async (req, res) => {
 app.get("/api/team/:teamId/form", async (req, res) => {
   try {
     const teamId = req.params.teamId;
-    if (!/^\d{1,12}$/.test(teamId)) return res.status(400).json({ success: false, error: "GeÃ§ersiz takÄ±m kimliÄŸi." });
+    if (!/^\d{1,12}$/.test(teamId)) return res.status(400).json({ success: false, error: "Geçersiz takım kimliği." });
 
     const before = req.query.before || new Date().toISOString();
     if (typeof before !== "string" || !Number.isFinite(Date.parse(before))) return res.status(400).json({ success: false, error: "Geçersiz geçmiş maç tarihi." });
@@ -256,7 +256,7 @@ app.get("/api/team/:teamId/form", async (req, res) => {
 
     res.status(getProviderErrorStatus(error)).json({
       success: false,
-      error: getPublicErrorMessage(error, "TakÄ±m form verileri alÄ±namadÄ±."),
+      error: getPublicErrorMessage(error, "Takım form verileri alınamadı."),
     });
   }
 });
@@ -269,7 +269,7 @@ app.get("/api/h2h/:homeId/:awayId", async (req, res) => {
   try {
     const homeId = req.params.homeId;
     const awayId = req.params.awayId;
-    if (!/^\d{1,12}$/.test(homeId) || !/^\d{1,12}$/.test(awayId)) return res.status(400).json({ success: false, error: "GeÃ§ersiz takÄ±m kimliÄŸi." });
+    if (!/^\d{1,12}$/.test(homeId) || !/^\d{1,12}$/.test(awayId)) return res.status(400).json({ success: false, error: "Geçersiz takım kimliği." });
 
     const matches = await cachedApiGet("/fixtures/headtohead", { h2h: `${homeId}-${awayId}`, last: 10 });
 
@@ -283,7 +283,7 @@ app.get("/api/h2h/:homeId/:awayId", async (req, res) => {
 
     res.status(getProviderErrorStatus(error)).json({
       success: false,
-      error: getPublicErrorMessage(error, "H2H verileri alÄ±namadÄ±."),
+      error: getPublicErrorMessage(error, "H2H verileri alınamadı."),
     });
   }
 });
@@ -507,7 +507,7 @@ function getOddsKey(market) {
 function calculateDataQuality({ fixtureAvailable, teamsAvailable, leagueAvailable, homeForm10, awayForm10, homeForm5, awayForm5, homeVenueForm, awayVenueForm, h2h, standings, stats, bookmakerOdds }) {
   const signals = [
     ["Fixture", fixtureAvailable, 10],
-    ["TakÄ±m bilgileri", teamsAvailable, 10],
+    ["Takım bilgileri", teamsAvailable, 10],
     ["Lig bilgisi", leagueAvailable, 5],
     ["Ev sahibi son 10", homeForm10.games > 0, 15],
     ["Deplasman son 10", awayForm10.games > 0, 15],
@@ -515,7 +515,7 @@ function calculateDataQuality({ fixtureAvailable, teamsAvailable, leagueAvailabl
     ["Ev/deplasman formu", homeVenueForm.games > 0 && awayVenueForm.games > 0, 10],
     ["H2H", h2h.count > 0, 5],
     ["Standings", Boolean(standings.home || standings.away), 5],
-    ["TakÄ±m istatistikleri", Number.isFinite(stats.home.shots) || Number.isFinite(stats.away.shots), 5],
+    ["Takım istatistikleri", Number.isFinite(stats.home.shots) || Number.isFinite(stats.away.shots), 5],
     ["API xG", Number.isFinite(stats.home.expectedGoals) || Number.isFinite(stats.away.expectedGoals), 5],
     ["Bookmaker odds", Object.keys(bookmakerOdds).length > 0, 5],
   ];
@@ -634,7 +634,7 @@ function summarizePerformance(records) {
     const group = record.market === "1" || record.market === "X" || record.market === "2"
       ? "1X2"
       : ["1X", "X2", "12"].includes(record.market)
-        ? "Ã‡ifte Åans"
+        ? "Çifte Şans"
         : record.market.startsWith("Üst") || record.market.startsWith("Alt")
           ? "Üst/Alt"
           : record.market.startsWith("KG")
@@ -1068,7 +1068,7 @@ let over25 = 0;
       },
 
       model: {
-        name: "Ä°statistiksel Poisson + GÃ¼ncel Form",
+        name: "İstatistiksel Poisson + Güncel Form",
         version: analysisVersion,
         ...(model41Output ? { id: "MODEL_4_1", calibration: model41Artifact.calibration.method, goalModel: model41Artifact.goalChoice, rawProbabilities: model41Output.probabilities } : {}),
         confidence: Number(confidence.toFixed(0)),
@@ -1086,7 +1086,7 @@ let over25 = 0;
       statistics: { home: homeStats, away: awayStats },
 
       dataQuality,
-      dataQualityLabel: dataQuality.score >= 90 ? "Ã‡ok gÃ¼Ã§lÃ¼ veri" : dataQuality.score >= 75 ? "GÃ¼Ã§lÃ¼ veri" : dataQuality.score >= 60 ? "Orta veri" : dataQuality.score >= 40 ? "ZayÄ±f veri" : "Yetersiz veri",
+      dataQualityLabel: dataQuality.score >= 90 ? "Çok güçlü veri" : dataQuality.score >= 75 ? "Güçlü veri" : dataQuality.score >= 60 ? "Orta veri" : dataQuality.score >= 40 ? "Zayıf veri" : "Yetersiz veri",
       predictionEligible,
       predictionScore,
       standings,
@@ -1185,12 +1185,12 @@ let over25 = 0;
         eligible: false,
         main: "NO_BET",
         reason: "Yetersiz veri",
-        message: "Bu maÃ§ iÃ§in gÃ¼venilir istatistiksel tahmin oluÅŸturmak iÃ§in yeterli veri bulunamadÄ±.",
+        message: "Bu maç için güvenilir istatistiksel tahmin oluşturmak için yeterli veri bulunamadı.",
         confidence: Number(confidence.toFixed(0)),
       },
 
       note:
-        "Bu sonuÃ§lar istatistiksel model Ã§Ä±ktÄ±sÄ±dÄ±r. Kesin maÃ§ sonucu veya bahis garantisi deÄŸildir.",
+        "Bu sonuçlar istatistiksel model çıktısıdır. Kesin maç sonucu veya bahis garantisi değildir.",
     };
   } catch (error) {
     throw error;
@@ -1223,14 +1223,14 @@ const forwardCapture = new ForwardCapture({
 
 app.get("/api/analyze/:fixtureId", analyzeLimiter, concurrencyGuard(2), async (req, res) => {
   const fixtureId = req.params.fixtureId;
-  if (!fixtureId || fixtureId.length > 500 || /[\x00-\x1f]/.test(fixtureId)) return res.status(400).json({ success: false, error: { message: "GeÃ§erli bir maÃ§ kimliÄŸi gÃ¶nderilmedi." } });
+  if (!fixtureId || fixtureId.length > 500 || /[\x00-\x1f]/.test(fixtureId)) return res.status(400).json({ success: false, error: { message: "Geçerli bir maç kimliği gönderilmedi." } });
   if (req.query.model !== undefined && !["MODEL_4_0", "MODEL_4_1"].includes(req.query.model)) return res.status(400).json({ success: false, error: { message: "Geçersiz model seçimi." } });
   try {
     return res.json(await analyzeFixture(fixtureId, { shadow: true, modelVersion: req.query.model }));
   } catch (error) {
     console.error(JSON.stringify({ type: "ANALYSIS_FAILED", fixtureId, category: error.category || "internal", message: error.message }));
     const status = error.status || getProviderErrorStatus(error);
-    return res.status(status).json({ success: false, error: { message: getPublicErrorMessage(error, "Analiz verileri alÄ±namadÄ±. LÃ¼tfen daha sonra tekrar deneyin.") } });
+    return res.status(status).json({ success: false, error: { message: getPublicErrorMessage(error, "Analiz verileri alınamadı. Lütfen daha sonra tekrar deneyin.") } });
   }
 });
 
@@ -1263,7 +1263,7 @@ const BEST_PREDICTIONS_MIN_PROBABILITY = 65;
 
 app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
-    return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
+    return res.status(400).json({ success: false, error: "Geçersiz tarih formatı. YYYY-MM-DD bekleniyor." });
   }
   const requestedDate = getRequestedDate(req.query.date);
   const cacheKey = `${requestedDate}:MODEL_4_0:historical-v1`;
@@ -1347,20 +1347,20 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
       results: evaluated,
       assessments: diagnosticAnalyses.map((analysis) => ({ fixture: analysis.fixture, status: analysis.predictionEligible ? "PREDICTION" : "INSUFFICIENT_DATA", dataQuality: analysis.dataQuality, confidence: analysis.model?.confidence ?? 0, recommendation: analysis.predictionEligible ? analysis.recommendation : { eligible: false, main: "NO_BET", reason: "INSUFFICIENT_DATA" } })),
       diagnostics,
-      note: "Yetersiz veri etiketi taÅŸÄ±yan maÃ§lar en iyi tahmin listesinde Ã¶neri olarak gÃ¶sterilmez.",
+      note: "Yetersiz veri etiketi taşıyan maçlar en iyi tahmin listesinde öneri olarak gösterilmez.",
     };
     bestPredictionsCache.set(cacheKey, { createdAt: Date.now(), value });
     return res.json(value);
   } catch (error) {
     console.error("BEST PREDICTIONS HATASI:", error.message);
-    return res.status(getProviderErrorStatus(error)).json({ success: false, error: getPublicErrorMessage(error, "En iyi tahminler alÄ±namadÄ±.") });
+    return res.status(getProviderErrorStatus(error)).json({ success: false, error: getPublicErrorMessage(error, "En iyi tahminler alınamadı.") });
   }
 });
 
 app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(3), async (req, res) => {
-  if (isProduction) return res.status(404).json({ success: false, error: "Endpoint bulunamadÄ±." });
+  if (isProduction) return res.status(404).json({ success: false, error: "Endpoint bulunamadı." });
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
-    return res.status(400).json({ success: false, error: "GeÃ§ersiz tarih formatÄ±. YYYY-MM-DD bekleniyor." });
+    return res.status(400).json({ success: false, error: "Geçersiz tarih formatı. YYYY-MM-DD bekleniyor." });
   }
   const requestedDate = getRequestedDate(req.query.date);
   const cached = bestPredictionsCache.get(requestedDate);
@@ -1369,7 +1369,7 @@ app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(3), async (req, 
     const fixtures = await providerRegistry.getFixtures(requestedDate);
     return res.json({ success: true, date: requestedDate, fixtureCount: fixtures.length, analyzedCount: 0, eligibleCount: 0, fixtureDataCount: fixtures.length, formAvailableCount: 0, h2hAvailableCount: 0, standingsAvailableCount: 0, oddsAvailableCount: 0, xgAvailableCount: 0, averageDataQuality: 0 });
   } catch (error) {
-    return res.status(500).json({ success: false, error: "Data diagnostics alÄ±namadÄ±." });
+    return res.status(500).json({ success: false, error: "Data diagnostics alınamadı." });
   }
 });
 
@@ -1380,7 +1380,7 @@ app.get("/api/performance", heavyLimiter, concurrencyGuard(3), async (req, res) 
     return res.json({ success: true, ...summarizePerformance(records), archive: summarizeArchive(archive.records), archiveSettlement: { checked: archive.checked, quotaStopped: archive.quotaStopped } });
   } catch (error) {
     console.error("PERFORMANS HATASI:", error.message);
-    return res.status(500).json({ success: false, error: "Performans verileri alÄ±namadÄ±." });
+    return res.status(500).json({ success: false, error: "Performans verileri alınamadı." });
   }
 });
 
@@ -1418,14 +1418,14 @@ app.get("/api/capture/status", (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ success: false, error: "Endpoint bulunamadÄ±." });
+  res.status(404).json({ success: false, error: "Endpoint bulunamadı." });
 });
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
   console.error(JSON.stringify({ timestamp: new Date().toISOString(), endpoint: req.originalUrl, errorType: error.type || error.name || "UnknownError", message: error.message }));
   const status = error.type === "entity.too.large" ? 413 : error.message === "CORS origin denied" ? 403 : 500;
-  return res.status(status).json({ success: false, error: status === 413 ? "Ä°stek gÃ¶vdesi Ã§ok bÃ¼yÃ¼k." : status === 403 ? "Origin izinli deÄŸil." : "Sunucu hatasÄ±." });
+  return res.status(status).json({ success: false, error: status === 413 ? "İstek gövdesi çok büyük." : status === 403 ? "Origin izinli değil." : "Sunucu hatası." });
 });
 
 if (require.main === module) {
@@ -1433,16 +1433,16 @@ forwardCapture.startScheduler();
 const resultCheckTimer = setInterval(() => {
   predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
     .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
-  checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuÃ§ kontrolÃ¼ baÅŸarÄ±sÄ±z:", error.message));
+  checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
   settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
-    .then((result) => { if (result.quotaStopped) console.warn("Archive sonuÃ§ kontrolÃ¼ kota nedeniyle durduruldu."); })
-    .catch((error) => console.warn("Archive otomatik sonuÃ§ kontrolÃ¼ baÅŸarÄ±sÄ±z:", error.message));
+    .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
+    .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
 }, 15 * 60 * 1000);
 resultCheckTimer.unref();
 
 app.listen(PORT, () => {
   console.log(
-    `Futbol Analiz AI backend Ã§alÄ±ÅŸÄ±yor: http://localhost:${PORT}`
+    `Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`
   );
 });
 
