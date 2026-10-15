@@ -42,3 +42,32 @@ test("historical fallback does not require secondary to list upcoming fixture", 
   assert.equal(history.matches.length, 10); assert.equal(history.provider, "openfootball"); assert.equal(secondaryCalls, 1);
 });
 
+
+test("Name-addressable history providers can enrich a fixture without matching the live fixture feed", async () => {
+  const { MultiProviderRegistry, createLegacyAdapter, canonicalFixture } = require("../services/multiProviderRegistry");
+  const fixture = canonicalFixture({
+    provider: "espn",
+    fixture: { id: "fixture-1", date: "2026-10-20T18:00:00Z" },
+    league: { id: "league-1", name: "League", country: "England", season: 2026 },
+    homeTeam: { id: "home-1", name: "Home FC" },
+    awayTeam: { id: "away-1", name: "Away FC" },
+    status: "SCHEDULED",
+  });
+  let lookups = 0;
+  const provider = createLegacyAdapter({
+    name: "thesportsdb",
+    enabled: true,
+    configured: true,
+    historyLookupByName: true,
+    capabilities: ["historicalResults", "teamForm"],
+    getTeamForm: async (_id, _before, context) => {
+      lookups++;
+      assert.equal(context.team.name, "Home FC");
+      return [];
+    },
+    getFixtures: async () => { throw new Error("Should not require a live fixture match"); },
+  });
+  const registry = new MultiProviderRegistry([provider], { now: () => Date.parse("2026-10-15T12:00:00Z") });
+  await registry.loadHistoricalForm(fixture, "home");
+  assert.equal(lookups, 1);
+});
