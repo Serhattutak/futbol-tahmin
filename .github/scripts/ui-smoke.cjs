@@ -23,6 +23,13 @@ const { chromium } = require("playwright");
     assert.ok(payload.matches.some(match =>
       /Palmeiras|Juventude/i.test((match.teams?.home?.name || "") + " " + (match.teams?.away?.name || ""))
     ), "the known real Brazilian fixture should be discoverable");
+    const fixtureKeys = payload.matches.map(match => [
+      match.league?.name || "",
+      match.teams?.home?.id || match.teams?.home?.name || "",
+      match.teams?.away?.id || match.teams?.away?.name || "",
+      String(match.fixture?.date || "").slice(0, 10),
+    ].join("|"));
+    assert.equal(new Set(fixtureKeys).size, fixtureKeys.length, "the same fixture must not appear twice under provider name/time variants");
     await page.waitForFunction(() => document.querySelectorAll(".match-row").length > 0, null, { timeout: 45000 });
     await page.screenshot({ path: "artifacts/zeus-desktop.png", fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
