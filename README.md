@@ -24,6 +24,8 @@ ZEUS AI, futbol maçlarını mevcut ve doğrulanabilir veriler üzerinden analiz
 
 Staging servisi, üretim servislerinden ayrı bir dalda çalışır. Staging veritabanı veya kimlik bilgileri üretim ortamında kullanılmamalıdır. Ayrıntılar için [Aşama 7 üretime hazırlık kontrolü](docs/STAGE-7-PRODUCTION-READINESS.md) belgesine bakın.
 
+Aşama 1–6 kapsamına eklenen Model 4.0 + 4.1 revizyonu ve her aşamanın kabul ölçütleri için [Aşama 1–6 hibrit model revizyonu](docs/STAGE-1-6-MODEL-HYBRID-REVISION.md) belgesine bakın. Bu belge üretim modelini veya dağıtım ayarlarını değiştirmez.
+
 ## Yerel geliştirme
 
 Node.js 22 önerilir.
