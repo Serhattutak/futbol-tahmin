@@ -3,10 +3,26 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { buildMatchStatistics } = require("./teamStatistics");
 const { features } = require("./model41");
+const { normalizeStatus } = require("./fixtureNormalization");
 const { MODEL_4_0, MODEL_4_1, loadArtifact, selectedModel } = require("./modelVersions");
 const { VERSION: HISTORY_VERSION, provenance } = require("./divisionHistory");
 const STATISTICS_VERSION = `${HISTORY_VERSION}-previous-day`;
 const hash = value => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+function isCompletedBefore(match, now) {
+  const date = match?.fixture?.date;
+  if (typeof date !== "string" || !Number.isFinite(Date.parse(date))) return false;
+  const dateOnly = match.fixture?.kickoffPrecision === "date" || /^\\d{4}-\\d{2}-\\d{2}$/.test(date);
+  // A date-only result cannot be proven available until that UTC calendar day ends.
+  const historicalTime = dateOnly ? Date.parse(`${date.slice(0, 10)}T23:59:59.999Z`) : Date.parse(date);
+  return Number.isFinite(historicalTime) && historicalTime < now
+    && normalizeStatus(match.fixture?.status?.short ?? match.status) === "FINISHED"
+    && Number.isFinite(match.goals?.home) && match.goals.home >= 0
+    && Number.isFinite(match.goals?.away) && match.goals.away >= 0;
+}
+function sanitizeHistoryAsOf(collected, now = Date.now()) {
+  const completed = rows => (rows || []).filter(match => isCompletedBefore(match, now));
+  return { ...collected, homeMatches: completed(collected.homeMatches), awayMatches: completed(collected.awayMatches), h2hMatches: completed(collected.h2hMatches) };
+}
 function validateInputs(collected, artifact, now = Date.now()) {
   const day = collected.fixture.kickoff.slice(0, 10);
   const cutoff = Math.min(now, Date.parse(`${day}T00:00:00Z`));
@@ -45,10 +61,14 @@ class ProductionAnalysis {
     const requested = selectedModel(modelVersion);
     const input = await this.cached(this.inputs, `input:${fixtureId}:${STATISTICS_VERSION}`, async () => { this.metrics.collections++; return this.collect(fixtureId); });
     if (input.hit) this.metrics.inputHits++;
-    const collected = input.value; const inputHash = hash(collected);
+    const asOf = this.now();
+    // Team form and H2H features must only see completed results available at prediction time.
+    // Fixture collectors can include the target or later same-day events because their query cutoff is kickoff.
+    const collected = sanitizeHistoryAsOf(input.value, asOf);
+    const inputHash = hash(collected);
     const baseKey = `${fixtureId}:${MODEL_4_0}:${STATISTICS_VERSION}:${inputHash}${persist ? "" : ":readonly"}`;
     let base;
-    try { base = await this.cached(this.models, baseKey, () => { this.metrics.model40Runs++; return this.calculate(collected, { persist, now: this.now() }); }); }
+    try { base = await this.cached(this.models, baseKey, () => { this.metrics.model40Runs++; return this.calculate(collected, { persist, now: asOf }); }); }
     catch (error) {
       if (!allowPartial) throw error;
       base = { value: null, hit: false };
@@ -61,13 +81,13 @@ class ProductionAnalysis {
       // Always check the artifact BEFORE a cache lookup; a changed or corrupt
       // artifact cannot reuse a successful result from an older version.
       const loaded = this.artifactLoader(); fingerprint = loaded.fingerprint;
-      readiness = validateInputs(collected, loaded.artifact, this.now());
+      readiness = validateInputs(collected, loaded.artifact, asOf);
       if (!readiness.ready) reason = readiness.reason;
       else {
         const key = `${fixtureId}:${MODEL_4_1}:${STATISTICS_VERSION}:${fingerprint}:${inputHash}`;
         const result = await this.cached(this.models, key, () => {
           this.metrics.model41Runs++;
-          const value = this.calculate(collected, { persist: false, now: this.now(), model41Artifact: loaded.artifact });
+          const value = this.calculate(collected, { persist: false, now: asOf, model41Artifact: loaded.artifact });
           assertPrediction(value); return value;
         });
         advanced = result.value; advancedHit = result.hit;
@@ -118,4 +138,4 @@ class ProductionAnalysis {
     return response;
   }
 }
-module.exports = { ProductionAnalysis, validateInputs, STATISTICS_VERSION, assertPrediction };
+module.exports = { ProductionAnalysis, validateInputs, STATISTICS_VERSION, assertPrediction, isCompletedBefore, sanitizeHistoryAsOf };
