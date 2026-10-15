@@ -106,8 +106,6 @@ jobs:
                 const response = await fetch(base + path, { signal: AbortSignal.timeout(15000) });
                 let body = await response.json().catch(() => null);
                 if (!response.ok) throw new Error("HTTP " + response.status);
-                // The web service may still be completing its cold-start capture.
-                // Poll briefly so this diagnostic reports the finished run, not only its start.
                 if (path === "/api/capture/status") {
                   for (let attempt = 0; attempt < 8 && body?.isRunning; attempt++) {
                     await new Promise(resolve => setTimeout(resolve, 5000));
@@ -167,3 +165,38 @@ jobs:
             docs/historical-v2-forward-dry-run.json
           if-no-files-found: ignore
           retention-days: 14
+
+  neon-ledger-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: zeus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d zeus_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Install PostgreSQL driver for isolated integration test
+        working-directory: backend
+        run: npm install --no-save --package-lock=false pg
+      - name: Verify real PostgreSQL persistence and restore
+        working-directory: backend
+        env:
+          ZEUS_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/zeus_test
+        run: node --test services/neonPredictionLedgerStore.integration.test.js
