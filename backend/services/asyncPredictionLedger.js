@@ -5,8 +5,8 @@ const { normalizeStatus } = require("./fixtureNormalization");
 const { stableEventId } = require("./neonPredictionLedgerStore");
 
 /**
- * Async event-ledger facade. This is deliberately not wired into server startup
- * yet: callers must await initialize() before serving requests or starting jobs.
+ * Async event-ledger facade. Server startup awaits initialize() before accepting
+ * requests or starting jobs, so callers can rely on a restored projection.
  * The supplied store owns persistence; this class owns the validated projection.
  */
 class AsyncPredictionLedger {
