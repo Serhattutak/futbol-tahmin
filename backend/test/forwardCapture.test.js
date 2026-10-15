@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
-const { ForwardCapture, windowReason, discoveryDates } = require("../services/forwardCapture");
+const { ForwardCapture, windowReason, fixtureShapeReason, discoveryDates } = require("../services/forwardCapture");
 const { PredictionLedger, MODELS } = require("../services/predictionLedger");
 const NOW = Date.parse("2026-09-20T10:00:00Z");
 function fixture(id = "test", minutes = 120) {
@@ -57,6 +57,17 @@ test("Exact window boundaries and timezone offsets use absolute instants", () =>
   assert.deepEqual(discoveryDates(Date.parse("2026-09-20T22:30:00Z")), ["2026-09-20", "2026-09-21", "2026-09-22"]);
   for (const kickoff of ["2026-02-30T12:00:00Z", "2026-09-20T24:00:00Z"]) assert.equal(windowReason({ ...fixture(), kickoff }, NOW), "INVALID_FIXTURE");
 });
+test("Invalid fixture diagnostics distinguish missing IDs, team names, precision and timestamps", () => {
+  const base = fixture("diagnostic");
+  assert.equal(fixtureShapeReason(base), null);
+  assert.equal(fixtureShapeReason({ ...base, providerFixtureId: null }), "MISSING_PROVIDER_FIXTURE_ID");
+  assert.equal(fixtureShapeReason({ ...base, homeTeam: { name: "" } }), "MISSING_TEAM_NAME");
+  assert.equal(fixtureShapeReason({ ...base, kickoffPrecision: "date" }), "KICKOFF_PRECISION_NOT_TIME");
+  assert.equal(fixtureShapeReason({ ...base, kickoff: "2026-09-20T12:00:00" }), "INVALID_KICKOFF_FORMAT");
+  assert.equal(fixtureShapeReason({ ...base, kickoff: "2026-02-30T12:00:00Z" }), "INVALID_KICKOFF_DATE");
+  assert.equal(fixtureShapeReason({ ...base, dataConflict: true }), "DATA_CONFLICT");
+});
+
 test("Unknown precision, conflicting and OpenFootball-only kickoff are rejected", () => {
   for (const changes of [{ kickoffPrecision: "date" }, { dataConflict: true }, { status: "LIVE" }, { result: { homeGoals: 0 } }]) assert.equal(windowReason({ ...fixture(), ...changes }, NOW), "INVALID_FIXTURE");
   assert.equal(windowReason({ ...fixture(), sources: ["openfootball"] }, NOW), "UNVERIFIED_KICKOFF_SOURCE");
