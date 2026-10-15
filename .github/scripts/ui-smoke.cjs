@@ -23,10 +23,21 @@ const { chromium } = require("playwright");
     assert.ok(payload.matches.some(match =>
       /Palmeiras|Juventude/i.test((match.teams?.home?.name || "") + " " + (match.teams?.away?.name || ""))
     ), "the known real Brazilian fixture should be discoverable");
+    const normalizeTeamName = value => {
+      const key = String(value || "").toLocaleLowerCase("tr-TR").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+      const aliases = {
+        albacetebalompie: "albacete", adceutafc: "ceuta", adceuta: "ceuta",
+        sdeibar: "eibar", cdcastellon: "castellon", sportinggijon: "sportinggijon",
+        realsportingdegijon: "sportinggijon", realsportinggijon: "sportinggijon",
+        burgoscf: "burgos", realvalladolidcf: "realvalladolid", cadizcf: "cadiz",
+        sdhuesca: "huesca", malagacf: "malaga", deportivolacoruna: "deportivo",
+      };
+      return aliases[key] || key;
+    };
     const fixtureKeys = payload.matches.map(match => [
-      match.league?.name || "",
-      match.teams?.home?.id || match.teams?.home?.name || "",
-      match.teams?.away?.id || match.teams?.away?.name || "",
+      String(match.league?.name || "").toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]/g, ""),
+      normalizeTeamName(match.teams?.home?.name),
+      normalizeTeamName(match.teams?.away?.name),
       String(match.fixture?.date || "").slice(0, 10),
     ].join("|"));
     const duplicateKeys = fixtureKeys.filter((key, index) => fixtureKeys.indexOf(key) !== index);
