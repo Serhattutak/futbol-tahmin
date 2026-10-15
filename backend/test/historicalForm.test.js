@@ -79,7 +79,7 @@ test("History lookup checks an independent provider even after OpenFootball alre
   const fixture = canonicalFixture({ provider: "api-football", fixture: { id: 200, date: before }, homeTeam: team, awayTeam: { id: 2, name: "Getafe" }, league: { id: 140, name: "La Liga", country: "Spain", season: 2026 }, status: "NS" });
   const registry = new MultiProviderRegistry([
     createLegacyAdapter({ name: "openfootball", enabled: true, capabilities: ["teamForm", "historicalResults"], getTeamForm: async () => firstSource, getFixtures: async () => [] }),
-    createLegacyAdapter({ name: "thesportsdb", enabled: true, capabilities: ["teamForm", "historicalResults"], getTeamForm: async () => { independentCalls++; return [row(1, dates[0])]; }, getFixtures: async () => [] }),
+    createLegacyAdapter({ name: "thesportsdb", enabled: true, capabilities: ["teamForm", "historicalResults"], getTeamForm: async () => { independentCalls++; return [row(1, dates[0])]; }, getFixtures: async () => [{ provider: "thesportsdb", fixture: { id: "tsdb-200", date: before, status: { short: "SCHEDULED" } }, league: { id: 140, name: "La Liga", country: "Spain", season: 2026 }, teams: { home: { id: "tsdb-team-realbetis", name: "Real Betis" }, away: { id: "tsdb-team-getafe", name: "Getafe" } }, goals: { home: null, away: null } }] }),
   ]);
   const history = await registry.getHistoricalForm(fixture, "home");
   assert.equal(history.matches.length, 10);
