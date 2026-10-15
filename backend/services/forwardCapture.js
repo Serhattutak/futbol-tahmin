@@ -24,7 +24,7 @@ function windowReason(fixture, now, config = defaults) {
   // OpenFootball's adapter assumes UTC for otherwise unqualified source times.
   // Historical scores remain usable, but that alone is not a reliable live kickoff.
   const sources = fixture.sources?.length ? fixture.sources : [fixture.provider];
-  if (!sources.some(p => ["api-football", "sportmonks", "football-data", "thesportsdb"].includes(p))) return "UNVERIFIED_KICKOFF_SOURCE";
+  if (!sources.some(p => ["api-football", "sportmonks", "football-data", "thesportsdb", "espn"].includes(p))) return "UNVERIFIED_KICKOFF_SOURCE";
   if (minutes < config.minLeadMinutes) return "TOO_CLOSE_TO_KICKOFF";
   if (minutes > config.maxLeadMinutes) return "TOO_EARLY";
   return null;
