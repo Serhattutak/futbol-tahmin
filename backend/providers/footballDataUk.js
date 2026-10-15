@@ -27,6 +27,7 @@ const LEAGUES = {
 };
 
 const cache = new Map();
+const statisticsByFixture = new Map();
 const normalized = (value) => String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
 function turkeyDate(kickoff) {
   const date = new Date(kickoff);
@@ -83,6 +84,7 @@ function toFixture(row, leagueName, meta, season) {
   const time = /^\d{1,2}:\d{2}$/.test(row.Time || "") ? row.Time : null;
   const kickoff = time ? localKickoffToUtc(date, time, meta.country) : date;
   const id = `fdu-${meta.code.toLowerCase()}-${season}-${date}-${normalized(row.HomeTeam)}-${normalized(row.AwayTeam)}`;
+  statisticsByFixture.set(id, { row, leagueName, meta, season, homeName: row.HomeTeam, awayName: row.AwayTeam });
   return {
     provider: "football-data-uk",
     providers: ["football-data-uk"],
@@ -135,6 +137,79 @@ async function getFixture(fixtureId) {
   if (!leagueName) return null;
   return (await loadLeague(leagueName, season)).find((fixture) => fixture.fixture.id === fixtureId) || null;
 }
+
+function numberField(row, field) {
+  if (row?.[field] === "" || row?.[field] == null) return null;
+  const value = Number(row[field]);
+  return Number.isFinite(value) ? value : null;
+}
+function getStatistics(fixtureId) {
+  const entry = statisticsByFixture.get(String(fixtureId));
+  if (!entry) return [];
+  const fields = [
+    ["HS", "Total Shots"], ["HST", "Shots on Goal"], ["HC", "Corner Kicks"],
+    ["HF", "Fouls"], ["HY", "Yellow Cards"], ["HR", "Red Cards"],
+  ];
+  const make = (side) => {
+    const prefix = side === "home" ? "H" : "A";
+    return {
+      team: { id: `fdu-team-${normalized(side === "home" ? entry.homeName : entry.awayName)}` },
+      statistics: fields.map(([field, type]) => ({ type, value: numberField(entry.row, side === "home" ? field : field.replace(/^H/, prefix) })).filter((stat) => stat.value !== null),
+    };
+  };
+  return [make("home"), make("away")].filter((row) => row.statistics.length);
+}
+function beforeKickoff(match, before) {
+  const date = String(match?.fixture?.date || "");
+  if (!date || !before) return false;
+  if (match.fixture?.kickoffPrecision === "date" || /^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return date.slice(0, 10) < String(before).slice(0, 10);
+  return Number.isFinite(Date.parse(date)) && Date.parse(date) < Date.parse(before);
+}
+async function getH2H(homeId, awayId, context = {}) {
+  const leagueName = context.league?.name;
+  const before = context.before;
+  const home = normalized(context.home?.name || String(homeId).replace(/^fdu-team-/, ""));
+  const away = normalized(context.away?.name || String(awayId).replace(/^fdu-team-/, ""));
+  if (!LEAGUES[leagueName] || !home || !away || !before) return [];
+  const seasons = seasonKeys(before, 5);
+  const results = [];
+  for (const season of seasons) {
+    try {
+      const matches = await loadLeague(leagueName, season);
+      results.push(...matches.filter((match) => {
+        const a = normalized(match.teams.home.name); const b = normalized(match.teams.away.name);
+        return ((a === home && b === away) || (a === away && b === home))
+          && beforeKickoff(match, before) && match.fixture.status.short === "FINISHED"
+          && Number.isFinite(match.goals.home) && Number.isFinite(match.goals.away);
+      }));
+    } catch { /* Keep collecting verified meetings from other seasons. */ }
+  }
+  return results.sort((a, b) => Date.parse(b.fixture.date) - Date.parse(a.fixture.date)).slice(0, 10);
+}
+async function getStandings(leagueId, season, context = {}) {
+  const leagueName = Object.keys(LEAGUES).find((name) => LEAGUES[name].code === String(leagueId)) || context.league?.name;
+  const before = context.before;
+  if (!LEAGUES[leagueName] || !before) return [];
+  let matches = [];
+  try { matches = await loadLeague(leagueName, seasonFor(String(before).slice(0, 10))); } catch { return []; }
+  const table = new Map();
+  const ensure = (name) => {
+    if (!table.has(name)) table.set(name, { team: { id: `fdu-team-${normalized(name)}`, name }, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0 });
+    return table.get(name);
+  };
+  for (const match of matches) {
+    if (!beforeKickoff(match, before) || match.fixture.status.short !== "FINISHED" || !Number.isFinite(match.goals.home) || !Number.isFinite(match.goals.away)) continue;
+    const home = ensure(match.teams.home.name); const away = ensure(match.teams.away.name);
+    home.played++; away.played++; home.goalsFor += match.goals.home; home.goalsAgainst += match.goals.away; away.goalsFor += match.goals.away; away.goalsAgainst += match.goals.home;
+    if (match.goals.home > match.goals.away) { home.won++; away.lost++; home.points += 3; }
+    else if (match.goals.home < match.goals.away) { away.won++; home.lost++; away.points += 3; }
+    else { home.drawn++; away.drawn++; home.points++; away.points++; }
+  }
+  const rows = [...table.values()].sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor || a.team.name.localeCompare(b.team.name));
+  rows.forEach((row, index) => { row.rank = index + 1; row.all = { played: row.played, win: row.won, draw: row.drawn, lose: row.lost, goals: { for: row.goalsFor, against: row.goalsAgainst } }; delete row.played; delete row.won; delete row.drawn; delete row.lost; delete row.goalsFor; delete row.goalsAgainst; });
+  return rows.length ? [{ league: { standings: [rows] } }] : [];
+}
+
 async function getTeamForm(teamId, before = new Date().toISOString(), context = {}) {
   const leagueName = context.league?.name;
   if (!LEAGUES[leagueName]) return [];
@@ -158,8 +233,8 @@ async function getTeamForm(teamId, before = new Date().toISOString(), context = 
 }
 module.exports = {
   name: "football-data-uk", configured: true, enabled: true,
-  capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form"],
-  getFixtures, getFixture, getTeamForm, supportsLeague: (name) => Boolean(LEAGUES[name]),
+  capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form", "h2h", "standings", "statistics"],
+  getFixtures, getFixture, getTeamForm, getH2H, getStandings, getStatistics, supportsLeague: (name) => Boolean(LEAGUES[name]),
   supportsHistoricalLeague: (league) => Boolean(LEAGUES[league?.name]),
   LEAGUES, seasonFor, seasonKeys, parseCsvLine, parseDate, toFixture, turkeyDate,
 };
