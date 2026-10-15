@@ -6,9 +6,18 @@ const { snapshot, MODELS } = require("./predictionLedger");
 const { normalizeStatus } = require("./fixtureNormalization");
 const { loadArtifact } = require("./modelVersions");
 const iso = time => new Date(time).toISOString();
+function fixtureShapeReason(fixture) {
+  if (!fixture?.providerFixtureId) return "MISSING_PROVIDER_FIXTURE_ID";
+  if (!fixture.homeTeam?.name || !fixture.awayTeam?.name) return "MISSING_TEAM_NAME";
+  if (fixture.dataConflict) return "DATA_CONFLICT";
+  if (fixture.kickoffPrecision !== "time") return "KICKOFF_PRECISION_NOT_TIME";
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(fixture.kickoff || "")) return "INVALID_KICKOFF_FORMAT";
+  if (!Number.isFinite(Date.parse(fixture.kickoff))) return "INVALID_KICKOFF_DATE";
+  if (Number(fixture.kickoff.slice(11, 13)) > 23 || new Date(fixture.kickoff.slice(0, 10) + "T00:00:00Z").toISOString().slice(0, 10) !== fixture.kickoff.slice(0, 10)) return "INVALID_KICKOFF_DATE";
+  return null;
+}
 function windowReason(fixture, now, config = defaults) {
-  if (!fixture?.providerFixtureId || !fixture.homeTeam?.name || !fixture.awayTeam?.name || fixture.dataConflict || fixture.kickoffPrecision !== "time" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(fixture.kickoff || "") || !Number.isFinite(Date.parse(fixture.kickoff))) return "INVALID_FIXTURE";
-  if (Number(fixture.kickoff.slice(11, 13)) > 23 || new Date(`${fixture.kickoff.slice(0, 10)}T00:00:00Z`).toISOString().slice(0, 10) !== fixture.kickoff.slice(0, 10)) return "INVALID_FIXTURE";
+  if (fixtureShapeReason(fixture)) return "INVALID_FIXTURE";
   const minutes = (Date.parse(fixture.kickoff) - now) / 60_000;
   if (minutes <= 0) return "KICKOFF_REACHED";
   if (normalizeStatus(fixture.status) !== "SCHEDULED" || fixture.result) return "INVALID_FIXTURE";
@@ -114,6 +123,7 @@ class ForwardCapture {
         summary.fixtures.push(detail);
         const reject = reason => {
           detail.reason = reason;
+          if (reason === "INVALID_FIXTURE") detail.validationReason = fixtureShapeReason(fixture) || "NOT_SCHEDULED_OR_HAS_RESULT";
           if (reason === "KICKOFF_REACHED") summary.skippedKickoffReached++;
           else if (["TOO_EARLY", "TOO_CLOSE_TO_KICKOFF"].includes(reason)) summary.skippedOutsideWindow++;
           else summary.skippedInvalidFixture++;
@@ -199,4 +209,4 @@ class ForwardCapture {
   }
   stopScheduler() { clearInterval(this.timer); this.timer = null; this.nextRunAt = null; }
 }
-module.exports = { ForwardCapture, windowReason, discoveryDates };
+module.exports = { ForwardCapture, windowReason, fixtureShapeReason, discoveryDates };
