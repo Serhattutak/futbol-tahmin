@@ -1,4 +1,4 @@
-import { MODEL40, MODEL41, fallbackMessage, modelLabel } from "./modelSelection.js";
+import { MODEL40, MODEL41, fallbackMessage } from "./modelSelection.js";
 
 export default function ModelSelector({ response, selected }) {
   if (!response?.models) return null;
