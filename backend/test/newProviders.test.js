@@ -224,3 +224,23 @@ test("TheSportsDB team history matches accent and Turkish dotted/dotless-I varia
   assert.equal(istanbul.length, 1);
   assert.equal(istanbul[0].teams.home.name, "İstanbul Başakşehir");
 });
+
+
+test("OpenFootball text historical catalog includes only the newly verified prior seasons", () => {
+  const expected = [
+    ["Championship", "2024-25"],
+    ["League One", "2024-25"],
+    ["League Two", "2024-25"],
+    ["National League", "2024-25"],
+    ["2. Bundesliga", "2024-25"],
+    ["3. Liga", "2024-25"],
+    ["Serie B", "2024-25"],
+    ["Segunda División", "2024-25"],
+    ["2. Liga", "2024-25"],
+    ["Eerste Divisie", "2023-24"],
+    ["Liga Portugal 2", "2023-24"],
+  ];
+  for (const [league, season] of expected) {
+    assert.ok(openFootballText.historicalLeagues[league].seasons.includes(season), league + " " + season);
+  }
+});
