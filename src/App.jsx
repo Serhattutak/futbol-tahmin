@@ -305,11 +305,37 @@ function PerformanceCard({ performance }) {
   return <section className="performance-card"><div><span className="eyebrow">📊 MODEL PERFORMANSI</span><h3>{completed ? `Son ${Math.min(completed, 100)} gerçek sonuç` : "Henüz yeterli tamamlanmış tahmin bulunmuyor."}</h3><p>{completed ? "Tamamlanmış gerçek fixture sonuçlarından hesaplanır." : "Arşivde sonuçlanan tahminler oluştuğunda performans burada hesaplanacak."}</p></div><strong>{completed && Number.isFinite(archive.successRate) ? `%${archive.successRate}` : "—"}</strong></section>;
 }
 
-function HomeView({ loading, matches, selectedDate, bestPredictions, performance, providerStatus, analysisCache, stats, onOpen, onFavorite, favoriteIds }) {
-  const strongest = bestPredictions.filter((item) => item.eligible === true && item.dataQuality?.score >= 60 && item.confidence >= 60 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market)).slice(0, 3);
-  const bestById = new Map(bestPredictions.map((item) => [item.fixture?.id, item]));
-  const activeProviders = providerStatus.filter((provider) => provider.available).map((provider) => provider.name); const unavailableProvider = providerStatus.find((provider) => provider.available === false);
-  return <div className="view-stack"><section className="hero-block"><div><span className="eyebrow accent">BUGÜNÜN ÖNE ÇIKANLARI</span><h1>Veriye dayalı <em>oyunu</em> keşfet.</h1><p>Maçları form, istatistik ve istatistiksel model olasılıklarıyla tek ekranda anlamlandır.</p></div><div className="hero-orbit"><span>MODEL</span><i /><i /><i /></div></section><PerformanceCard performance={performance} /><section className="quick-stats"><div><b>{stats.leagues || "—"}</b><span>Takip edilen lig</span></div><div><b>{stats.teams || "—"}</b><span>Analiz edilen takım</span></div><div><b>ZEUS AI</b><span>Otomatik tahmin motoru</span></div></section><SectionHeading eyebrow="ÖNCELİKLİ LİSTE" title="🔥 Günün En Güçlü Tahminleri" action={<span className="live-dot-label">KALİTE + GÜVEN</span>} /><div className="card-list">{strongest.length ? strongest.map((item) => <MatchCard key={item.fixture?.id} match={bestPredictionToMatch(item)} summary={item} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} featured />) : <EmptyState icon="✦" title="Güçlü veri bulunan maç yok" text="Gerçek provider verileriyle eligible olan tahminler burada gösterilir." />}</div><SectionHeading eyebrow="FİKSTÜR" title="📅 Tüm Maçlar" action={<span>{formatDate(parseDateKey(selectedDate))} · {matches.length} maç</span>} /><div className="card-list">{matches.length ? matches.map((match) => <MatchCard key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} summary={bestById.get(match.fixture?.id)} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />) : <EmptyState title={loading ? "Maçlar yükleniyor" : "Bu tarihte maç bulunamadı"} text="Yakın tarihleri gün seçicisinden görüntüleyebilirsiniz." />}</div><SectionHeading eyebrow="SİSTEM DURUMU" title="Platform özeti" action={<span className="brand-slogan">ZEUS AI · Otomatik model</span>} /><div className="source-card"><div><span className="source-status">● VERİ KAYNAKLARI</span><strong>{activeProviders.length ? activeProviders.join(" · ") : "Veri kaynağı bekleniyor"}</strong><p>{unavailableProvider ? "Bir veri sağlayıcı geçici olarak kullanılamıyor." : "Kullanılan kaynaklar güvenli durum metadatasıyla izlenir."}</p></div><span className="source-arrow">↗</span></div></div>;
+function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCache, onOpen, onFavorite, favoriteIds }) {
+  const strongest = bestPredictions
+    .filter((item) => item.eligible === true && item.dataQuality?.score >= 60 && item.confidence >= 60 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market))
+    .slice(0, 3);
+  const bestById = new Map(bestPredictions.map((item) => [String(item.fixture?.id), item]));
+  const selectedLabel = formatDate(parseDateKey(selectedDate));
+
+  return <div className="view-stack home-view">
+    <section className="home-simple-hero">
+      <span className="eyebrow accent">ZEUS AI · MAÇ ANALİZİ</span>
+      <h1>Futbolu <em>veriyle</em> yorumla.</h1>
+      <p>Günün maçları, model olasılıkları ve veri kalitesi tek ekranda. Tahmin yalnızca gerçek analiz verisi mevcut olduğunda gösterilir.</p>
+      <div className="home-hero-meta"><span>{selectedLabel}</span><span>{loading ? "Maçlar yükleniyor…" : `${matches.length} maç listelendi`}</span></div>
+    </section>
+
+    <section className="home-section">
+      <SectionHeading eyebrow="MODEL + VERİ KALİTESİ" title="Öne çıkan analizler" action={<span className="home-section-note">En fazla 3 maç</span>} />
+      <div className="card-list">
+        {strongest.length ? strongest.map((item) => <MatchCard key={item.fixture?.id} match={bestPredictionToMatch(item)} summary={item} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} featured />) : <EmptyState icon="✦" title="Şimdilik doğrulanabilir seçim yok" text="Sadece veri kalitesi ve model koşullarını karşılayan gerçek maç analizleri burada gösterilir. Uygun maç yoksa sistem tahmin uydurmaz." />}
+      </div>
+    </section>
+
+    <section className="home-section">
+      <SectionHeading eyebrow="FİKSTÜR" title="Maçlar" action={<span>{selectedLabel} · {matches.length}</span>} />
+      <div className="card-list">
+        {matches.length ? matches.map((match) => <MatchCard key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} summary={bestById.get(String(match.fixture?.id))} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />) : <EmptyState title={loading ? "Maçlar yükleniyor" : "Bu tarihte maç bulunamadı"} text="Farklı bir günü yukarıdaki tarih seçicisinden seçebilirsiniz." />}
+      </div>
+    </section>
+
+    <p className="home-disclaimer">Gösterilen yüzdeler model tahmin olasılıklarıdır; garanti değildir. Eksik veya doğrulanamayan olasılıklar gizlenir. “Model güveni”, maçın kazanılma olasılığıyla aynı şey değildir.</p>
+  </div>;
 }
 
 function PerformanceView({ performance }) {
