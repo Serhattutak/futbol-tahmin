@@ -93,7 +93,7 @@ class MultiProviderRegistry {
   async getFixture(id) {
     if (id && typeof id === "object") return [id];
     if (this.known.get(String(id))?.expiresAt > this.now()) return [this.known.get(String(id)).fixture];
-    const name = /^sm-/.test(id) ? "sportmonks" : /^fd-/.test(id) ? "football-data" : /^fdu-/.test(id) ? "football-data-uk" : /^of-/.test(id) ? "openfootball" : /^tsdb-/.test(id) ? "thesportsdb" : /^espn-/.test(id) ? "espn" : /^\d+$/.test(id) ? "api-football" : null;
+    const name = /^sm-/.test(id) ? "sportmonks" : /^fd-/.test(id) ? "football-data" : /^of-/.test(id) ? "openfootball" : /^tsdb-/.test(id) ? "thesportsdb" : /^espn-/.test(id) ? "espn" : /^\d+$/.test(id) ? "api-football" : null;
     const provider = this.providers.find((p) => p.name === name && p.enabled);
     if (!provider) {
       const date = String(id).match(/^\d{4}-\d{2}-\d{2}/)?.[0];
@@ -136,7 +136,7 @@ class MultiProviderRegistry {
   getTeamHistoricalMatches(team, beforeDate, options) { return this.historicalData.getTeamHistoricalMatches(team, beforeDate, options); }
   getHistoricalForm(fixture, side) { return this.getTeamHistoricalMatches(fixture[side === "home" ? "homeTeam" : "awayTeam"], fixture.kickoff, { fixture, side }); }
   async loadHistoricalForm(fixture, side) {
-    const order = ["openfootball", "football-data-uk", "sportmonks", "football-data", "api-football", "thesportsdb", "espn"];
+    const order = ["openfootball", "sportmonks", "football-data", "api-football", "thesportsdb", "espn"];
     let best = { matches: [], provider: null }; let updated = fixture;
     const historyCandidates = [];
     const historyAttempts = [];
