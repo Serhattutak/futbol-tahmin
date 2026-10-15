@@ -60,8 +60,21 @@ async function collectDivisionHistory({ team, before, fixtureId, league, catalog
   rows = [];
   for (let offset = 0; offset < 3; offset++) {
     for (const division of divisions) {
-      const year = (catalog[division]?.calendarYear ? currentCalendarYear : currentSeasonYear) - offset;
-      const season = catalog[division]?.calendarYear ? String(year) : `${year}-${String(year + 1).slice(-2)}`;
+      const meta = catalog[division] || {};
+      const targetYear = meta.calendarYear ? currentCalendarYear : currentSeasonYear;
+      // Text-source catalogs intentionally list only verified season files, and
+      // some leagues have gaps. Select the nearest available seasons instead of
+      // asking for nonexistent year-offset files and silently losing history.
+      const available = Array.isArray(meta.seasons)
+        ? meta.seasons.map(String)
+          .filter(season => Number(season.slice(0, 4)) <= targetYear)
+          .sort((a, b) => Number(b.slice(0, 4)) - Number(a.slice(0, 4)) || b.localeCompare(a))
+        : null;
+      const year = targetYear - offset;
+      const season = available
+        ? available[offset]
+        : meta.calendarYear ? String(year) : `${year}-${String(year + 1).slice(-2)}`;
+      if (!season) continue;
       // Completed prior seasons are reusable; current snapshots have a bounded age.
       const installed = datasets.find(s => s.league === division && s.season === season);
       let incoming = installed?.matches || [];

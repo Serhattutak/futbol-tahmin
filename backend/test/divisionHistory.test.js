@@ -90,6 +90,45 @@ test("Historical Segunda capability is separate from capture fixture discovery",
   assert.equal(of.supportsHistoricalLeague({ name: "Segunda División", country: "Mexico" }), false);
 });
 
+test("Catalogs with season gaps use nearest verified seasons rather than missing years", async () => {
+  const requested = [];
+  const catalog = {
+    "League One": { country: "England", seasons: ["2025-26"] },
+    "Premier League": { country: "England", seasons: ["2026-27", "2025-26", "2023-24"] },
+  };
+  const rows = await collectDivisionHistory({
+    team: { name: "No matching team" },
+    before: "2026-10-15T12:00:00Z",
+    now: Date.parse("2026-10-15T12:00:00Z"),
+    league: { name: "League One", country: "England" },
+    catalog,
+    datasets: [],
+    load: async (league, season) => { requested.push(`${league}:${season}`); return []; },
+  });
+  assert.deepEqual(rows, []);
+  assert.deepEqual(requested, [
+    "League One:2025-26",
+    "Premier League:2026-27",
+    "Premier League:2025-26",
+    "Premier League:2023-24",
+  ]);
+});
+
+test("Calendar-year catalog gaps use available past years and exclude future seasons", async () => {
+  const requested = [];
+  const rows = await collectDivisionHistory({
+    team: { name: "No matching team" },
+    before: "2026-03-15T12:00:00Z",
+    now: Date.parse("2026-03-15T12:00:00Z"),
+    league: { name: "League A", country: "Brazil" },
+    catalog: { "League A": { country: "Brazil", calendarYear: true, seasons: ["2026", "2024", "2023"] } },
+    datasets: [],
+    load: async (_league, season) => { requested.push(season); return []; },
+  });
+  assert.deepEqual(rows, []);
+  assert.deepEqual(requested, ["2026", "2024", "2023"]);
+});
+
 test("Calendar-year leagues request the actual current year before the European season rollover", async () => {
   const requested = [];
   const rows = await collectDivisionHistory({
