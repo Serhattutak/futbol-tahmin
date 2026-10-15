@@ -109,7 +109,7 @@ function schemaPool({ missingColumn = null, missingUnique = false } = {}) {
   return {
     async query(sql) {
       if (sql.includes("information_schema.columns")) return { rows: columns };
-      if (sql.includes("information_schema.table_constraints")) return { rows: missingUnique ? [] : [{ constraint_type: "PRIMARY KEY" }] };
+      if (sql.includes("FROM pg_indexes")) return { rows: missingUnique ? [] : [{ indexdef: "CREATE UNIQUE INDEX zeus_event_id_uq ON public.zeus_prediction_ledger_events USING btree (event_id)" }] };
       throw new Error("UNEXPECTED_QUERY");
     },
   };
