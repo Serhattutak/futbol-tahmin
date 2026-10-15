@@ -47,6 +47,13 @@ function seasonKeyFor(meta, date) {
   return seasonKey(date);
 }
 function normalizeName(value) { return String(value || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, ""); }
+function turkeyDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const part = (type) => parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
 function deterministicId(match, league) { return `of-${normalizeName(league)}-${match.date}-${normalizeName(match.team1)}-${normalizeName(match.team2)}`; }
 function scoreOf(score) { if (Array.isArray(score)) return score; if (Array.isArray(score?.ft)) return score.ft; return null; }
 function toFixture(match, leagueName, meta, season) {
@@ -71,7 +78,7 @@ async function getFixtures(date, league) {
     try {
       const meta = HISTORICAL_LEAGUES[leagueName];
       const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date));
-      results[index] = fixtures.filter((fixture) => fixture.fixture.date.slice(0, 10) === date);
+      results[index] = fixtures.filter((fixture) => (fixture.fixture.kickoffPrecision === "date" ? fixture.fixture.date.slice(0, 10) : turkeyDate(fixture.fixture.date)) === date);
     } catch (error) {
       results[index] = [];
       lastError ||= error;
@@ -193,4 +200,4 @@ async function getStandings(leagueId, season, context = {}) {
 }
 
 // Bulk historical replay shares the existing provider normalization and cache.
-module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, selectHeadToHead, calculateStandingsRows, historicalSeasonKeys, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(HISTORICAL_LEAGUES[name]) };
+module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, selectHeadToHead, calculateStandingsRows, historicalSeasonKeys, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(HISTORICAL_LEAGUES[name]), turkeyDate };
