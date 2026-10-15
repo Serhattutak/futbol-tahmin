@@ -76,7 +76,7 @@ test("History lookup checks an independent provider even after OpenFootball alre
   const dates = Array.from({ length: 10 }, (_, i) => new Date(Date.UTC(2026, 4, 10 - i)).toISOString().slice(0, 10));
   const firstSource = dates.map((date, i) => row(i + 1, date));
   let independentCalls = 0;
-  const fixture = canonicalFixture({ provider: "api-football", fixture: { id: 200, date: before }, homeTeam: team, awayTeam: { id: 2, name: "Getafe" }, league: { id: 140, name: "La Liga", country: "Spain", season: 2026 }, status: "NS" });
+  const fixture = canonicalFixture({ provider: "thesportsdb", fixture: { id: "tsdb-200", date: before }, homeTeam: team, awayTeam: { id: 2, name: "Getafe" }, league: { id: 140, name: "La Liga", country: "Spain", season: 2026 }, status: "NS" });
   const registry = new MultiProviderRegistry([
     createLegacyAdapter({ name: "openfootball", enabled: true, capabilities: ["teamForm", "historicalResults"], getTeamForm: async () => firstSource, getFixtures: async () => [] }),
     createLegacyAdapter({ name: "thesportsdb", enabled: true, capabilities: ["teamForm", "historicalResults"], getTeamForm: async () => { independentCalls++; return [row(1, dates[0])]; }, getFixtures: async () => [{ provider: "thesportsdb", fixture: { id: "tsdb-200", date: before, status: { short: "SCHEDULED" } }, league: { id: 140, name: "La Liga", country: "Spain", season: 2026 }, teams: { home: { id: "tsdb-team-realbetis", name: "Real Betis" }, away: { id: "tsdb-team-getafe", name: "Getafe" } }, goals: { home: null, away: null } }] }),
