@@ -170,6 +170,7 @@ class MultiProviderRegistry {
     const data = { fixture, homeMatches: [], awayMatches: [], h2hMatches: [], standingsResponse: [], oddsResponse: [], recentStats: [], sourceMetadata: { providers: [...fixture.sources], fields: {}, unavailable: {} } };
     for (const side of ["home", "away"]) {
       const history = await this.getHistoricalForm(fixture, side); fixture = history.fixture;
+      if (history.historyAttempts?.length) data.sourceMetadata.historyAttempts = [...(data.sourceMetadata.historyAttempts || []), ...history.historyAttempts.map((attempt) => ({ ...attempt, side }))];
       const field = side === "home" ? "homeMatches" : "awayMatches";
       data[field] = history.matches;
       if (history.provider) data.sourceMetadata.fields[field] = history.provider;
