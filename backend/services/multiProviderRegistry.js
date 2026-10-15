@@ -59,7 +59,8 @@ function reconcileFixtures(fixtures) {
     const sameDay = reconciled.find((other) =>
       canonicalTeamId(other.homeTeam) === canonicalTeamId(fixture.homeTeam)
       && canonicalTeamId(other.awayTeam) === canonicalTeamId(fixture.awayTeam)
-      && leagueKey(other.league?.name) === leagueKey(fixture.league?.name)
+      && (!other.league?.country || !fixture.league?.country || normalize(other.league.country) === normalize(fixture.league.country))
+      && leagueKey(other.league?.name, other.league?.country) === leagueKey(fixture.league?.name, fixture.league?.country)
       && other.kickoff.slice(0, 10) === fixture.kickoff.slice(0, 10)
     );
     if (!sameDay) { reconciled.push({ ...fixture }); continue; }
