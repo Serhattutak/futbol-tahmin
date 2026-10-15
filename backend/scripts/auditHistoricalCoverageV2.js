@@ -4,7 +4,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const assert = require("node:assert/strict");
 const { collectDivisionHistory, VERSION, provenance } = require("../services/divisionHistory");
-const { MultiProviderRegistry, createLegacyAdapter } = require("../services/multiProviderRegistry");
+const { MultiProviderRegistry, createLegacyAdapter, canonicalFixture } = require("../services/multiProviderRegistry");
 const { validateInputs, ProductionAnalysis } = require("../services/productionAnalysis");
 const { loadArtifact } = require("../services/modelVersions");
 const { ForwardCapture } = require("../services/forwardCapture");
@@ -24,8 +24,7 @@ async function main() {
   const before = protectedHashes();
   const baseline = read("docs/historical-coverage-audit.json");
   const now = Date.parse(baseline.cohortAsOf);
-  const cached = new Map(read("backend/data/fixture-cache.json").flatMap(([, e]) => e.fixtures).map(f => [String(f.providerFixtureId), f]));
-  const fixtures = baseline.fixtures.map(r => { const f = cached.get(r.fixtureId); assert.ok(f, r.fixtureId); assert.equal(f.kickoff, r.kickoff); return f; });
+  // Rebuild the frozen cohort fixtures from the committed audit artifact. Never depend on a runtime fixture cache, which can be created by CI smoke tests and is not the frozen cohort.\n  const fixtures = baseline.fixtures.map(r => canonicalFixture({ provider: r.provider || "frozen-cohort", fixture: { id: r.fixtureId, date: r.kickoff }, league: { id: `cohort-${r.league}`, name: r.league, country: r.country, season: r.season }, homeTeam: { id: `cohort-home-${r.fixtureId}`, name: r.home }, awayTeam: { id: `cohort-away-${r.fixtureId}`, name: r.away }, status: "SCHEDULED" }));\n  assert.ok(fixtures.every(Boolean), "Every frozen cohort row must reconstruct a canonical fixture");
   assert.equal(fixtures.length, 253);
   // Uses the production registry/adapter/normalization/cache path, but injects
   // only the saved real bulk sources; no provider client can be called here.
