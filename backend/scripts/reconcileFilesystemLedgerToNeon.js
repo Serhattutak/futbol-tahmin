@@ -22,6 +22,7 @@ function compareEventIds(sourceEvents, destinationEvents) {
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL_REQUIRED");
   const apply = process.argv.includes(APPLY_FLAG);
+  if (apply && !process.env.ZEUS_LEDGER_DIR) throw new Error("ZEUS_LEDGER_DIR_REQUIRED_FOR_APPLY");
   if (apply && process.env.ZEUS_RECONCILE_CONFIRM !== APPLY_CONFIRMATION) {
     throw new Error("RECONCILIATION_CONFIRMATION_REQUIRED");
   }
@@ -49,7 +50,8 @@ async function main() {
         destination: "neon",
         ...initial,
         wouldAppend: initial.missingFromDestination.length,
-        safeToApply: initial.destinationOnly.length === 0,
+        sourceDirectoryConfigured: Boolean(process.env.ZEUS_LEDGER_DIR),
+        safeToApply: Boolean(process.env.ZEUS_LEDGER_DIR) && initial.destinationOnly.length === 0,
       }, null, 2) + "\n");
       return;
     }
