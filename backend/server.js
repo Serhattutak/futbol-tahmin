@@ -1,5 +1,6 @@
 const { buildMatchStatistics, calculateTeamStatistics } = require("./services/teamStatistics");
 const { apiHistory } = require("./services/historicalForm");
+const { forEachConcurrent } = require("./services/forEachConcurrent");
 ﻿const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -1286,9 +1287,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
     // Bound upstream work: the endpoint can see hundreds of fixtures, but must not
     // fan out an unbounded number of provider requests or wait for 200 sequential analyses.
     const ANALYSIS_CONCURRENCY = 4;
-    let nextCandidate = 0;
-    async function analyzeNextCandidate() {
-      while (nextCandidate < candidates.length) {
+    await forEachConcurrent(candidates, ANALYSIS_CONCURRENCY, async (match) => {      while (nextCandidate < candidates.length) {
         const match = candidates[nextCandidate++];
         try {
           const analysis = await analyzeFixture(String(match.fixture.id), { includeMatchStatistics: false, modelVersion: "MODEL_4_0" });
@@ -1342,8 +1341,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
           console.warn(`Best prediction analiz edilemedi: ${match.fixture?.id}`);
         }
       }
-    }
-    await Promise.all(Array.from({ length: Math.min(ANALYSIS_CONCURRENCY, candidates.length) }, () => analyzeNextCandidate()));
+    });
 
     evaluated.sort((left, right) => right.predictionScore - left.predictionScore);
     const diagnostics = {
