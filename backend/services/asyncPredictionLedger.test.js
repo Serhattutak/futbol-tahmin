@@ -152,3 +152,20 @@ test("settlement refuses unverified provider fixture IDs and pre-kickoff outcome
   const finished = [{ provider: "alpha", providerFixtureId: "wrong-id", status: "FINISHED", result: { status: "FINISHED", homeGoals: 1, awayGoals: 0 } }];
   assert.deepEqual(await ledger.settle("settle-2", finished), { reason: "NOT_STARTED" });
 });
+
+test("validates destination schema before loading any events", async () => {
+  const order = [];
+  const store = fakeStore();
+  store.validateSchema = async () => { order.push("schema"); };
+  store.loadEvents = async () => { order.push("restore"); return []; };
+  const ledger = new AsyncPredictionLedger({ store });
+  await ledger.initialize();
+  assert.deepEqual(order, ["schema", "restore"]);
+
+  const invalidStore = fakeStore();
+  invalidStore.validateSchema = async () => { throw new Error("LEDGER_SCHEMA_INVALID"); };
+  invalidStore.loadEvents = async () => { throw new Error("restore should not run"); };
+  const invalidLedger = new AsyncPredictionLedger({ store: invalidStore });
+  await assert.rejects(invalidLedger.initialize(), /LEDGER_SCHEMA_INVALID/);
+  assert.throws(() => invalidLedger.entries(), /ASYNC_LEDGER_NOT_INITIALIZED/);
+});
