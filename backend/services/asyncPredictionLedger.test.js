@@ -98,3 +98,57 @@ test("rejects duplicate event IDs returned by a corrupt or inconsistent store", 
   await assert.rejects(ledger.initialize(), /DUPLICATE_LEDGER_EVENT_ID/);
   assert.throws(() => ledger.status(), /ASYNC_LEDGER_NOT_INITIALIZED/);
 });
+
+test("settles verified final results idempotently and records contradictory scores", async () => {
+  const prediction = {
+    type: "prediction", ledgerId: "settle-1",
+    snapshot: {
+      ledgerId: "settle-1",
+      predictionCreatedAt: "2026-10-01T10:00:00.000Z",
+      kickoffTime: "2026-10-01T12:00:00.000Z",
+      fixtureId: "fixture-provider-1",
+      providerFixtureIds: { alpha: "a-1", beta: "b-1" },
+      homeProbability: 0.6, drawProbability: 0.25, awayProbability: 0.15,
+      over15: 0.7, over25: 0.5, over35: 0.3, bttsYes: 0.4,
+    },
+  };
+  const store = fakeStore([prediction]);
+  const ledger = new AsyncPredictionLedger({ store, now: () => Date.parse("2026-10-02T00:00:00.000Z") });
+  await ledger.initialize();
+  const fixtures = [
+    { provider: "alpha", providerFixtureId: "a-1", status: "FINISHED", result: { status: "FINISHED", homeGoals: 2, awayGoals: 0 } },
+    { provider: "beta", providerFixtureId: "b-1", status: "FINISHED", result: { status: "FINISHED", homeGoals: 2, awayGoals: 0 } },
+  ];
+  assert.deepEqual(await ledger.settle("settle-1", fixtures), { saved: true, reason: null });
+  const settled = ledger.entries()[0];
+  assert.equal(settled.resultStatus, "settled");
+  assert.equal(settled.actualHomeGoals, 2);
+  assert.equal(settled.resultVerification, "verified");
+  assert.deepEqual(await ledger.settle("settle-1", fixtures), { saved: false, reason: "ALREADY_SETTLED" });
+
+  const contradictory = [
+    { provider: "alpha", providerFixtureId: "a-1", status: "FINISHED", result: { status: "FINISHED", homeGoals: 1, awayGoals: 0 } },
+  ];
+  assert.deepEqual(await ledger.settle("settle-1", contradictory), { reason: "RESULT_CONFLICT" });
+  assert.equal(ledger.entries()[0].conflicts.length, 1);
+});
+
+test("settlement refuses unverified provider fixture IDs and pre-kickoff outcomes", async () => {
+  const prediction = {
+    type: "prediction", ledgerId: "settle-2",
+    snapshot: {
+      ledgerId: "settle-2", predictionCreatedAt: "2026-10-01T10:00:00.000Z",
+      kickoffTime: "2026-10-03T12:00:00.000Z", fixtureId: "fixture-provider-2",
+      providerFixtureIds: { alpha: "expected-id" },
+      homeProbability: 0.5, drawProbability: 0.3, awayProbability: 0.2,
+      over15: 0.7, over25: 0.5, over35: 0.3, bttsYes: 0.4,
+    },
+  };
+  const ledger = new AsyncPredictionLedger({
+    store: fakeStore([prediction]),
+    now: () => Date.parse("2026-10-02T00:00:00.000Z"),
+  });
+  await ledger.initialize();
+  const finished = [{ provider: "alpha", providerFixtureId: "wrong-id", status: "FINISHED", result: { status: "FINISHED", homeGoals: 1, awayGoals: 0 } }];
+  assert.deepEqual(await ledger.settle("settle-2", finished), { reason: "NOT_STARTED" });
+});
