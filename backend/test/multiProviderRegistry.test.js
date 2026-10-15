@@ -78,3 +78,31 @@ test("historical H2H and standings can use league history without a live provide
   assert.equal(result.h2hMatches.length, 1);
   assert.equal(result.standingsResponse.length, 1);
 });
+
+test("Cross-source fixture aliases merge only within the same country", () => {
+  const { reconcileFixtures } = require("../services/multiProviderRegistry");
+  const make = (provider, leagueName, country, kickoff = "2026-10-16T18:30:00Z", precision = "time") => ({
+    ...fixture(provider, kickoff),
+    league: { name: leagueName, country },
+    homeTeam: { canonicalTeamId: "team:home", name: "Galatasaray" },
+    awayTeam: { canonicalTeamId: "team:away", name: "Fenerbahce" },
+    kickoffPrecision: precision,
+    providerFixtureIds: { [provider]: provider + "-1" },
+  });
+  assert.equal(reconcileFixtures([
+    make("espn", "Super League", "Switzerland"),
+    make("openfootball-text", "Swiss Super League", "Switzerland", "2026-10-16T00:00:00Z", "date"),
+  ]).length, 1);
+  assert.equal(reconcileFixtures([
+    make("espn", "MLS", "USA"),
+    make("openfootball-text", "Major League Soccer", "USA", "2026-10-16T00:00:00Z", "date"),
+  ]).length, 1);
+  assert.equal(reconcileFixtures([
+    make("espn", "First League", "Bulgaria"),
+    make("openfootball-text", "Bulgarian First League", "Bulgaria", "2026-10-16T00:00:00Z", "date"),
+  ]).length, 1);
+  assert.equal(reconcileFixtures([
+    make("espn", "Super League", "Switzerland"),
+    make("other", "Super League", "Greece"),
+  ]).length, 2);
+});
