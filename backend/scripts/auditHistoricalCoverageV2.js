@@ -18,13 +18,17 @@ function protectedHashes() {
   const files = Object.keys(read("docs/historical-v2-integrity-before.json")).filter(f => !f.endsWith("fixture-cache.json"));
   const ledger = "backend/data/prediction-ledger";
   for (const f of fs.readdirSync(path.join(root, ledger))) if (fs.statSync(path.join(root, ledger, f)).isFile()) files.push(`${ledger}/${f}`);
-  // Local developer secrets such as backend/.env are intentionally absent from CI.\n  // Protect every integrity-listed file that actually exists in this checkout.\n  return Object.fromEntries([...new Set(files)].filter(f => fs.existsSync(path.join(root, f))).map(f => [f, sha(f)]));
+  // Local developer secrets such as backend/.env are intentionally absent from CI.
+  // Protect every integrity-listed file that actually exists in this checkout.
+  return Object.fromEntries([...new Set(files)].filter(f => fs.existsSync(path.join(root, f))).map(f => [f, sha(f)]));
 }
 async function main() {
   const before = protectedHashes();
   const baseline = read("docs/historical-coverage-audit.json");
   const now = Date.parse(baseline.cohortAsOf);
-  // Rebuild the frozen cohort fixtures from the committed audit artifact. Never depend on a runtime fixture cache, which can be created by CI smoke tests and is not the frozen cohort.\n  const fixtures = baseline.fixtures.map(r => canonicalFixture({ provider: r.provider || "frozen-cohort", fixture: { id: r.fixtureId, date: r.kickoff }, league: { id: `cohort-${r.league}`, name: r.league, country: r.country, season: r.season }, homeTeam: { id: `cohort-home-${r.fixtureId}`, name: r.home }, awayTeam: { id: `cohort-away-${r.fixtureId}`, name: r.away }, status: "SCHEDULED" }));\n  assert.ok(fixtures.every(Boolean), "Every frozen cohort row must reconstruct a canonical fixture");
+  // Rebuild the frozen cohort fixtures from the committed audit artifact. Never depend on a runtime fixture cache, which can be created by CI smoke tests and is not the frozen cohort.
+  const fixtures = baseline.fixtures.map(r => canonicalFixture({ provider: r.provider || "frozen-cohort", fixture: { id: r.fixtureId, date: r.kickoff }, league: { id: `cohort-${r.league}`, name: r.league, country: r.country, season: r.season }, homeTeam: { id: `cohort-home-${r.fixtureId}`, name: r.home }, awayTeam: { id: `cohort-away-${r.fixtureId}`, name: r.away }, status: "SCHEDULED" }));
+  assert.ok(fixtures.every(Boolean), "Every frozen cohort row must reconstruct a canonical fixture");
   assert.equal(fixtures.length, 253);
   // Uses the production registry/adapter/normalization/cache path, but injects
   // only the saved real bulk sources; no provider client can be called here.
