@@ -94,7 +94,7 @@ jobs:
         run: |
           node <<'NODE'
           const assert = require("node:assert/strict");
-          const base = process.env.ZEUS_API_BASE_URL.replace(/\\/$/, "");
+          const base = process.env.ZEUS_API_BASE_URL.replace(/\/$/, "");
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
           async function getJson(path) {
             let lastError;
