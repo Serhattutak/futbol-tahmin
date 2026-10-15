@@ -18,7 +18,7 @@ function protectedHashes() {
   const files = Object.keys(read("docs/historical-v2-integrity-before.json")).filter(f => !f.endsWith("fixture-cache.json"));
   const ledger = "backend/data/prediction-ledger";
   for (const f of fs.readdirSync(path.join(root, ledger))) if (fs.statSync(path.join(root, ledger, f)).isFile()) files.push(`${ledger}/${f}`);
-  return Object.fromEntries([...new Set(files)].map(f => [f, sha(f)]));
+  // Local developer secrets such as backend/.env are intentionally absent from CI.\n  // Protect every integrity-listed file that actually exists in this checkout.\n  return Object.fromEntries([...new Set(files)].filter(f => fs.existsSync(path.join(root, f))).map(f => [f, sha(f)]));
 }
 async function main() {
   const before = protectedHashes();
