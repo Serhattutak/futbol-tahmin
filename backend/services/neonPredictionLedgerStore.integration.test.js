@@ -33,6 +33,7 @@ test("real PostgreSQL round-trip, idempotency, fresh-connection recovery, and ro
       )
     `);
     const store = new NeonPredictionLedgerStore({ pool, table });
+    assert.deepEqual(await store.validateSchema(), { valid: true, table });
     const prediction = {
       type: "prediction", ledgerId: "integration-fixture-model",
       snapshot: { homeProbability: 0.52, drawProbability: 0.27, awayProbability: 0.21 }
@@ -64,6 +65,7 @@ test("real PostgreSQL round-trip, idempotency, fresh-connection recovery, and ro
       idleTimeoutMillis: 1000
     });
     const restored = new NeonPredictionLedgerStore({ pool: restartedPool, table });
+    assert.deepEqual(await restored.validateSchema(), { valid: true, table });
     const events = await restored.loadEvents();
     assert.equal(events.length, 3);
     assert.deepEqual(new Set(events.map(event => event.type)), new Set(["prediction", "settlement", "conflict"]));
