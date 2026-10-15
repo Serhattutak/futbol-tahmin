@@ -79,3 +79,13 @@ button { -webkit-tap-highlight-color: transparent; }
 .zeus-insight ul { display: grid; gap: 9px; margin: 0; padding-left: 19px; }
 .zeus-insight li { padding-left: 2px; color: var(--text); font-size: 12px; line-height: 1.5; }
 .zeus-insight li::marker { color: var(--cyan); }
+
+
+/* Match-card predictions visible before opening details */
+.one-x-two-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.one-x-two-strip > div { display: grid; gap: 4px; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.one-x-two-strip span { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.one-x-two-strip b { color: var(--cyan); font-size: 15px; font-variant-numeric: tabular-nums; }
+.expected-goals-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: 8px; color: var(--muted); font-size: 11px; }
+.expected-goals-line b { color: var(--text); font-weight: 600; }
+@media (max-width: 380px) { .one-x-two-strip { gap: 5px; } .one-x-two-strip > div { padding: 8px 6px; } .one-x-two-strip span { font-size: 9px; } .one-x-two-strip b { font-size: 13px; } }
