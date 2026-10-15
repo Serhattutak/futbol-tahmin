@@ -85,7 +85,8 @@ class ForwardCapture {
     const lastRunAgeMs = Number.isFinite(lastRunMs) ? Math.max(0, this.now() - lastRunMs) : null;
     const lastSuccessfulRunAgeMs = Number.isFinite(lastSuccessfulRunMs) ? Math.max(0, this.now() - lastSuccessfulRunMs) : null;
     const captureHealth = lastSuccessfulRunAgeMs === null ? "never_succeeded" : lastSuccessfulRunAgeMs > this.config.intervalMs * 2 ? "stale" : "fresh";
-    return { ...publicState, lastRunAgeMs, lastSuccessfulRunAgeMs, captureHealth, storage: { directoryConfigured: Boolean(process.env.ZEUS_LEDGER_DIR), mode: process.env.ZEUS_LEDGER_DIR ? "configured_directory" : "default_local_directory", durabilityWarning: process.env.ZEUS_LEDGER_DIR ? null : "ZEUS_LEDGER_DIR is not configured; runtime ledger durability depends on the instance filesystem." },
+    const neonMode = (process.env.ZEUS_LEDGER_MODE || "filesystem") === "neon";
+    return { ...publicState, lastRunAgeMs, lastSuccessfulRunAgeMs, captureHealth, storage: { directoryConfigured: Boolean(process.env.ZEUS_LEDGER_DIR), mode: neonMode ? "neon_postgres" : process.env.ZEUS_LEDGER_DIR ? "configured_directory" : "default_local_directory", durabilityWarning: neonMode || process.env.ZEUS_LEDGER_DIR ? null : "ZEUS_LEDGER_DIR is not configured; runtime ledger durability depends on the instance filesystem." },
       isRunning: Boolean(this.running) || fs.existsSync(path.join(this.config.directory, "run.lock")), schedulerActive: Boolean(this.timer), nextRunAt: this.nextRunAt || null,
       recordedPredictions: rows.length, recordedFixtures: new Set(rows.map(r => r.fixtureId)).size,
       window: { minLeadMinutes: this.config.minLeadMinutes, maxLeadMinutes: this.config.maxLeadMinutes } };
@@ -152,7 +153,7 @@ class ForwardCapture {
         if (!dryRun) this.state.lastAttempts[detail.fixtureId] = iso(this.now());
         try {
           const result = await this.analysis.analyze(detail.fixtureId, { modelVersion: MODELS[1], persist: false, recordLedger: false, allowPartial: true,
-            onAnalyzed: (response, collected) => {
+            onAnalyzed: async (response, collected) => {
               // Recheck the enriched source and current clock immediately before publishing.
               const late = windowReason(collected.fixture, this.now(), this.config);
               if (late) return { reason: late, records: [] };
@@ -161,7 +162,7 @@ class ForwardCapture {
               detail.dataQuality = Object.fromEntries(Object.values(response.models).filter(Boolean).map(m => [m.modelVersion, { dataQuality: m.dataQuality, statisticsQuality: m.statisticsQuality, historicalSampleSize: m.historicalSampleSize }]));
               detail.minutesBeforeKickoff = (Date.parse(collected.fixture.kickoff) - this.now()) / 60_000;
               detail.kickoff = collected.fixture.kickoff;
-              const records = dryRun ? candidates.map(c => ({ model: c.model, ledgerId: c.record?.ledgerId, saved: false, wouldSave: Boolean(c.record) && !existing.some(r => r.ledgerId === c.record.ledgerId), reason: c.reason || (existing.some(r => r.ledgerId === c.record?.ledgerId) ? "DUPLICATE" : "DRY_RUN") })) : this.ledger.recordResponse(response, collected, { guard: (f, time) => windowReason(f, time, this.config) });
+              const records = dryRun ? candidates.map(c => ({ model: c.model, ledgerId: c.record?.ledgerId, saved: false, wouldSave: Boolean(c.record) && !existing.some(r => r.ledgerId === c.record.ledgerId), reason: c.reason || (existing.some(r => r.ledgerId === c.record?.ledgerId) ? "DUPLICATE" : "DRY_RUN") })) : await this.ledger.recordResponse(response, collected, { guard: (f, time) => windowReason(f, time, this.config) });
               const rejectedWindow = records.find(r => ["KICKOFF_REACHED", "TOO_CLOSE_TO_KICKOFF", "TOO_EARLY", "INVALID_FIXTURE", "UNVERIFIED_KICKOFF_SOURCE"].includes(r.reason));
               if (rejectedWindow) return { reason: rejectedWindow.reason, records };
               return { records, validModels: valid.map(c => c.model), rejected: candidates.filter(c => !c.record).map(c => ({ model: c.model, reason: c.reason })), fallbackReason: response.model41FallbackReason };

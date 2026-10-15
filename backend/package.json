@@ -9,7 +9,8 @@
     "capture:forward": "node scripts/runForwardCapture.js",
     "backtest": "node scripts/runBacktest.js",
     "model41:prepare": "node scripts/runModel41.js --prepare",
-    "model41:final": "node scripts/runModel41.js --final"
+    "model41:final": "node scripts/runModel41.js --final",
+    "ledger:reconcile:neon": "node scripts/reconcileFilesystemLedgerToNeon.js"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +21,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
-    "express-rate-limit": "^8.7.0"
+    "pg": "8.23.0"
   }
 }

@@ -1206,8 +1206,12 @@ let over25 = 0;
 
 const { ProductionAnalysis } = require("./services/productionAnalysis");
 const { PredictionLedger } = require("./services/predictionLedger");
+const { createPredictionLedgerHandle } = require("./services/createPredictionLedgerHandle");
 const { mountLedgerRoutes } = require("./services/forwardPerformance");
-const predictionLedger = new PredictionLedger();
+const filesystemPredictionLedger = new PredictionLedger();
+const predictionLedgerHandle = createPredictionLedgerHandle(filesystemPredictionLedger);
+// Services retain this stable reference while startup chooses and validates the active store.
+const predictionLedger = predictionLedgerHandle.ledger;
 const productionAnalysis = new ProductionAnalysis({
   ledger: predictionLedger,
   collect: async fixtureId => {
@@ -1470,25 +1474,113 @@ app.use((error, req, res, next) => {
   return res.status(status).json({ success: false, error: status === 413 ? "İstek gövdesi çok büyük." : status === 403 ? "Origin izinli değil." : "Sunucu hatası." });
 });
 
-if (require.main === module) {
-  // CI's local server must not start scheduled provider requests or mutate runtime ledgers.
-  if (process.env.ZEUS_DISABLE_CAPTURE_SCHEDULER !== "1") {
-    forwardCapture.startScheduler();
-    const resultCheckTimer = setInterval(() => {
-      predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
-        .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
-      checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
-      settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
-        .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
-        .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
-    }, 15 * 60 * 1000);
-    resultCheckTimer.unref();
-  }
+if (require.main !== module && process.env.ZEUS_LEDGER_MODE && process.env.ZEUS_LEDGER_MODE !== "filesystem") {
+  // Serverless imports cannot await the restore gate; never silently serve filesystem data in Neon mode.
+  throw new Error("NEON_MODE_REQUIRES_ASYNC_SERVER_BOOTSTRAP");
+}
 
-  app.listen(PORT, () => {
-    console.log(
-      `Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`
-    );
+if (require.main === module) {
+  (async () => {
+    const ledgerMode = process.env.ZEUS_LEDGER_MODE || "filesystem";
+    let ledgerRuntime = null;
+
+    if (ledgerMode === "filesystem") {
+      predictionLedgerHandle.markReady();
+    } else if (ledgerMode === "neon") {
+      if (process.env.ZEUS_LEDGER_STAGING_SMOKE === "true") {
+        const { runStagingSmoke } = require("./scripts/neonStagingSmoke");
+        const smoke = await runStagingSmoke();
+        console.log(JSON.stringify(smoke));
+      }
+      if (process.env.ZEUS_LEDGER_MIGRATION_REHEARSAL === "true") {
+        const { rehearseProductionLedgerMigration } = require("./scripts/rehearseProductionLedgerMigration");
+        const rehearsal = await rehearseProductionLedgerMigration();
+        console.log(JSON.stringify(rehearsal));
+      }
+      // One-shot, explicitly confirmed import from the read-only production API
+      // into the dedicated staging Neon branch. This never writes to production.
+      let stagingImportVerified = false;
+      if (process.env.ZEUS_LEDGER_STAGING_IMPORT_PRODUCTION === "true") {
+        const { importProductionLedgerToStaging } = require("./scripts/importProductionLedgerToStaging");
+        const report = await importProductionLedgerToStaging();
+        if (report?.targetVerified !== true || report.target !== "dedicated Neon staging branch") {
+          throw new Error("STAGING_PRODUCTION_IMPORT_NOT_VERIFIED");
+        }
+        console.log(JSON.stringify(report));
+        stagingImportVerified = true;
+      }
+
+      // Optional read-only filesystem reconciliation applies only when no explicit
+      // production-to-staging import ran; an empty /tmp source is not authoritative
+      // after staging has been populated from the live production API.
+      let reconciliationVerified =
+        process.env.ZEUS_LEDGER_RECONCILIATION_VERIFIED === "true" || stagingImportVerified;
+      if (!stagingImportVerified && process.env.ZEUS_LEDGER_RECONCILIATION_PREFLIGHT === "true") {
+        const { main: runReconciliationDryRun } = require("./scripts/reconcileFilesystemLedgerToNeon");
+        const report = await runReconciliationDryRun();
+        if (report?.mode !== "dry-run" || !report.safeToApply ||
+            report.missingFromDestination?.length !== 0 || report.destinationOnly?.length !== 0) {
+          throw new Error("NEON_RECONCILIATION_MISMATCH: source and destination event IDs must match exactly before startup.");
+        }
+        reconciliationVerified = true;
+      }
+      if (!reconciliationVerified) {
+        throw new Error("NEON_RECONCILIATION_REQUIRED: run and verify the guarded reconciliation CLI before enabling Neon.");
+      }
+      const { Pool } = require("pg");
+      const { createPredictionLedgerRuntime } = require("./services/createPredictionLedgerRuntime");
+      const { normalizePostgresConnectionString } = require("./services/postgresConnectionConfig");
+      ledgerRuntime = await createPredictionLedgerRuntime({
+        mode: ledgerMode,
+        filesystemLedger: filesystemPredictionLedger,
+        createPool: connectionString => new Pool({
+          connectionString: normalizePostgresConnectionString(connectionString),
+          connectionTimeoutMillis: 10000,
+          idleTimeoutMillis: 30000,
+          max: 5,
+        }),
+      });
+      predictionLedgerHandle.replace(ledgerRuntime.ledger);
+      predictionLedgerHandle.markReady();
+      const ledgerStatus = await ledgerRuntime.ledger.status();
+      console.log(JSON.stringify({
+        type: "LEDGER_RUNTIME_READY",
+        mode: ledgerRuntime.mode,
+        ...ledgerStatus,
+      }));
+    } else {
+      throw new Error("UNSUPPORTED_LEDGER_MODE");
+    }
+
+    // CI's local server must not start scheduled provider requests or mutate runtime ledgers.
+    if (process.env.ZEUS_DISABLE_CAPTURE_SCHEDULER !== "1") {
+      forwardCapture.startScheduler();
+      const resultCheckTimer = setInterval(() => {
+        predictionLedger.settleFromProviders(ids => providerRegistry.getResults(ids))
+          .catch(error => console.warn(JSON.stringify({ type: "LEDGER_SETTLEMENT_FAILED", error: error.message })));
+        checkPendingPredictions(10).catch((error) => console.warn("Otomatik sonuç kontrolü başarısız:", error.message));
+        settlePending({ getResults: (providerFixtureIds) => providerRegistry.getResults(providerFixtureIds), filePath: historicalArchivePath, limit: 10 })
+          .then((result) => { if (result.quotaStopped) console.warn("Archive sonuç kontrolü kota nedeniyle durduruldu."); })
+          .catch((error) => console.warn("Archive otomatik sonuç kontrolü başarısız:", error.message));
+      }, 15 * 60 * 1000);
+      resultCheckTimer.unref();
+    }
+
+    const server = app.listen(PORT, () => {
+      console.log(`Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`);
+    });
+    const shutdown = () => {
+      server.close(() => {
+        if (ledgerRuntime?.pool) {
+          ledgerRuntime.pool.end().catch(error => console.warn(JSON.stringify({ type: "LEDGER_POOL_SHUTDOWN_FAILED", message: error.message })));
+        }
+      });
+    };
+    process.once("SIGTERM", shutdown);
+    process.once("SIGINT", shutdown);
+  })().catch(error => {
+    console.error(JSON.stringify({ type: "LEDGER_STARTUP_BLOCKED", message: error.message }));
+    process.exitCode = 1;
   });
 }
 // Vercel serverless (@vercel/node), modülün dışa aktardığı isteği karşılayan bir
@@ -1497,6 +1589,6 @@ if (require.main === module) {
 // dışa aktarımlar (testlerin ve diğer modüllerin kullandığı) fonksiyona özellik
 // olarak eklenerek korunur; hiçbir mevcut import kırılmaz.
 module.exports = app;
-Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
+Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger, predictionLedgerHandle });
 
 
