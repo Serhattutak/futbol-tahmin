@@ -89,3 +89,18 @@ test("Historical Segunda capability is separate from capture fixture discovery",
   assert.equal(of.supportsHistoricalLeague({ name: "Segunda División", country: "Spain" }), true);
   assert.equal(of.supportsHistoricalLeague({ name: "Segunda División", country: "Mexico" }), false);
 });
+
+test("Calendar-year leagues request the actual current year before the European season rollover", async () => {
+  const requested = [];
+  const rows = await collectDivisionHistory({
+    team: { name: "Example FC" },
+    before: "2026-03-15T12:00:00Z",
+    now: Date.parse("2026-03-15T12:00:00Z"),
+    league: { name: "Brazilian Serie A", country: "Brazil" },
+    catalog: { "Brazilian Serie A": { country: "Brazil", calendarYear: true } },
+    datasets: [],
+    load: async (_league, season) => { requested.push(season); return []; },
+  });
+  assert.deepEqual(requested, ["2026", "2025", "2024"]);
+  assert.deepEqual(rows, []);
+});
