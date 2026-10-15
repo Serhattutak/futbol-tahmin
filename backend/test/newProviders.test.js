@@ -5,6 +5,7 @@ const footballData = require("../providers/footballData");
 const openFootball = require("../providers/openFootball");
 const openFootballText = require("../providers/openFootballText");
 const espn = require("../providers/espn");
+const theSportsDb = require("../providers/theSportsDb");
 
 test("Sportmonks fixture response canonical legacy formuna normalize edilir", () => {
   const fixture = sportmonks.toFixture({ id: 1, starting_at: "2026-09-20T18:00:00Z", state: { short_name: "NS" }, league: { id: 2, name: "League" }, season: { id: 3 }, participants: [{ id: 10, name: "Home", meta: { location: "home" } }, { id: 20, name: "Away", meta: { location: "away" } }] });
@@ -141,4 +142,18 @@ test("OpenFootball text source advances inferred year across winter season rollo
 test("OpenFootball text history is eligible for different competitions in a covered country", () => {
   assert.equal(openFootballText.supportsHistoricalLeague({ name: "Liga Profesional Argentina", country: "Argentina" }), true);
   assert.equal(openFootballText.supportsHistoricalLeague({ name: "Unknown league", country: "Unknown country" }), false);
+});
+
+test("TheSportsDB history accepts only finished, scored, pre-cutoff matches involving the requested team", () => {
+  const events = [
+    { idEvent: "1", dateEvent: "2026-09-01", strStatus: "Match Finished", strHomeTeam: "Arsenal", strAwayTeam: "Chelsea", intHomeScore: "2", intAwayScore: "1" },
+    { idEvent: "2", dateEvent: "2026-09-03", strStatus: "Match Finished", strHomeTeam: "Arsenal", strAwayTeam: "Liverpool", intHomeScore: "1", intAwayScore: "0" },
+    { idEvent: "3", dateEvent: "2026-08-29", strStatus: "Not Started", strHomeTeam: "Arsenal", strAwayTeam: "Everton", intHomeScore: null, intAwayScore: null },
+    { idEvent: "4", dateEvent: "2026-08-27", strStatus: "Match Finished", strHomeTeam: "Spurs", strAwayTeam: "Everton", intHomeScore: "0", intAwayScore: "0" },
+  ];
+  const matches = theSportsDb.selectTeamHistory(events, "Arsenal", "2026-09-02T12:00:00Z");
+  assert.equal(matches.length, 1);
+  assert.equal(matches[0].teams.home.name, "Arsenal");
+  assert.equal(matches[0].goals.home, 2);
+  assert.equal(matches[0].goals.away, 1);
 });
