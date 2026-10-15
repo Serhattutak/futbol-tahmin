@@ -155,16 +155,55 @@ jobs:
       - name: Run offline historical coverage replay (no provider calls or ledger writes)
         working-directory: backend
         run: node scripts/auditHistoricalCoverageV2.js
-      - name: Upload historical coverage audit reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: historical-coverage-audit
-          path: |
-            docs/historical-coverage-v2.json
-            docs/historical-v2-forward-dry-run.json
-          if-no-files-found: ignore
-          retention-days: 14
+      - name: Verify live Neon staging API (read-only)
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/neon-durable-prediction-ledger'
+        env:
+          ZEUS_STAGING_API_BASE_URL: https://zeus-ai-ledger-staging.onrender.com
+        run: |
+          node <<'NODE'
+          const base = process.env.ZEUS_STAGING_API_BASE_URL.replace(/\\/$/, "");
+          const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+          async function get(path, attempts = 3) {
+            let lastError;
+            for (let attempt = 1; attempt <= attempts; attempt++) {
+              try {
+                const response = await fetch(base + path, { signal: AbortSignal.timeout(15000) });
+                const body = await response.json().catch(() => null);
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                return body;
+              } catch (error) {
+                lastError = error;
+                if (attempt < attempts) await wait(5000);
+              }
+            }
+            throw lastError;
+          }
+          (async () => {
+            let health;
+            for (let attempt = 1; attempt <= 12; attempt++) {
+              try {
+                health = await get("/api/health", 1);
+                break;
+              } catch (error) {
+                if (attempt === 12) throw error;
+                await wait(5000);
+              }
+            }
+            if (health?.status !== "ok") throw new Error("Staging health payload is invalid");
+            console.log(JSON.stringify({ path: "/api/health", status: "ok" }));
+            for (const path of ["/api/providers/status", "/api/capture/status", "/api/ledger/status", "/api/ledger/performance", "/api/ledger/comparison"]) {
+              const body = await get(path);
+              if (!body || body.success === false) throw new Error(path + " returned an unsuccessful payload");
+              if (path === "/api/capture/status" && body.storage?.mode !== "neon_postgres") {
+                throw new Error("Staging capture status is not reporting Neon storage");
+              }
+              if (path === "/api/ledger/status" && body.total !== 0) {
+                throw new Error("Staging ledger should remain empty during read-only API verification");
+              }
+              console.log(JSON.stringify({ path, success: true, storageMode: body.storage?.mode || undefined, total: body.total }));
+            }
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
 
   neon-ledger-integration:
     runs-on: ubuntu-latest
