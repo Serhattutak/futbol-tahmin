@@ -12,3 +12,7 @@ backend/data/fixture-cache.backup.json
 
 # Vercel
 .vercel
+
+# Mutable runtime state must never be seeded from source control.
+backend/data/forward-capture/
+backend/data/prediction-ledger/
