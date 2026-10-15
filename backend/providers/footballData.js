@@ -59,14 +59,25 @@ async function getFixture(fixtureId) {
   const id = String(fixtureId).replace(/^fd-/, "");
   return toFixture(await request(`/matches/${id}`));
 }
+function isUnavailableHistoryQuery(error) {
+  // football-data.org may reject team-history queries with HTTP 400 for teams or
+  // competitions not available to the configured account. Treat this as a
+  // provider-specific history miss so the registry can continue to other sources.
+  return error?.httpStatus === 400;
+}
 async function getTeamForm(id, before = new Date().toISOString()) {
   const dateTo = new Date(Math.min(Date.parse(before), Date.now())).toISOString().slice(0, 10);
-  const data = await request(`/teams/${String(id).replace(/^fd-team-/, "")}/matches`, { status: "FINISHED", limit: 10, dateTo });
-  return (data.matches || []).map(toFixture).filter(Boolean);
+  try {
+    const data = await request(`/teams/${String(id).replace(/^fd-team-/, "")}/matches`, { status: "FINISHED", limit: 10, dateTo });
+    return (data.matches || []).map(toFixture).filter(Boolean);
+  } catch (error) {
+    if (isUnavailableHistoryQuery(error)) return [];
+    throw error;
+  }
 }
 async function getStandings(league) {
   if (!league) return [];
   const data = await request(`/competitions/${league}/standings`);
   return [{ league: { standings: (data.standings || []).filter((group) => group.type === "TOTAL").map((group) => (group.table || []).map((row) => ({ team: { id: `fd-team-${row.team.id}` }, rank: row.position, points: row.points, all: { played: row.playedGames } }))) } }];
 }
-module.exports = { name: "football-data", configured: Boolean(token), enabled: Boolean(token), capabilities: ["fixtures", "fixture", "result", "teamForm", "standings"], getFixtures, getFixture, getTeamForm, getStandings, toFixture, providerError };
+module.exports = { name: "football-data", configured: Boolean(token), enabled: Boolean(token), capabilities: ["fixtures", "fixture", "result", "teamForm", "standings"], getFixtures, getFixture, getTeamForm, getStandings, toFixture, providerError, isUnavailableHistoryQuery };
