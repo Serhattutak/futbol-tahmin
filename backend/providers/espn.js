@@ -74,7 +74,7 @@ function toFixture(event, leagueName, meta) {
   const away = competition.competitors?.find((c) => c.homeAway === "away");
   if (!home?.team?.displayName || !away?.team?.displayName) return null;
   const statusName = competition.status?.type?.name || "STATUS_SCHEDULED";
-  const score = (side) => { const v = Number(side?.score?.value ?? side?.score); return Number.isFinite(v) ? v : null; };
+  const score = (side) => { const raw = side?.score?.value ?? side?.score; if (raw == null || raw === "") return null; const v = Number(raw); return Number.isFinite(v) ? v : null; };
   return {
     provider: "espn",
     providers: ["espn"],
@@ -173,4 +173,4 @@ async function getTeamForm(teamId, before, context = {}) {
 }
 async function getH2H() { return null; }
 async function getStandings() { return null; }
-module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form", "news"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, getNewsForFixture, normalizeNewsForTeams, supportsLeague: (name) => Boolean(LEAGUES[name]) };
+module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form", "news"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, getNewsForFixture, normalizeNewsForTeams, toFixture, supportsLeague: (name) => Boolean(LEAGUES[name]) };
