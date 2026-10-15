@@ -1529,11 +1529,12 @@ if (require.main === module) {
       }
       const { Pool } = require("pg");
       const { createPredictionLedgerRuntime } = require("./services/createPredictionLedgerRuntime");
+      const { normalizePostgresConnectionString } = require("./services/postgresConnectionConfig");
       ledgerRuntime = await createPredictionLedgerRuntime({
         mode: ledgerMode,
         filesystemLedger: filesystemPredictionLedger,
         createPool: connectionString => new Pool({
-          connectionString,
+          connectionString: normalizePostgresConnectionString(connectionString),
           connectionTimeoutMillis: 10000,
           idleTimeoutMillis: 30000,
           max: 5,
