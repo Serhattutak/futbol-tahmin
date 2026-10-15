@@ -90,16 +90,17 @@ test("OpenFootball text source parses dated results in both supported match-line
     "  21:30   Galatasaray  2-2 (0-0)  Çorum",
     "Sat Aug 15",
     "  19:00   Atiker Konyaspor  0-1 (0-0)  Çaykur Rizespor",
-  ].join("
-"), "Süper Lig", "2026-27");
+  ].join("\n"), "Süper Lig", "2026-27");
   assert.equal(turkey.length, 2);
   assert.deepEqual(turkey.map(match => [match.fixture.date, match.teams.home.name, match.teams.away.name, match.goals.home, match.goals.away]), [
     ["2026-08-14", "Galatasaray", "Çorum", 2, 2],
     ["2026-08-15", "Atiker Konyaspor", "Çaykur Rizespor", 0, 1],
   ]);
-  const finland = openFootballText.parseTextResults("= Finland Veikkausliiga 2025
-Sat Apr 5 2025
-  15:00  Ilves Tampere v HJK Helsinki 3-2 (1-2)", "Veikkausliiga", "2025");
+  const finland = openFootballText.parseTextResults([
+    "= Finland Veikkausliiga 2025",
+    "Sat Apr 5 2025",
+    "  15:00  Ilves Tampere v HJK Helsinki 3-2 (1-2)",
+  ].join("\n"), "Veikkausliiga", "2025");
   assert.equal(finland.length, 1);
   assert.equal(finland[0].teams.home.name, "Ilves Tampere");
   assert.equal(finland[0].teams.away.name, "HJK Helsinki");
@@ -117,8 +118,6 @@ test("OpenFootball text catalogue contains additional verified country and divis
     { name: "Chinese Super League", country: "China" },
     { name: "Liga MX", country: "Mexico" },
     { name: "Major League Soccer", country: "USA" },
-  ]) assert.equal(openFootballText.supportsHistoricalLeague(league), true, league.name);
-  for (const league of [
     { name: "Super League", country: "Switzerland" },
     { name: "NB I", country: "Hungary" },
     { name: "Primera División", country: "Argentina" },
