@@ -1492,6 +1492,11 @@ if (require.main === module) {
         const smoke = await runStagingSmoke();
         console.log(JSON.stringify(smoke));
       }
+      if (process.env.ZEUS_LEDGER_MIGRATION_REHEARSAL === "true") {
+        const { rehearseProductionLedgerMigration } = require("./scripts/rehearseProductionLedgerMigration");
+        const rehearsal = await rehearseProductionLedgerMigration();
+        console.log(JSON.stringify(rehearsal));
+      }
       // Optional staging preflight: run a read-only reconciliation comparison on
       // this exact source/target pair. Refuse startup if any source event is missing
       // from Neon or any destination-only event exists; no writes happen here.
