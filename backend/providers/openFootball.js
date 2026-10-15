@@ -96,11 +96,12 @@ function calculateStandingsRows(fixtures, before) {
     return table.get(key);
   };
   for (const match of fixtures || []) {
-    const home = ensure(match.teams?.home);
-    const away = ensure(match.teams?.away);
-    if (!home || !away || !matchBeforeFixture(match, before) || match.fixture?.status?.short !== "FINISHED"
+    if (!matchBeforeFixture(match, before) || match.fixture?.status?.short !== "FINISHED"
       || !Number.isFinite(match.goals?.home) || !Number.isFinite(match.goals?.away)
       || match.goals.home < 0 || match.goals.away < 0) continue;
+    const home = ensure(match.teams?.home);
+    const away = ensure(match.teams?.away);
+    if (!home || !away) continue;
     const hg = match.goals.home;
     const ag = match.goals.away;
     home.all.played++; away.all.played++;
