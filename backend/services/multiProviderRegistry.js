@@ -14,6 +14,10 @@ function leagueKey(name, country) {
   if (c === "usa" && ["majorleaguesoccer", "mls"].includes(key)) return "mls";
   if (c === "denmark" && ["danishsuperliga", "superliga"].includes(key)) return "danishsuperliga";
   if (c === "hungary" && ["hungariannbi", "nbi"].includes(key)) return "hungariannbi";
+  if (c === "brazil" && ["brazilianseriea", "campeonatobrasileiroseriea"].includes(key)) return "brazilianseriea";
+  if (c === "croatia" && ["croatianfirstfootballleague", "hnl"].includes(key)) return "croatianfirstfootballleague";
+  if (c === "bulgaria" && ["bulgarianfirstleague", "firstleague"].includes(key)) return "bulgarianfirstleague";
+  if (c === "wales" && ["welshcymrupremier", "cymrupremier"].includes(key)) return "welshcymrupremier";
   if (c === "argentina" && ["primeradivisionargentina", "primeradivision", "ligaprofesional", "ligaprofesionalargentina"].includes(key)) return "argentinaprimera";
   return LEAGUE_ALIASES[key] || key;
 }
