@@ -93,7 +93,9 @@ test("OpenFootball text source parses dated results in both supported match-line
     "  19:00   Atiker Konyaspor  0-1 (0-0)  Çaykur Rizespor",
   ].join("\n"), "Süper Lig", "2026-27");
   assert.equal(turkey.length, 2);
-  assert.deepEqual(turkey.map(match => [match.fixture.date, match.teams.home.name, match.teams.away.name, match.goals.home, match.goals.away]), [
+  assert.equal(turkey[0].fixture.kickoffPrecision, "time");
+  assert.equal(turkey[0].fixture.date, "2026-08-14T18:30:00.000Z");
+  assert.deepEqual(turkey.map(match => [match.fixture.date.slice(0, 10), match.teams.home.name, match.teams.away.name, match.goals.home, match.goals.away]), [
     ["2026-08-14", "Galatasaray", "Çorum", 2, 2],
     ["2026-08-15", "Atiker Konyaspor", "Çaykur Rizespor", 0, 1],
   ]);
@@ -166,6 +168,8 @@ test("OpenFootball text source preserves scoreless scheduled fixtures for live d
   ].join("\n"), "Süper Lig", "2026-27");
   assert.equal(fixtures.length, 1);
   assert.equal(fixtures[0].fixture.status.short, "SCHEDULED");
+  assert.equal(fixtures[0].fixture.kickoffPrecision, "time");
+  assert.equal(fixtures[0].fixture.date, "2026-10-16T18:30:00.000Z");
   assert.equal(fixtures[0].goals.home, null);
   assert.equal(fixtures[0].goals.away, null);
 });
