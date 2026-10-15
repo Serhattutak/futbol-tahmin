@@ -241,6 +241,7 @@ module.exports = {
   name: "openfootball-text",
   configured: true,
   enabled: true,
+  historyLookupByName: true,
   capabilities: ["fixtures", "historicalResults", "teamForm"],
   historicalLeagues: CATALOG,
   getSeasonFixtures: loadLeague,
