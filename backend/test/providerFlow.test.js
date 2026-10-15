@@ -8,13 +8,18 @@ const { normalizeStatus, normalizeKickoff } = require("../services/fixtureNormal
 const { canonicalFixture, canonicalTeamId, reconcileFixtures, MultiProviderRegistry, createLegacyAdapter } = require("../services/multiProviderRegistry");
 const { saveSnapshot, readArchive, settlePending, reconciledSettlement, summarizeArchive } = require("../services/historicalArchive");
 const { ProviderError } = require("../services/apiFootballClient");
-const { selectHeadToHead, calculateStandingsRows } = require("../providers/openFootball");
+const { selectHeadToHead, calculateStandingsRows, historicalSeasonKeys } = require("../providers/openFootball");
 
 function openFootballMatch(home, away, date, homeGoals, awayGoals) {
   const finished = Number.isFinite(homeGoals) && Number.isFinite(awayGoals);
   const id = (name) => `of-team-${String(name).toLowerCase().replace(/[^a-z0-9]/g, "")}`;
   return { fixture: { id: `test-${date}-${home}-${away}`, date, kickoffPrecision: /^\d{4}-\d{2}-\d{2}$/.test(date) ? "date" : "time", status: { short: finished ? "FINISHED" : "SCHEDULED" } }, teams: { home: { id: id(home), name: home }, away: { id: id(away), name: away } }, goals: { home: homeGoals, away: awayGoals } };
 }
+
+test("OpenFootball historical H2H spans five correct season keys", () => {
+  assert.deepEqual(historicalSeasonKeys({ file: "en.1.json", country: "England" }, "2026-09-15", 5), ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23"]);
+  assert.deepEqual(historicalSeasonKeys({ file: "br.1.json", country: "Brazil", calendarYear: true }, "2026-09-15", 5), ["2026", "2025", "2024", "2023", "2022"]);
+});
 
 test("OpenFootball H2H uses only verified finished meetings before kickoff", () => {
   const matches = [
