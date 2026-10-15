@@ -142,3 +142,16 @@ jobs:
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
+      - name: Run offline historical coverage replay (no provider calls or ledger writes)
+        working-directory: backend
+        run: node scripts/auditHistoricalCoverageV2.js
+      - name: Upload historical coverage audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: historical-coverage-audit
+          path: |
+            docs/historical-coverage-v2.json
+            docs/historical-v2-forward-dry-run.json
+          if-no-files-found: ignore
+          retention-days: 14
