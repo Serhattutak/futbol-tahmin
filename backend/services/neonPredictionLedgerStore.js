@@ -38,6 +38,36 @@ class NeonPredictionLedgerStore {
     this.table = table;
   }
 
+  async validateSchema() {
+    const tableName = this.table.slice("public.".length);
+    const result = await this.pool.query(
+      "SELECT column_name, data_type, udt_name, is_nullable FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2",
+      ["public", tableName]
+    );
+    const columns = new Map((result.rows || []).map(row => [row.column_name, row]));
+    const required = {
+      event_id: { data_type: "text", is_nullable: "NO" },
+      ledger_id: { data_type: "text", is_nullable: "NO" },
+      event_type: { data_type: "text", is_nullable: "NO" },
+      payload: { data_type: "jsonb", is_nullable: "NO" },
+      created_at: { data_type: "timestamp with time zone", is_nullable: "NO" },
+    };
+    for (const [name, expected] of Object.entries(required)) {
+      const actual = columns.get(name);
+      if (!actual || actual.data_type !== expected.data_type || actual.is_nullable !== expected.is_nullable) {
+        throw new Error("LEDGER_SCHEMA_INVALID");
+      }
+    }
+    const constraintResult = await this.pool.query(
+      "SELECT tc.constraint_type FROM information_schema.table_constraints tc JOIN information_schema.key_column_usage kcu ON tc.constraint_catalog = kcu.constraint_catalog AND tc.constraint_schema = kcu.constraint_schema AND tc.constraint_name = kcu.constraint_name AND tc.table_name = kcu.table_name WHERE tc.table_schema = $1 AND tc.table_name = $2 AND kcu.column_name = $3",
+      ["public", tableName, "event_id"]
+    );
+    if (!(constraintResult.rows || []).some(row => row.constraint_type === "PRIMARY KEY" || row.constraint_type === "UNIQUE")) {
+      throw new Error("LEDGER_SCHEMA_IDEMPOTENCY_CONSTRAINT_MISSING");
+    }
+    return { valid: true, table: this.table };
+  }
+
   async append(event) {
     const eventId = stableEventId(event);
     const result = await this.pool.query(
