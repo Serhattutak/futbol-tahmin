@@ -124,6 +124,15 @@ function previousSeasonKey(meta, date) {
   const start = Number(current.slice(0, 4)) - 1;
   return `${start}-${String(start + 1).slice(-2)}`;
 }
+function historicalSeasonKeys(meta, date, count = 5) {
+  const current = seasonKeyFor(meta, date);
+  if (meta.calendarYear) return Array.from({ length: count }, (_, index) => String(Number(current) - index));
+  const start = Number(current.slice(0, 4));
+  return Array.from({ length: count }, (_, index) => {
+    const year = start - index;
+    return `${year}-${String(year + 1).slice(-2)}`;
+  });
+}
 
 async function getH2H(homeId, awayId, context = {}) {
   const leagueName = context.league?.name;
@@ -133,7 +142,8 @@ async function getH2H(homeId, awayId, context = {}) {
   const before = context.before;
   if (!meta || !homeName || !awayName || !before) return [];
   const date = String(before).slice(0, 10);
-  const seasons = [...new Set([seasonKeyFor(meta, date), previousSeasonKey(meta, date)])];
+  // Pull up to five seasons so the H2H sample can reach ten real meetings.
+  const seasons = historicalSeasonKeys(meta, date, 5);
   const fixtures = [];
   for (const season of seasons) {
     try { fixtures.push(...await loadLeague(leagueName, season)); } catch { /* Preserve results from any available season. */ }
@@ -154,4 +164,4 @@ async function getStandings(leagueId, season, context = {}) {
 }
 
 // Bulk historical replay shares the existing provider normalization and cache.
-module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, selectHeadToHead, calculateStandingsRows, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(LEAGUES[name]) };
+module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, selectHeadToHead, calculateStandingsRows, historicalSeasonKeys, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(LEAGUES[name]) };
