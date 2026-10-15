@@ -186,3 +186,20 @@ test("weekly OpenFootball source audit script is syntactically valid", () => {
   const file = path.resolve(__dirname, "../scripts/auditOpenFootballTextSources.js");
   assert.doesNotThrow(() => new vm.Script(fs.readFileSync(file, "utf8"), { filename: file }));
 });
+
+test("weekly source audit discovers unmapped season files without mistaking regional sub-leagues for new top-level sources", () => {
+  const { buildDiscoveryCandidates } = require("../scripts/auditOpenFootballTextSources");
+  const catalog = {
+    "Example League": { root: "https://raw.githubusercontent.com/openfootball/europe/master", path: "example", file: "{season}_ex1.txt", seasons: ["2025-26"] },
+    "Premier League": { root: "https://raw.githubusercontent.com/openfootball/england/master", path: "{season}", file: "1-premierleague.txt", seasons: ["2026-27"] },
+  };
+  const trees = new Map([
+    ["openfootball/europe", ["example/2025-26_ex1.txt", "new-country/2026-27_nl1.txt", "new-country/README.md"]],
+    ["openfootball/england", ["2026-27/1-premierleague.txt", "2026-27/3-league1.txt", "2025-26/region/1_Prov.txt"]],
+  ]);
+  const candidates = buildDiscoveryCandidates(catalog, trees);
+  assert.ok(candidates.some(candidate => candidate.repository === "openfootball/europe" && candidate.path === "new-country/2026-27_nl1.txt"));
+  assert.ok(candidates.some(candidate => candidate.repository === "openfootball/england" && candidate.path === "2026-27/3-league1.txt"));
+  assert.equal(candidates.some(candidate => candidate.path === "example/2025-26_ex1.txt"), false);
+  assert.equal(candidates.some(candidate => candidate.path === "2025-26/region/1_Prov.txt"), false);
+});
