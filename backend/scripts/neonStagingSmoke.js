@@ -69,10 +69,17 @@ async function runStagingSmoke({
       status: "FINISHED",
       result: { status: "FINISHED", homeGoals: score.home, awayGoals: score.away },
     });
-    const settlement = await ledger.settle(ledgerId, [finalFixture({ home: 1, away: 0 })]);
+    const providerSettlement = await ledger.settleFromProviders(
+      async providerFixtureIds => {
+        if (providerFixtureIds.espn !== `fixture-${suffix}`) throw new Error("STAGING_SMOKE_PROVIDER_ID_MISMATCH");
+        return [finalFixture({ home: 1, away: 0 })];
+      },
+      10,
+    );
+    const settlement = providerSettlement[0];
     const conflict = await ledger.settle(ledgerId, [finalFixture({ home: 0, away: 0 })]);
-    if (!settlement.saved || conflict.reason !== "RESULT_CONFLICT") {
-      throw new Error("STAGING_SMOKE_SETTLEMENT_OR_CONFLICT_FAILED");
+    if (!settlement?.saved || conflict.reason !== "RESULT_CONFLICT") {
+      throw new Error("STAGING_SMOKE_PROVIDER_SETTLEMENT_OR_CONFLICT_FAILED");
     }
 
     restorePool = await createPool(connectionString);
