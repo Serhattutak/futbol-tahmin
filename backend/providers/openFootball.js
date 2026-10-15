@@ -31,6 +31,7 @@ const HISTORICAL_LEAGUES = {
   "Pro League": { file: "be.1.json", country: "Belgium" },
   "Süper Lig": { file: "tr.1.json", country: "Turkey" },
   "Austrian Bundesliga": { file: "at.1.json", country: "Austria" },
+  "2. Liga": { file: "at.2.json", country: "Austria" },
   "Super League Greece": { file: "gr.1.json", country: "Greece" },
 };
 const TEAM_ALIASES = new Map();
