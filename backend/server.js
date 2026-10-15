@@ -1283,47 +1283,67 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
     ).values()].slice(0, BEST_PREDICTIONS_LIMIT);
     const evaluated = [];
     const diagnosticAnalyses = [];
-
-    for (const match of candidates) {
-      try {
-        const analysis = await analyzeFixture(String(match.fixture.id), { includeMatchStatistics: false, modelVersion: "MODEL_4_0" });
-        diagnosticAnalyses.push(analysis);
-        const availability = analysis.dataAvailability || {};
-        console.log(JSON.stringify({
-          type: "DATA_DIAGNOSTIC",
-          date: requestedDate,
-          fixtureId: match.fixture.id,
-          FIXTURE_DATA_OK: Boolean(availability.fixture),
-          FORM_DATA_OK: Boolean(availability.teamForm?.home && availability.teamForm?.away),
-          H2H_DATA_OK: Boolean(availability.h2h),
-          ODDS_DATA_OK: Boolean(availability.odds),
-          STANDINGS_DATA_OK: Boolean(availability.standings),
-          XG_DATA_OK: Boolean(availability.apiXg),
-        }));
-        if (!analysis.predictionEligible || !analysis.recommendation?.bestMarket || analysis.dataQuality.score < BEST_PREDICTIONS_MIN_QUALITY || analysis.model.confidence < BEST_PREDICTIONS_MIN_CONFIDENCE || analysis.recommendation.bestMarket.probability < BEST_PREDICTIONS_MIN_PROBABILITY || ["NO_BET", "NO BET"].includes(analysis.recommendation.bestMarket.market)) continue;
-        evaluated.push({
-          fixture: analysis.fixture,
-          modelVersion: "MODEL_4_0", model41Available: false, model41FallbackReason: "LAZY_DETAIL_ONLY",
-          statisticsQuality: analysis.statisticsProfile?.dataQuality || analysis.dataQuality,
-          historicalSampleSize: analysis.historicalSampleSize,
-          dataQuality: analysis.dataQuality,
-          dataQualityLabel: analysis.dataQualityLabel,
-          confidence: analysis.model?.confidence ?? 0,
-          predictionScore: analysis.predictionScore ?? 0,
-          predictions: analysis.predictions,
-          expectedGoals: analysis.expectedGoals,
-          prediction: analysis.recommendation.bestMarket,
-          bookmakerOdds: analysis.recommendation?.bookmakerOdds ?? null,
-          fairOdds: analysis.recommendation?.fairOdds ?? null,
-          value: analysis.recommendation?.value ?? null,
-          eligible: Boolean(analysis.predictionEligible),
-          availability: analysis.dataAvailability,
-        });
-      } catch (error) {
-        diagnosticAnalyses.push(insufficientAnalysis((await providerRegistry.getFixture(String(match.fixture.id)))[0], { errorCategory: error.category || "provider_unavailable" }));
-        console.warn(`Best prediction analiz edilemedi: ${match.fixture?.id}`);
+    // Bound upstream work: the endpoint can see hundreds of fixtures, but must not
+    // fan out an unbounded number of provider requests or wait for 200 sequential analyses.
+    const ANALYSIS_CONCURRENCY = 4;
+    let nextCandidate = 0;
+    async function analyzeNextCandidate() {
+      while (nextCandidate < candidates.length) {
+        const match = candidates[nextCandidate++];
+        try {
+          const analysis = await analyzeFixture(String(match.fixture.id), { includeMatchStatistics: false, modelVersion: "MODEL_4_0" });
+          diagnosticAnalyses.push(analysis);
+          const availability = analysis.dataAvailability || {};
+          console.log(JSON.stringify({
+            type: "DATA_DIAGNOSTIC",
+            date: requestedDate,
+            fixtureId: match.fixture.id,
+            FIXTURE_DATA_OK: Boolean(availability.fixture),
+            FORM_DATA_OK: Boolean(availability.teamForm?.home && availability.teamForm?.away),
+            H2H_DATA_OK: Boolean(availability.h2h),
+            ODDS_DATA_OK: Boolean(availability.odds),
+            STANDINGS_DATA_OK: Boolean(availability.standings),
+            XG_DATA_OK: Boolean(availability.apiXg),
+          }));
+          const bestMarket = analysis.recommendation?.bestMarket;
+          if (!analysis.predictionEligible || !bestMarket || Number(analysis.dataQuality?.score) < BEST_PREDICTIONS_MIN_QUALITY || Number(analysis.model?.confidence) < BEST_PREDICTIONS_MIN_CONFIDENCE || Number(bestMarket.probability) < BEST_PREDICTIONS_MIN_PROBABILITY || ["NO_BET", "NO BET"].includes(bestMarket.market)) continue;
+          evaluated.push({
+            fixture: analysis.fixture,
+            modelVersion: "MODEL_4_0", model41Available: false, model41FallbackReason: "LAZY_DETAIL_ONLY",
+            statisticsQuality: analysis.statisticsProfile?.dataQuality || analysis.dataQuality,
+            historicalSampleSize: analysis.historicalSampleSize,
+            dataQuality: analysis.dataQuality,
+            dataQualityLabel: analysis.dataQualityLabel,
+            confidence: analysis.model?.confidence ?? 0,
+            predictionScore: analysis.predictionScore ?? 0,
+            predictions: analysis.predictions,
+            expectedGoals: analysis.expectedGoals,
+            prediction: bestMarket,
+            bookmakerOdds: analysis.recommendation?.bookmakerOdds ?? null,
+            fairOdds: analysis.recommendation?.fairOdds ?? null,
+            value: analysis.recommendation?.value ?? null,
+            eligible: Boolean(analysis.predictionEligible),
+            availability: analysis.dataAvailability,
+          });
+        } catch (error) {
+          // A secondary provider lookup must not turn one failed match into a failed
+          // response for every other match. Record a minimal, explicitly ineligible result.
+          let fallback = null;
+          try { fallback = (await providerRegistry.getFixture(String(match.fixture.id)))[0] || null; } catch { /* provider remains unavailable */ }
+          if (fallback) diagnosticAnalyses.push(insufficientAnalysis(fallback, { errorCategory: error.category || "provider_unavailable" }));
+          else diagnosticAnalyses.push({
+            success: false,
+            predictionEligible: false,
+            model: { confidence: 0 },
+            dataQuality: { score: 0, missing: ["PROVIDER_UNAVAILABLE"] },
+            dataAvailability: { fixture: false, teamForm: { home: false, away: false }, h2h: false, odds: false, standings: false, apiXg: false },
+            fixture: { id: match.fixture?.id, date: match.fixture?.date, league: match.league?.name, home: match.teams?.home?.name, away: match.teams?.away?.name },
+          });
+          console.warn(`Best prediction analiz edilemedi: ${match.fixture?.id}`);
+        }
       }
     }
+    await Promise.all(Array.from({ length: Math.min(ANALYSIS_CONCURRENCY, candidates.length) }, () => analyzeNextCandidate()));
 
     evaluated.sort((left, right) => right.predictionScore - left.predictionScore);
     const diagnostics = {
