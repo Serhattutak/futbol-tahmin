@@ -121,7 +121,7 @@ function normalizeNewsForTeams(payload, homeName, awayName, limit = 8) {
     const href = item?.links?.web?.href || item?.link || item?.url || null;
     const published = item?.published || item?.lastModified || item?.date || null;
     return { headline: String(headline).trim(), description: String(description).trim(), url: typeof href === "string" ? href : null, published: typeof published === "string" ? published : null };
-  }).filter(item => { const text = normalize(item.headline + " " + item.description); return Boolean(item.headline && ((home && text.includes(home)) || (away && text.includes(away))); })
+  }).filter(item => { const text = normalize(item.headline + " " + item.description); return Boolean(item.headline && ((home && text.includes(home)) || (away && text.includes(away)))); })
     .slice(0, limit);
 }
 async function getNewsForFixture(fixture) {
