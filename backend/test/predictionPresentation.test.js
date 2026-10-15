@@ -12,7 +12,8 @@ test("Market heading follows the selected actual model, including 4.0 fallback",
   assert.equal(modelLabel(selectModelAnalysis(response, MODEL41)), "ZEUS AI");
   assert.equal(modelLabel(selectModelAnalysis({ ...response, model41Available: false }, MODEL41)), "ZEUS AI");
   assert.equal(modelLabel({}), "ZEUS AI");
-  assert.equal(selectModelAnalysis(response).modelVersion, MODEL41, "eligible calibrated model is selected automatically");
+  assert.equal(selectModelAnalysis(response).modelVersion, MODEL40, "detail view stays aligned with the production list model");
+  assert.equal(selectModelAnalysis(response, MODEL41).modelVersion, MODEL41, "internal model comparison remains available when explicitly requested");
   assert.equal(selectModelAnalysis({ ...response, model41Available: false }).modelVersion, MODEL40, "baseline safely handles unavailable advanced model");
   assert.deepEqual(response, original);
   const app = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../src/App.jsx"), "utf8");
