@@ -16,9 +16,8 @@ const NAV_ITEMS = [
   { id: "home", label: "Ana Sayfa", icon: "⌂" },
   { id: "predictions", label: "Tahminler", icon: "✦" },
   { id: "matches", label: "Maçlar", icon: "◉" },
-  { id: "live", label: "Canlı", icon: "●" },
-  { id: "favorites", label: "Favoriler", icon: "♡" },
   { id: "performance", label: "Performans", icon: "▥" },
+  { id: "more", label: "Daha Fazla", icon: "⋯" },
 ];
 const MARKET_GROUPS = [
   { id: "all", label: "Tümü" },
@@ -59,6 +58,7 @@ function App() {
   const previousViewRef = useRef("home");
   const scrollPositionRef = useRef(0);
   const [activeView, setActiveView] = useState("home");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [matches, setMatches] = useState([]);
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   const matchesDate = useRef(selectedDate);
@@ -246,9 +246,9 @@ function App() {
   }
 
   return <div className="app-shell">
-    <header className="topbar"><div className="brand-mark"><span className="brand-ball">⚽</span><span>ZEUS ONE <b>BETTING</b></span></div><div className="topbar-actions"><span className="today">{new Date().toLocaleDateString("tr-TR", { weekday: "short", day: "numeric", month: "short" })}</span><button className="icon-button" type="button" aria-label="Bildirimler">♢<i /></button></div></header>
+    <header className="topbar"><div className="brand-mark"><span className="brand-ball">⚽</span><span>ZEUS <b>AI</b></span></div><div className="topbar-actions"><span className="today">{new Date().toLocaleDateString("tr-TR", { weekday: "short", day: "numeric", month: "short" })}</span><button className="icon-button" type="button" aria-label="Bildirimler">♢<i /></button></div></header>
     <main className="page-content"><DateSelector selectedDate={selectedDate} onChange={changeDate} />{fixtureWarning && <p className="muted-note" role="status">{fixtureWarning}</p>}{error && <div className="error-banner">{error}</div>}{renderView()}</main>
-    <nav className="bottom-nav" aria-label="Ana navigasyon">{NAV_ITEMS.map((item) => <button key={item.id} type="button" className={activeView === item.id ? "nav-item active" : "nav-item"} onClick={() => navigateTo(item.id)}><span className="nav-icon">{item.icon}</span><span>{item.label}</span></button>)}</nav>
+    <nav className="bottom-nav" aria-label="Ana navigasyon">{NAV_ITEMS.map((item) => item.id === "more" ? <button key={item.id} type="button" aria-expanded={moreOpen} className={moreOpen || ["live", "favorites"].includes(activeView) ? "nav-item active" : "nav-item"} onClick={() => setMoreOpen(open => !open)}><span className="nav-icon">{item.icon}</span><span>{item.label}</span></button> : <button key={item.id} type="button" className={activeView === item.id ? "nav-item active" : "nav-item"} onClick={() => { setMoreOpen(false); navigateTo(item.id); }}><span className="nav-icon">{item.icon}</span><span>{item.label}</span></button>)}{moreOpen && <div className="nav-more-menu"><button type="button" onClick={() => { setMoreOpen(false); navigateTo("live"); }}>● Canlı maçlar</button><button type="button" onClick={() => { setMoreOpen(false); navigateTo("favorites"); }}>♡ Favoriler</button></div>}</nav>
   </div>;
 }
 
