@@ -91,3 +91,86 @@ test("real PostgreSQL round-trip, idempotency, fresh-connection recovery, and ro
     await Promise.allSettled([pool.end(), restartedPool?.end()]);
   }
 });
+
+test("real PostgreSQL async settlement, conflict, and projection restore", {
+  skip: !process.env.ZEUS_TEST_DATABASE_URL
+}, async () => {
+  const connectionString = process.env.ZEUS_TEST_DATABASE_URL;
+  const host = new URL(connectionString).hostname;
+  assert.ok(["localhost", "127.0.0.1", "::1"].includes(host), "integration tests require local isolated PostgreSQL");
+  const { Pool } = require("pg");
+  const { AsyncPredictionLedger } = require("./asyncPredictionLedger");
+  const table = "public.zeus_prediction_ledger_settlement_test";
+  const createPool = () => new Pool({ connectionString, max: 2, connectionTimeoutMillis: 5000, idleTimeoutMillis: 1000 });
+  let pool = createPool();
+  let restartedPool;
+  try {
+    await pool.query(`DROP TABLE IF EXISTS ${table}`);
+    await pool.query(`
+      CREATE TABLE ${table} (
+        event_id text PRIMARY KEY,
+        ledger_id text NOT NULL,
+        event_type text NOT NULL CHECK (event_type IN ('prediction', 'settlement', 'conflict')),
+        payload jsonb NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )
+    `);
+    const prediction = {
+      type: "prediction",
+      ledgerId: "settlement-integration-fixture",
+      snapshot: {
+        ledgerId: "settlement-integration-fixture",
+        predictionCreatedAt: "2026-10-01T10:00:00.000Z",
+        kickoffTime: "2026-10-01T12:00:00.000Z",
+        fixtureId: "fixture-integration-1",
+        providerFixtureIds: { alpha: "alpha-1", beta: "beta-1" },
+        homeProbability: 0.6, drawProbability: 0.25, awayProbability: 0.15,
+        over15: 0.7, over25: 0.5, over35: 0.3, bttsYes: 0.4
+      }
+    };
+    const ledger = new AsyncPredictionLedger({
+      store: new NeonPredictionLedgerStore({ pool, table }),
+      now: () => Date.parse("2026-10-02T00:00:00.000Z")
+    });
+    await ledger.initialize();
+    assert.deepEqual(await ledger.appendEvent(prediction), {
+      saved: true, eventId: "prediction:settlement-integration-fixture"
+    });
+
+    const consistent = [
+      { provider: "alpha", providerFixtureId: "alpha-1", status: "FINISHED", result: { status: "FINISHED", homeGoals: 2, awayGoals: 0 } },
+      { provider: "beta", providerFixtureId: "beta-1", status: "FINISHED", result: { status: "FINISHED", homeGoals: 2, awayGoals: 0 } }
+    ];
+    assert.deepEqual(await ledger.settle(prediction.ledgerId, consistent), { saved: true, reason: null });
+    assert.equal(ledger.entries()[0].resultVerification, "verified");
+
+    const contradictory = [
+      { provider: "alpha", providerFixtureId: "alpha-1", status: "FINISHED", result: { status: "FINISHED", homeGoals: 1, awayGoals: 0 } }
+    ];
+    assert.deepEqual(await ledger.settle(prediction.ledgerId, contradictory), { reason: "RESULT_CONFLICT" });
+    assert.equal(ledger.entries()[0].conflicts.length, 1);
+
+    await pool.end();
+    pool = null;
+    restartedPool = createPool();
+    const restored = new AsyncPredictionLedger({
+      store: new NeonPredictionLedgerStore({ pool: restartedPool, table }),
+      now: () => Date.parse("2026-10-02T00:00:00.000Z")
+    });
+    await restored.initialize();
+    const entry = restored.entries()[0];
+    assert.equal(entry.resultStatus, "settled");
+    assert.equal(entry.actualHomeGoals, 2);
+    assert.equal(entry.actualAwayGoals, 0);
+    assert.equal(entry.resultVerification, "verified");
+    assert.equal(entry.conflicts.length, 1);
+    assert.deepEqual(restored.status(), {
+      initialized: true, eventCount: 3, predictionCount: 1, settlementCount: 1, conflictCount: 1
+    });
+  } finally {
+    const cleanupPool = restartedPool || pool || createPool();
+    await cleanupPool.query(`DROP TABLE IF EXISTS ${table}`).catch(() => {});
+    await Promise.allSettled([pool?.end(), restartedPool?.end(), cleanupPool === pool || cleanupPool === restartedPool ? Promise.resolve() : cleanupPool.end()]);
+  }
+});
+
