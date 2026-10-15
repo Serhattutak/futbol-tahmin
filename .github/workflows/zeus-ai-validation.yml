@@ -63,6 +63,8 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
       - name: Start local backend and built frontend
+        env:
+          ZEUS_DISABLE_CAPTURE_SCHEDULER: "1"
         run: |
           CORS_ORIGINS=http://127.0.0.1:4173 npm --prefix backend start > /tmp/zeus-backend.log 2>&1 &
           npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/zeus-frontend.log 2>&1 &
