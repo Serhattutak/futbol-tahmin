@@ -2,6 +2,7 @@ const axios = require("axios");
 const { collectDivisionHistory } = require("../services/divisionHistory");
 const { createProviderError } = require("../services/apiFootballClient");
 const { forEachConcurrent } = require("../services/forEachConcurrent");
+const { localKickoffToUtc, TIMEZONES } = require("../services/localKickoff");
 
 const EUROPE = "https://raw.githubusercontent.com/openfootball/europe/master";
 const WORLD = "https://raw.githubusercontent.com/openfootball/world/master";
@@ -88,7 +89,9 @@ function parseDateHeader(line, currentYear) {
 }
 
 function parseResultLine(line, leagueName, meta, season, date) {
-  let value = line.trim().replace(/^\d{1,2}:\d{2}\s+/, "");
+  const rawLine = line.trim();
+  const timeMatch = /^(\d{1,2}:\d{2})\s+/.exec(rawLine);
+  let value = rawLine.replace(/^\d{1,2}:\d{2}\s+/, "");
   if (!date || !value || /^[#▪(=]/.test(value)) return null;
   const scoreMatch = /(\d{1,2})\s*-\s*(\d{1,2})/.exec(value);
   let home = "", away = "", goalsHome = null, goalsAway = null;
@@ -115,10 +118,14 @@ function parseResultLine(line, leagueName, meta, season, date) {
   if (!home || !away || normalizeName(home) === normalizeName(away)) return null;
   const id = "oftxt-" + normalizeName(leagueName) + "-" + date + "-" + normalizeName(home) + "-" + normalizeName(away);
   const finished = Number.isFinite(goalsHome) && Number.isFinite(goalsAway);
+  // Country-level local kickoff conversion is reliable for single-time-zone leagues.
+  // Keep MLS, Liga MX and Brazilian fixtures date-only because their clubs span time zones.
+  const canConvertKickoff = Boolean(timeMatch && TIMEZONES[meta.country]) && !["USA", "Mexico", "Brazil"].includes(meta.country);
+  const kickoff = canConvertKickoff ? localKickoffToUtc(date, timeMatch[1], meta.country) : date;
   return {
     provider: "openfootball-text",
     providers: ["openfootball-text"],
-    fixture: { id, date, kickoffPrecision: "date", status: { short: finished ? "FINISHED" : "SCHEDULED" } },
+    fixture: { id, date: kickoff, sourceLocalDate: date, kickoffPrecision: canConvertKickoff ? "time" : "date", status: { short: finished ? "FINISHED" : "SCHEDULED" } },
     league: { id: "oftxt-league-" + normalizeName(leagueName), name: leagueName, country: meta.country, season },
     teams: { home: { id: "oftxt-team-" + normalizeName(home), name: home }, away: { id: "oftxt-team-" + normalizeName(away), name: away } },
     goals: { home: goalsHome, away: goalsAway },
@@ -181,7 +188,7 @@ async function getFixtures(date) {
   await forEachConcurrent(names, 4, async (name, index) => {
     try {
       const season = seasonForDate(CATALOG[name], date);
-      results[index] = (await loadLeague(name, season)).filter(match => match.fixture.date.slice(0, 10) === date);
+      results[index] = (await loadLeague(name, season)).filter(match => (match.fixture.sourceLocalDate || match.fixture.date.slice(0, 10)) === date);
     } catch (error) {
       lastError ||= error;
       results[index] = [];
