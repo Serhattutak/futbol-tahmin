@@ -62,7 +62,7 @@ class NeonPredictionLedgerStore {
       "SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2",
       ["public", tableName]
     );
-    if (!(indexResult.rows || []).some(row => /CREATE UNIQUE INDEX\\b/i.test(row.indexdef || "") && /\\(event_id\\)/i.test(row.indexdef || ""))) {
+    if (!(indexResult.rows || []).some(row => /CREATE UNIQUE INDEX\b/i.test(row.indexdef || "") && /\(event_id\)/i.test(row.indexdef || ""))) {
       throw new Error("LEDGER_SCHEMA_IDEMPOTENCY_CONSTRAINT_MISSING");
     }
     return { valid: true, table: this.table };
