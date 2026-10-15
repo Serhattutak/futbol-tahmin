@@ -3,6 +3,7 @@ const { localKickoffToUtc } = require("../services/localKickoff");
 const { createProviderError } = require("../services/apiFootballClient");
 
 const { collectDivisionHistory } = require("../services/divisionHistory");
+const { forEachConcurrent } = require("../services/forEachConcurrent");
 const BASE_URL = "https://raw.githubusercontent.com/openfootball/football.json/master";
 const LEAGUES = {
   "Premier League": { file: "en.1.json", country: "England" },
@@ -63,18 +64,33 @@ async function loadLeague(leagueName, season) {
   cache.set(key, { value: promise, expiresAt: Date.now() + 5 * 60 * 1000 }); return promise;
 }
 async function getFixtures(date, league) {
-  const all = []; let lastError;
-  for (const leagueName of league && LEAGUES[league] ? [league] : Object.keys(LEAGUES)) {
+  const names = league && HISTORICAL_LEAGUES[league] ? [league] : Object.keys(HISTORICAL_LEAGUES);
+  const results = new Array(names.length);
+  let lastError = null;
+  await forEachConcurrent(names, 5, async (leagueName, index) => {
     try {
-      const meta = LEAGUES[leagueName];
+      const meta = HISTORICAL_LEAGUES[leagueName];
       const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date));
-      all.push(...fixtures.filter((fixture) => fixture.fixture.date.slice(0, 10) === date));
-    } catch (error) { lastError = error; }
-  }
+      results[index] = fixtures.filter((fixture) => fixture.fixture.date.slice(0, 10) === date);
+    } catch (error) {
+      results[index] = [];
+      lastError ||= error;
+    }
+  });
+  const all = results.flat();
   if (!all.length && lastError) throw lastError;
   return all;
 }
-async function getFixture(fixtureId) { for (const leagueName of Object.keys(LEAGUES)) { const meta = LEAGUES[leagueName]; const date = String(fixtureId).match(/\d{4}-\d{2}-\d{2}/)?.[0] || new Date().toISOString().slice(0, 10); const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date)); const found = fixtures.find((fixture) => fixture.fixture.id === fixtureId); if (found) return found; } return null; }
+async function getFixture(fixtureId) {
+  const date = String(fixtureId).match(/\d{4}-\d{2}-\d{2}/)?.[0] || new Date().toISOString().slice(0, 10);
+  for (const leagueName of Object.keys(HISTORICAL_LEAGUES)) {
+    const meta = HISTORICAL_LEAGUES[leagueName];
+    const fixtures = await loadLeague(leagueName, seasonKeyFor(meta, date));
+    const found = fixtures.find((fixture) => fixture.fixture.id === fixtureId);
+    if (found) return found;
+  }
+  return null;
+}
 async function getTeamForm(teamId, before = new Date().toISOString(), context = {}) {
   const team = context.team || { name: TEAM_ALIASES.get(teamId) };
   return collectDivisionHistory({ team, before, fixtureId: context.fixtureId, league: context.league, catalog: HISTORICAL_LEAGUES, load: loadLeague });
@@ -175,4 +191,4 @@ async function getStandings(leagueId, season, context = {}) {
 }
 
 // Bulk historical replay shares the existing provider normalization and cache.
-module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, selectHeadToHead, calculateStandingsRows, historicalSeasonKeys, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(LEAGUES[name]) };
+module.exports = { name: "openfootball", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "teamForm", "h2h", "standings", "result", "historicalResults"], getSeasonFixtures: loadLeague, getFixtures, getFixture, getTeamForm, getH2H, getStandings, selectHeadToHead, calculateStandingsRows, historicalSeasonKeys, historicalLeagues: HISTORICAL_LEAGUES, supportsHistoricalLeague: (league) => Boolean(HISTORICAL_LEAGUES[league?.name]) && (!league.country || HISTORICAL_LEAGUES[league.name].country === league.country), supportsLeague: (name) => Boolean(HISTORICAL_LEAGUES[name]) };
