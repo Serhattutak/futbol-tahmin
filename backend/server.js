@@ -166,7 +166,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // --------------------------------------------------
-// TARÄ°H OLUÅTURMA
+// TARİH OLUŞTURMA
 // --------------------------------------------------
 
 function getDateString(date) {
@@ -189,7 +189,7 @@ function getRequestedDate(value) {
 }
 
 // --------------------------------------------------
-// BUGÃœN + 7 GÃœN MAÃ‡LARI
+// BUGÜN + 7 GÜN MAÇLARI
 // --------------------------------------------------
 
 app.get("/api/football-test", async (req, res) => {
@@ -230,7 +230,7 @@ app.get("/api/football-test", async (req, res) => {
 });
 
 // --------------------------------------------------
-// TAKIM SON 10 MAÃ‡
+// TAKIM SON 10 MAÇ
 // --------------------------------------------------
 
 app.get("/api/team/:teamId/form", async (req, res) => {
@@ -720,7 +720,7 @@ function summarizeH2H(matches, homeId, awayId) {
 }
 
 // --------------------------------------------------
-// MAÃ‡ ANALÄ°ZÄ°
+// MAÇ ANALİZİ
 // --------------------------------------------------
 
 function insufficientAnalysis(fixture, sourceMetadata = {}, statisticsProfile = null, version = MODEL_VERSION) {
@@ -815,7 +815,7 @@ function analyzeCollectedFixture(collected, { variant = "stats", now = Date.now(
     expectedHomeGoals *= HOME_ADVANTAGE * (1 + weightedEdge);
     expectedAwayGoals *= 1 - weightedEdge;
 
-    // AÅŸÄ±rÄ± deÄŸerleri sÄ±nÄ±rla
+    // Aşırı değerleri sınırla
     expectedHomeGoals = Math.min(
       Math.max(expectedHomeGoals, 0.2),
       4
@@ -827,7 +827,7 @@ function analyzeCollectedFixture(collected, { variant = "stats", now = Date.now(
     );
 
     // ------------------------------------------------
-    // MAÃ‡ SKOR OLASILIKLARI
+    // MAÇ SKOR OLASILIKLARI
     // ------------------------------------------------
 
     let homeWin = 0;
@@ -903,7 +903,7 @@ let over25 = 0;
     const bttsNo = 1 - bttsYes;
 
     // ------------------------------------------------
-    // Ã‡Ä°FTE ÅANS
+    // ÇİFTE ŞANS
     // ------------------------------------------------
 
     const doubleChance1X = homeWin + draw;
@@ -911,7 +911,7 @@ let over25 = 0;
     const doubleChance12 = homeWin + awayWin;
 
     // ------------------------------------------------
-    // TAHMÄ°N
+    // TAHMİN
     // ------------------------------------------------
 
     let prediction = "X";
@@ -1000,7 +1000,7 @@ let over25 = 0;
     const predictionScore = rankMarket({ probability: bestMarket.probability, confidence, dataQuality: dataQuality.score, value: bestMarket.value, hasOdds: Number.isFinite(bestMarket.bookmakerOdds) });
 
     // ------------------------------------------------
-    // SONUÃ‡
+    // SONUÇ
     // ------------------------------------------------
 
     const isPreKickoff = new Date(fixture.fixture.date).getTime() > now && normalizeStatus(fixture.fixture?.status?.short) === "SCHEDULED";
