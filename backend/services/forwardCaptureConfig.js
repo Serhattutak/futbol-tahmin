@@ -7,5 +7,5 @@ module.exports = Object.freeze({
   maxUncoveredAnalysesPerRun: 2,
   betweenAnalysesMs: 1000,
   discoveryTimezones: ["UTC", "Europe/Istanbul"],
-  directory: path.join(__dirname, "../data/forward-capture"),
+  directory: process.env.ZEUS_LEDGER_DIR ? path.join(path.resolve(process.env.ZEUS_LEDGER_DIR), "forward-capture") : path.join(__dirname, "../data/forward-capture"),
 });

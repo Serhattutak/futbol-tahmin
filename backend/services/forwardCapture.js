@@ -85,7 +85,7 @@ class ForwardCapture {
     const lastRunAgeMs = Number.isFinite(lastRunMs) ? Math.max(0, this.now() - lastRunMs) : null;
     const lastSuccessfulRunAgeMs = Number.isFinite(lastSuccessfulRunMs) ? Math.max(0, this.now() - lastSuccessfulRunMs) : null;
     const captureHealth = lastSuccessfulRunAgeMs === null ? "never_succeeded" : lastSuccessfulRunAgeMs > this.config.intervalMs * 2 ? "stale" : "fresh";
-    return { ...publicState, lastRunAgeMs, lastSuccessfulRunAgeMs, captureHealth,
+    return { ...publicState, lastRunAgeMs, lastSuccessfulRunAgeMs, captureHealth, storage: { directoryConfigured: Boolean(process.env.ZEUS_LEDGER_DIR), mode: process.env.ZEUS_LEDGER_DIR ? "configured_directory" : "default_local_directory", durabilityWarning: process.env.ZEUS_LEDGER_DIR ? null : "ZEUS_LEDGER_DIR is not configured; runtime ledger durability depends on the instance filesystem." },
       isRunning: Boolean(this.running) || fs.existsSync(path.join(this.config.directory, "run.lock")), schedulerActive: Boolean(this.timer), nextRunAt: this.nextRunAt || null,
       recordedPredictions: rows.length, recordedFixtures: new Set(rows.map(r => r.fixtureId)).size,
       window: { minLeadMinutes: this.config.minLeadMinutes, maxLeadMinutes: this.config.maxLeadMinutes } };
