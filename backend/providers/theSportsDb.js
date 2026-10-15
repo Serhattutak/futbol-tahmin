@@ -21,7 +21,7 @@ function selectTeamHistory(events, teamName, before = new Date().toISOString()) 
     if (fixture.fixture.kickoffPrecision === "date") return fixture.fixture.date.slice(0, 10) < cutoffDay;
     const kickoff = Date.parse(fixture.fixture.date);
     return Number.isFinite(kickoff) && kickoff < cutoff;
-  }).sort((a, b) => Date.parse(b.fixture.date) - Date.parse(a.fixture.date)).slice(0, 10);
+  }).filter((fixture, index, rows) => rows.findIndex(other => other.fixture.id === fixture.fixture.id) === index).sort((a, b) => Date.parse(b.fixture.date) - Date.parse(a.fixture.date)).slice(0, 10);
 }
 async function getTeamForm(_teamId, before, context = {}) {
   const teamName = context.team?.name;
@@ -29,13 +29,9 @@ async function getTeamForm(_teamId, before, context = {}) {
   const found = await request("searchteams.php", { t: teamName });
   const team = (found?.teams || []).find(row => normalized(row.strTeam) === normalized(teamName));
   if (!team?.idTeam) return [];
-  if (team.idLeague) {
-    const leagueEvents = await request("eventspastleague.php", { id: team.idLeague });
-    const selected = selectTeamHistory(leagueEvents?.events, teamName, before);
-    if (selected.length) return selected;
-  }
+  const leagueEvents = team.idLeague ? await request("eventspastleague.php", { id: team.idLeague }) : null;
   const teamEvents = await request("eventslast.php", { id: team.idTeam });
-  return selectTeamHistory(teamEvents?.results || teamEvents?.events, teamName, before);
+  return selectTeamHistory([...(leagueEvents?.events || []), ...(teamEvents?.results || teamEvents?.events || [])], teamName, before);
 }
 async function getH2H() { return null; }
 async function getStandings() { return null; }
