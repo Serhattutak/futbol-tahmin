@@ -6,6 +6,17 @@ const fixture = (provider, kickoff = "2026-09-16T12:00:00Z", homeGoals = null, a
 test("fixture discovery tum uygun providerlari birlestirir ve cache tekrar cagirmaz", async () => { let first = 0; let second = 0; const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixtures: async () => { first += 1; return [fixture("a")]; } }, { name: "b", enabled: true, getFixtures: async () => { second += 1; return [fixture("b")]; } }]); await registry.getFixtures("2026-09-16"); await registry.getFixtures("2026-09-16"); assert.equal(first, 1); assert.equal(second, 1); });
 test("hata veya quota sonrasi fallback provider kullanilir", async () => { const fallback = { name: "b", enabled: true, getFixtures: async () => [fixture("b")] }; for (const error of [new ProviderError("timeout_network", "timeout"), new ProviderError("quota", "quota")]) { const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixtures: async () => { throw error; } }, fallback]); assert.equal((await registry.getFixtures("2026-09-16"))[0].provider, "b"); } });
 test("ayni fixture tek canonical fixture olur, farkli kickoff conflict olur", () => { assert.equal(reconcileFixtures([fixture("a"), fixture("b")]).length, 1); const conflicts = reconcileFixtures([fixture("a"), fixture("b", "2026-09-16T13:00:00Z")]); assert.ok(conflicts.every((item) => item.dataConflict)); });
+test("same-day cross-provider duplicates collapse and conflicting scores are hidden", () => {
+  const first = { ...fixture("openfootball", "2026-09-16T12:00:00Z", 2, 1), kickoffPrecision: "time", providerFixtureIds: { openfootball: "of-1" } };
+  const second = { ...fixture("espn", "2026-09-16T13:00:00Z", 1, 0), kickoffPrecision: "time", providerFixtureIds: { espn: "espn-1" } };
+  const rows = reconcileFixtures([first, second]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].dataConflict, true);
+  assert.equal(rows[0].result, null);
+  assert.equal(rows[0].status, "UNKNOWN");
+  assert.deepEqual(rows[0].sources, ["openfootball", "espn"]);
+});
+
 test("sonuc uzlasmasi verified veya conflict doner", () => { assert.equal(reconcileResults([{ homeGoals: 2, awayGoals: 1 }, { homeGoals: 2, awayGoals: 1 }]).resultVerificationStatus, "verified"); assert.equal(reconcileResults([{ homeGoals: 2, awayGoals: 1 }, { homeGoals: 1, awayGoals: 1 }]).resultVerificationStatus, "conflict"); });
 test("provider team idleri stable canonical team kimligine baglanir", () => { assert.equal(canonicalTeamId({ name: "Team Name", id: 1 }), canonicalTeamId({ name: "Team Name", id: 2 })); });
 test("bilinen Ispanyol takim adi varyantlari ayni canonical takima eslenir", () => {
