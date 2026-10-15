@@ -161,7 +161,7 @@ jobs:
           ZEUS_STAGING_API_BASE_URL: https://zeus-ai-ledger-staging.onrender.com
         run: |
           node <<'NODE'
-          const base = process.env.ZEUS_STAGING_API_BASE_URL.replace(/\\/$/, "");
+          const base = process.env.ZEUS_STAGING_API_BASE_URL.endsWith("/") ? process.env.ZEUS_STAGING_API_BASE_URL.slice(0, -1) : process.env.ZEUS_STAGING_API_BASE_URL;
           const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
           async function get(path, attempts = 3) {
             let lastError;
