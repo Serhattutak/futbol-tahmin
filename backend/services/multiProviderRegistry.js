@@ -250,8 +250,8 @@ class MultiProviderRegistry {
       try { results.push(...await provider.getFixture(fixtureId)); this.updateStatus(provider.name, true); }
       catch (error) { this.updateStatus(provider.name, false, error.category || "provider_unavailable"); if (!["no_data", "unsupported"].includes(error.category)) transient = error; }
     }
-    if (transient) throw transient;
-    if (!attempted) {
+    if (transient && !results.length) throw transient;
+    if (!attempted && !results.length) {
       if (skippedError) throw skippedError;
       throw new ProviderError("unsupported", "No enabled result provider.");
     }
@@ -259,7 +259,7 @@ class MultiProviderRegistry {
       const enriched = await this.enrich(results[0], { strict: true });
       ids = enriched.providerFixtureIds;
       for (const provider of this.providers) {
-        if (!provider.enabled || !ids[provider.name] || results.some((item) => item.provider === provider.name)) continue;
+        if (!provider.enabled || !ids[provider.name] || results.some((item) => item.provider === provider.name) || !this.canRequest(provider)) continue;
         try { results.push(...await provider.getFixture(ids[provider.name])); } catch (error) { if (!["no_data", "unsupported"].includes(error.category)) throw error; }
       }
     }
