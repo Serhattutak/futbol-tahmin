@@ -6,11 +6,18 @@ function createConcurrencyGuard({ activeByKey = new Map() } = {}) {
       const active = activeByKey.get(key) || 0;
       if (active >= limit) return res.status(429).json({ success: false, error: "Çok fazla eşzamanlı istek." });
       activeByKey.set(key, active + 1);
-      res.on("finish", () => {
+      let released = false;
+      const release = () => {
+        if (released) return;
+        released = true;
         const remaining = (activeByKey.get(key) || 1) - 1;
         if (remaining > 0) activeByKey.set(key, remaining);
         else activeByKey.delete(key);
-      });
+      };
+      // A disconnected client may close the socket without a response finish.
+      // Release on either event, but never decrement the same slot twice.
+      res.on("finish", release);
+      res.on("close", release);
       next();
     };
   };
