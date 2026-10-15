@@ -32,9 +32,6 @@ const HISTORICAL_LEAGUES = {
   "Süper Lig": { file: "tr.1.json", country: "Turkey" },
   "Austrian Bundesliga": { file: "at.1.json", country: "Austria" },
   "Super League Greece": { file: "gr.1.json", country: "Greece" },
-  "Liga MX": { file: "mx.1.json", country: "Mexico" },
-  "Egyptian Premier League": { file: "eg.1.json", country: "Egypt" },
-  "A-League": { file: "au.1.json", country: "Australia" },
 };
 const TEAM_ALIASES = new Map();
 
@@ -67,7 +64,7 @@ function toFixture(match, leagueName, meta, season) {
 async function loadLeague(leagueName, season) {
   const meta = HISTORICAL_LEAGUES[leagueName]; if (!meta) return [];
   const key = `${leagueName}:${season}`; if (cache.get(key)?.expiresAt > Date.now()) return cache.get(key).value;
-  const promise = axios.get(`${BASE_URL}/${season}/${meta.file}`, { timeout: 15000 }).then((response) => (response.data.matches || []).map((match) => toFixture(match, leagueName, meta, season))).catch((error) => { if (error.response?.status === 404) { cache.set(key, { value: [], expiresAt: Date.now() + 5 * 60 * 1000 }); return []; } cache.delete(key); throw createProviderError(error); });
+  const promise = axios.get(`${BASE_URL}/${season}/${meta.file}`, { timeout: 15000 }).then((response) => (response.data.matches || []).map((match) => toFixture(match, leagueName, meta, season))).catch((error) => { if (error.response?.status === 404) { cache.set(key, { value: [], expiresAt: Date.now() + 6 * 60 * 60 * 1000 }); return []; } cache.delete(key); throw createProviderError(error); });
   cache.set(key, { value: promise, expiresAt: Date.now() + 5 * 60 * 1000 }); return promise;
 }
 async function getFixtures(date, league) {
