@@ -25,7 +25,7 @@ jobs:
         if: always()
         run: |
           npm audit --json > /tmp/frontend-npm-audit.json || true
-          node -e 'const a=require("/tmp/frontend-npm-audit.json"); const vulnerabilities=Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:(v.via||[]).map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range}))})); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities,vulnerabilities},null,2))'
+          node -e 'const a=require("/tmp/frontend-npm-audit.json"); const vulnerabilities=Object.entries(a.vulnerabilities||{}).map(([name,v])=>({name,severity:v.severity,range:v.range,fixAvailable:v.fixAvailable,via:(v.via||[]).map(x=>typeof x==="string"?x:{title:x.title,url:x.url,range:x.range)}))})); console.log(JSON.stringify({metadata:a.metadata?.vulnerabilities,vulnerabilities},null,2))'
       - name: Build frontend
         env:
           VITE_API_BASE_URL: http://127.0.0.1:3001
@@ -71,6 +71,28 @@ jobs:
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: node .github/scripts/live-api-smoke.cjs
+      - name: Read-only production ledger and provider diagnostics
+        if: always()
+        env:
+          ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
+        run: |
+          node <<'NODE'
+          const base = process.env.ZEUS_API_BASE_URL.replace(/\\/$/, "");
+          const paths = ["/api/health", "/api/providers/status", "/api/ledger/status", "/api/ledger/performance", "/api/ledger/comparison", "/api/capture/status"];
+          (async () => {
+            for (const path of paths) {
+              try {
+                const response = await fetch(base + path, { signal: AbortSignal.timeout(15000) });
+                const body = await response.json().catch(() => null);
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                let summary = body;
+                if (path === "/api/ledger/performance" && body?.report) summary = { source: body.report.source, comparison: body.report.comparison, models: Object.fromEntries(Object.entries(body.report.models || {}).map(([key, value]) => [key, { totalPredictions: value.totalPredictions, settledPredictions: value.settledPredictions, pendingPredictions: value.pendingPredictions, conflictPredictions: value.conflictPredictions, sampleSize: value.sampleSize, accuracy: value["1X2"]?.accuracy, brier: value["1X2"]?.brier, logLoss: value["1X2"]?.logLoss, leagues: value.leagues }])) };
+                if (path === "/api/ledger/comparison" && body?.comparison) summary = body.comparison;
+                console.log(JSON.stringify({ path, status: response.status, data: summary }));
+              } catch (error) { console.log(JSON.stringify({ path, error: error.message })); process.exitCode = 1; }
+            }
+          })();
+          NODE
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
