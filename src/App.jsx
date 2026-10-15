@@ -328,6 +328,16 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, analysisCac
       <div className="home-hero-meta"><span>{selectedLabel}</span><span>{loading ? "Maçlar yükleniyor…" : `${matches.length} maç listelendi`}</span></div>
     </section>
 
+    <section className="signal-panel">
+      <div className="signal-panel-heading"><div><span className="eyebrow accent">CANLI VERİ ÖZETİ</span><h2>Model sinyalleri</h2><p>Yalnızca mevcut analizlerden üretilen görünüm</p></div><span className="signal-live-mark"><i /> GÜNCEL</span></div>
+      {strongest.length ? <div className="signal-list">{strongest.map((item) => <div className="signal-row" key={item.fixture?.id}>
+        <div className="signal-match"><strong>{item.fixture?.home || "Ev sahibi"}</strong><span>vs</span><strong>{item.fixture?.away || "Deplasman"}</strong></div>
+        <div className="signal-track" aria-label={`Model güveni yüzde ${Math.round(item.confidence || 0)}`}><span style={{ width: `${Math.max(0, Math.min(100, Number(item.confidence) || 0))}%` }} /></div>
+        <div className="signal-values"><b>%{Number(item.confidence || 0).toFixed(0)}</b><small>Güven</small><b>%{Number(item.dataQuality?.score || 0).toFixed(0)}</b><small>Veri</small></div>
+      </div>)}</div> : <div className="signal-empty"><span>◌</span><p>Doğrulanabilir model sinyali oluştuğunda grafik burada görünecek.</p></div>}
+      <div className="signal-legend"><span><i className="legend-confidence" /> Model güveni</span><span><i className="legend-quality" /> Veri kalitesi</span></div>
+    </section>
+
     <section className="home-section">
       <SectionHeading eyebrow="MODEL + VERİ KALİTESİ" title="Öne çıkan analizler" action={<span className="home-section-note">En fazla 3 maç</span>} />
       <div className="card-list">
