@@ -6,7 +6,7 @@ import { MODEL40, MODEL41, modelLabel, modelCacheKey, selectModelAnalysis } from
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { getCachedFrontendJson, readFrontendJson } from "./frontendApi.js";
-import { dataQualityReasons, dataQualityText, marketMetrics, matchesMarketFilter } from "./predictionPresentation.js";
+import { dataQualityReasons, dataQualityText, marketMetrics, matchesMarketFilter, oneXTwoSummary } from "./predictionPresentation.js";
 
 // Production'da (Vercel) frontend ve backend aynı origin'de çalışır; bu yüzden
 // API istekleri göreli "/api/..." yoluyla gider (boş API_BASE). Geliştirmede ise
@@ -276,11 +276,11 @@ function MatchCard({ match, analysis, summary, onOpen, onFavorite, favoriteIds =
   const bookmakerOdds = summary?.bookmakerOdds ?? analysis?.recommendation?.bookmakerOdds;
   const value = summary?.value ?? analysis?.recommendation?.value;
   const missing = summary?.dataQuality?.missing || analysis?.dataQuality?.missing || [];
-  const sources = analysis?.fixture?.sourceProviders || analysis?.sourceMetadata?.providers || match?.providers || (match?.provider ? [match.provider] : []);
+  const sources = analysis?.fixture?.sourceProviders || analysis?.sourceMetadata?.providers || match?.providers || (match?.provider ? [match.provider] : []);\n  const oneXTwo = oneXTwoSummary(summary?.predictions || analysis?.predictions);\n  const expectedGoals = summary?.expectedGoals || analysis?.expectedGoals;
   return <article className={featured ? "match-card featured-card" : "match-card"}>
     <div className="card-meta"><span className="league-pill">{match?.league?.name || "Lig"}</span><span>{formatDate(match?.fixture?.date)} · {formatTime(match?.fixture?.date)}</span></div>
     <div className="teams-row"><div className="team-name"><span className="team-crest">{home.slice(0, 1)}</span><strong>{home}</strong></div><span className="versus">{getStatus(match) === "finished" ? `${match.goals?.home ?? "—"} - ${match.goals?.away ?? "—"}` : "VS"}</span><div className="team-name away"><strong>{away}</strong><span className="team-crest">{away.slice(0, 1)}</span></div></div>
-    <div className="prediction-strip"><div><span className="field-label">EN GÜÇLÜ TAHMİN</span><strong>{prediction}</strong><small>Olasılık (Probability): {pct(bestMarket?.probability)}</small></div><div><span className="field-label">MODEL GÜVENİ</span><ConfidenceBadge confidence={summary?.confidence ?? analysis?.model?.confidence} /></div></div>
+    <div className="prediction-strip"><div><span className="field-label">EN GÜÇLÜ TAHMİN</span><strong>{prediction}</strong><small>Olasılık (Probability): {pct(bestMarket?.probability)}</small></div><div><span className="field-label">MODEL GÜVENİ</span><ConfidenceBadge confidence={summary?.confidence ?? analysis?.model?.confidence} /></div></div>\n    {oneXTwo && <div className="one-x-two-strip" aria-label="1X2 tahmin olasılıkları"><div><span>1 · {home}</span><b>{pct(oneXTwo.home)}</b></div><div><span>X · Beraberlik</span><b>{pct(oneXTwo.draw)}</b></div><div><span>2 · {away}</span><b>{pct(oneXTwo.away)}</b></div></div>}\n    {Number.isFinite(Number(expectedGoals?.home)) && Number.isFinite(Number(expectedGoals?.away)) && <div className="expected-goals-line"><span>Model gol beklentisi</span><b>{home} {Number(expectedGoals.home).toFixed(2)} – {Number(expectedGoals.away).toFixed(2)} {away}</b></div>}
     <div className="quality-line"><DataQualityBadge quality={quality} label={qualityLabel} /><span>Kaynak: <b>{sources.length ? sources.join(", ") : "—"}</b></span><span>Oran: <b>{Number.isFinite(bookmakerOdds) ? Number(bookmakerOdds).toFixed(2) : "—"}</b></span><span>Value: <b>{Number.isFinite(value) ? `${value > 0 ? "+" : ""}${Number(value).toFixed(1)}%` : "—"}</b></span></div>
     {match?.dataConflict && <div className="quality-note">Veri uyuşmazlığı: kaynak kayıtları otomatik birleştirilmedi.</div>}
     {quality < 40 && missing.length > 0 && <div className="quality-note">Bu maç için yeterli istatistik bulunamadı.</div>}
