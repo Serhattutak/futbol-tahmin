@@ -215,3 +215,9 @@ input,select{border-radius:10px!important;border-color:var(--line)!important;bac
 .performance-card,.detail-section,.signal-panel,.performance-section{border-radius:15px}
 @media(min-width:700px){.page-content{padding:22px 20px 32px}.bottom-nav{bottom:14px;border:1px solid rgba(150,180,207,.17);border-radius:18px;padding-bottom:7px}.app-shell{padding-bottom:110px}}
 @media(max-width:380px){.page-content{padding:10px 10px 20px}.home-simple-hero{padding:16px}.match-card{padding:11px}.nav-item{font-size:9px}.nav-item .nav-icon{font-size:17px}}
+
+
+/* Transparent coverage counters for real pre-match analysis. */
+.home-data-status{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px;padding:10px 12px;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:12px;background:rgba(16,31,48,.65)}
+.home-data-status span{display:inline-flex;gap:5px;align-items:center;color:var(--muted,#a8b7c9);font-size:11px}
+.home-data-status b{color:var(--text,#eef5fb);font-variant-numeric:tabular-nums}
