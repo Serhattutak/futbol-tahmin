@@ -48,3 +48,12 @@ export function dataQualityText(score) {
   if (value < 75) return "İyi veri";
   return "Güçlü veri";
 }
+
+export function oneXTwoSummary(predictions) {
+  const raw = [predictions?.homeWin, predictions?.draw, predictions?.awayWin];
+  if (raw.some(value => value === null || value === undefined || value === "")) return null;
+  const [home, draw, away] = raw.map(Number);
+  if (![home, draw, away].every(Number.isFinite) || [home, draw, away].some(value => value < 0 || value > 100)) return null;
+  if (Math.abs(home + draw + away - 100) > 1.5) return null;
+  return { home, draw, away };
+}
