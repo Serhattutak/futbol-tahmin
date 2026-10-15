@@ -198,7 +198,7 @@ class MultiProviderRegistry {
         historyCandidates.push(...matches);
         best = { matches: mergeHistory(historyCandidates, { team, before: updated.kickoff, now: this.now() }), provider: best.provider || (matches.length ? name : null) };
         const sourceFamily = source => String(source || "").startsWith("openfootball") ? "openfootball" : source;
-        const independentSources = new Set(historyCandidates.map(match => sourceFamily(match.provider));
+        const independentSources = new Set(historyCandidates.map(match => sourceFamily(match.provider)));
         // Keep checking independent providers even after ten matches from OpenFootball. The text and JSON mirrors are one source family, not two independent confirmations.
         if (best.matches.length >= 10 && independentSources.size >= 2) break;
       } catch (error) { historyAttempts.push({ provider: name, outcome: "request_failed", category: error.category || "provider_unavailable", ...(Number.isInteger(error.httpStatus) ? { httpStatus: error.httpStatus } : {}) }); this.updateStatus(name, false, error.category || "provider_unavailable"); }
