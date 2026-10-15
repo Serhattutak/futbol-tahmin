@@ -32,7 +32,7 @@ test("empty input completes without invoking the worker", async () => {
   assert.equal(calls, 0);
 });
 
-test("rejects non-array items and invalid concurrency values", async () => {
+test("rejects non-array input, invalid concurrency, and non-function workers", async () => {
   await assert.rejects(
     () => forEachConcurrent(null, 2, async () => {}),
     { name: "TypeError", message: "items must be an array" },
@@ -44,14 +44,33 @@ test("rejects non-array items and invalid concurrency values", async () => {
       { name: "RangeError", message: "concurrency must be a positive integer" },
     );
   }
+
+  await assert.rejects(
+    () => forEachConcurrent([1], 1, null),
+    { name: "TypeError", message: "worker must be a function" },
+  );
 });
 
-test("propagates worker errors to the caller", async () => {
+test("stops scheduling new work after a worker failure and waits for in-flight work", async () => {
   const expected = new Error("synthetic worker failure");
+  const started = [];
+  let active = 0;
+  let peak = 0;
   await assert.rejects(
-    () => forEachConcurrent([0, 1, 2], 1, async (item) => {
-      if (item === 1) throw expected;
+    () => forEachConcurrent([0, 1, 2, 3, 4, 5], 2, async (item) => {
+      started.push(item);
+      active += 1;
+      peak = Math.max(peak, active);
+      try {
+        if (item === 0) throw expected;
+        await new Promise((resolve) => setImmediate(resolve));
+      } finally {
+        active -= 1;
+      }
     }),
     (error) => error === expected,
   );
+  assert.deepEqual(started, [0, 1]);
+  assert.ok(peak <= 2);
+  assert.equal(active, 0);
 });
