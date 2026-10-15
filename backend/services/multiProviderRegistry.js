@@ -172,7 +172,7 @@ class MultiProviderRegistry {
   getTeamHistoricalMatches(team, beforeDate, options) { return this.historicalData.getTeamHistoricalMatches(team, beforeDate, options); }
   getHistoricalForm(fixture, side) { return this.getTeamHistoricalMatches(fixture[side === "home" ? "homeTeam" : "awayTeam"], fixture.kickoff, { fixture, side }); }
   async loadHistoricalForm(fixture, side) {
-    const order = ["openfootball", "sportmonks", "football-data", "api-football", "thesportsdb", "espn"];
+    const order = ["openfootball", "openfootball-text", "sportmonks", "football-data", "api-football", "thesportsdb", "espn"];
     let best = { matches: [], provider: null }; let updated = fixture;
     const historyCandidates = [];
     const historyAttempts = [];
