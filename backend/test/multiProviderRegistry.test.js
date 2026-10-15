@@ -1,8 +1,34 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { ProviderError } = require("../services/apiFootballClient");
-const { MultiProviderRegistry, canonicalTeamId, numericAgreement, reconcileFixtures, reconcileResults } = require("../services/multiProviderRegistry");
+const { MultiProviderRegistry, canonicalTeamId, numericAgreement, reconcileFixtures, reconcileResults, toCanonicalLegacy, toCanonicalApiFootball } = require("../services/multiProviderRegistry");
 const fixture = (provider, kickoff = "2026-09-16T12:00:00Z", homeGoals = null, awayGoals = null) => ({ provider, providerFixtureId: provider, canonicalFixtureId: `${kickoff}:team:home:team:away:league`, league: { name: "League" }, season: 2026, kickoff, homeTeam: { canonicalTeamId: "team:home", name: "Home" }, awayTeam: { canonicalTeamId: "team:away", name: "Away" }, status: "FT", result: Number.isFinite(homeGoals) ? { homeGoals, awayGoals } : null, sources: [provider], dataConflict: false });
+test("scheduled ESPN fixtures with placeholder 0-0 scores are not treated as completed results", () => {
+  const raw = {
+    fixture: { id: "espn-1", date: "2026-10-16T19:00:00Z", kickoffPrecision: "time", status: { short: "SCHEDULED" } },
+    league: { id: "eng.2", name: "Championship", country: "England" },
+    teams: { home: { id: "h", name: "Mansfield Town" }, away: { id: "a", name: "Oxford United" } },
+    goals: { home: 0, away: 0 },
+  };
+  const scheduled = toCanonicalLegacy("espn", raw);
+  assert.equal(scheduled.status, "SCHEDULED");
+  assert.equal(scheduled.result, null);
+  assert.equal(scheduled.dataConflict, false);
+  const finished = toCanonicalLegacy("espn", { ...raw, fixture: { ...raw.fixture, status: { short: "FT" } } });
+  assert.equal(finished.status, "FINISHED");
+  assert.deepEqual(finished.result, { homeGoals: 0, awayGoals: 0, status: "FINISHED", completedAt: raw.fixture.date });
+});
+
+test("API-Football scheduled fixtures cannot acquire results from placeholder scores", () => {
+  const raw = {
+    fixture: { id: 7, date: "2026-10-16T19:00:00Z", status: { short: "NS" } },
+    league: { id: 1, name: "League", country: "England" },
+    teams: { home: { id: 1, name: "Home" }, away: { id: 2, name: "Away" } },
+    goals: { home: 0, away: 0 },
+  };
+  assert.equal(toCanonicalApiFootball(raw).result, null);
+});
+
 test("fixture discovery tum uygun providerlari birlestirir ve cache tekrar cagirmaz", async () => { let first = 0; let second = 0; const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixtures: async () => { first += 1; return [fixture("a")]; } }, { name: "b", enabled: true, getFixtures: async () => { second += 1; return [fixture("b")]; } }]); await registry.getFixtures("2026-09-16"); await registry.getFixtures("2026-09-16"); assert.equal(first, 1); assert.equal(second, 1); });
 test("hata veya quota sonrasi fallback provider kullanilir", async () => { const fallback = { name: "b", enabled: true, getFixtures: async () => [fixture("b")] }; for (const error of [new ProviderError("timeout_network", "timeout"), new ProviderError("quota", "quota")]) { const registry = new MultiProviderRegistry([{ name: "a", enabled: true, getFixtures: async () => { throw error; } }, fallback]); assert.equal((await registry.getFixtures("2026-09-16"))[0].provider, "b"); } });
 test("ayni fixture tek canonical fixture olur, farkli kickoff conflict olur", () => { assert.equal(reconcileFixtures([fixture("a"), fixture("b")]).length, 1); const conflicts = reconcileFixtures([fixture("a"), fixture("b", "2026-09-16T13:00:00Z")]); assert.ok(conflicts.every((item) => item.dataConflict)); });
