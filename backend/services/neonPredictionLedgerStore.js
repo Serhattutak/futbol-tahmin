@@ -12,8 +12,17 @@ function stableEventId(event) {
   if (event.type === "prediction" || event.type === "settlement") {
     return `${event.type}:${event.ledgerId}`;
   }
-  // A ledger entry can have multiple distinct conflict observations.
-  return `conflict:${event.ledgerId}:${crypto.createHash("sha256").update(JSON.stringify(event)).digest("hex")}`;
+  // Match the filesystem ledger's conflict identity: distinct score outcomes,
+  // not provider evidence ordering or incidental metadata.
+  if (!Array.isArray(event.evidence)) throw new TypeError("INVALID_CONFLICT_EVIDENCE");
+  const scores = [...new Set(event.evidence.map(item => {
+    if (!Number.isInteger(item?.home) || item.home < 0 || !Number.isInteger(item?.away) || item.away < 0) {
+      throw new TypeError("INVALID_CONFLICT_EVIDENCE");
+    }
+    return `${item.home}:${item.away}`;
+  }))].sort();
+  if (scores.length < 1) throw new TypeError("INVALID_CONFLICT_EVIDENCE");
+  return `conflict:${event.ledgerId}:${crypto.createHash("sha256").update(JSON.stringify(scores)).digest("hex")}`;
 }
 
 /**
