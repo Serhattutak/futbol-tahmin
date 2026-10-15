@@ -1517,10 +1517,11 @@ if (require.main === module) {
       });
       predictionLedgerHandle.replace(ledgerRuntime.ledger);
       predictionLedgerHandle.markReady();
+      const ledgerStatus = await ledgerRuntime.ledger.status();
       console.log(JSON.stringify({
         type: "LEDGER_RUNTIME_READY",
         mode: ledgerRuntime.mode,
-        ...ledgerRuntime.ledger.status(),
+        ...ledgerStatus,
       }));
     } else {
       throw new Error("UNSUPPORTED_LEDGER_MODE");
