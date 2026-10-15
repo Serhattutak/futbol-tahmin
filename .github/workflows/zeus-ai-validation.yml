@@ -204,6 +204,50 @@ jobs:
             }
           })().catch(error => { console.error(error); process.exitCode = 1; });
           NODE
+      - name: Verify staging fixture coverage by date and league
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/neon-durable-prediction-ledger'
+        env:
+          ZEUS_STAGING_API_BASE_URL: https://zeus-ai-ledger-staging.onrender.com
+        run: |
+          node <<'NODE'
+          const assert = require("node:assert/strict");
+          const base = process.env.ZEUS_STAGING_API_BASE_URL.replace(/\\/$/, "");
+          const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+          const p = Object.fromEntries(parts.map(x => [x.type, x.value]));
+          const today = new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day)));
+          const dates = [...new Set(["2025-10-12", today.toISOString().slice(0, 10), new Date(today.getTime() + 86400000).toISOString().slice(0, 10)])];
+          const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+          async function getDate(date) {
+            let lastError;
+            for (let attempt = 1; attempt <= 4; attempt++) {
+              try {
+                const response = await fetch(base + "/api/football-test?date=" + date, { signal: AbortSignal.timeout(25000) });
+                const body = await response.json();
+                assert.equal(response.status, 200, "fixture API should return HTTP 200 for " + date);
+                assert.equal(body.success, true, "fixture API should succeed for " + date);
+                assert.equal(body.date, date, "fixture API should preserve the requested date");
+                assert.ok(Array.isArray(body.matches), "matches must be an array");
+                assert.equal(body.results, body.matches.length, "result count must match fixture array length");
+                return body;
+              } catch (error) {
+                lastError = error;
+                if (attempt < 4) await wait(attempt * 3000);
+              }
+            }
+            throw lastError;
+          }
+          (async () => {
+            const checks = [];
+            for (const date of dates) {
+              const body = await getDate(date);
+              const leagues = [...new Set(body.matches.map(match => match.league?.name).filter(Boolean))].sort();
+              const providers = [...new Set(body.matches.flatMap(match => match.providers || match.sources || [match.provider]).filter(Boolean))].sort();
+              checks.push({ date, results: body.results, source: body.source || null, stale: Boolean(body.stale), providerError: body.providerError || null, leagueCount: leagues.length, leagues, providers });
+            }
+            assert.ok(checks[0].results > 0, "known historical date 2025-10-12 must contain real fixtures");
+            console.log(JSON.stringify({ ok: true, fixtureCoverage: checks }));
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
 
   neon-ledger-integration:
     runs-on: ubuntu-latest
