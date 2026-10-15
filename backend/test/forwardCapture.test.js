@@ -192,3 +192,16 @@ test("Restart recovers a dead owner lock but never removes a live or malformed l
   fs.writeFileSync(lock, JSON.stringify({ pid: process.pid })); assert.equal((await s.capture.run()).reason, "ALREADY_RUNNING");
   fs.writeFileSync(lock, "{"); assert.equal((await s.capture.run()).reason, "ALREADY_RUNNING");
 });
+
+test("Capture status reports Neon as durable storage when Neon mode is active", async t => {
+  const previousMode = process.env.ZEUS_LEDGER_MODE;
+  process.env.ZEUS_LEDGER_MODE = "neon";
+  t.after(() => {
+    if (previousMode === undefined) delete process.env.ZEUS_LEDGER_MODE;
+    else process.env.ZEUS_LEDGER_MODE = previousMode;
+  });
+  const s = setup(t);
+  const status = s.capture.status();
+  assert.equal(status.storage.mode, "neon_postgres");
+  assert.equal(status.storage.durabilityWarning, null);
+});
