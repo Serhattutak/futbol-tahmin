@@ -107,7 +107,8 @@ test("OpenFootball text source parses dated results in both supported match-line
   assert.equal(finland.length, 1);
   assert.equal(finland[0].teams.home.name, "Ilves Tampere");
   assert.equal(finland[0].teams.away.name, "HJK Helsinki");
-  assert.equal(finland[0].fixture.date, "2025-04-05");
+  assert.equal(finland[0].fixture.kickoffPrecision, "time");
+  assert.equal(finland[0].fixture.date, "2025-04-05T12:00:00.000Z");
   assert.equal(finland[0].fixture.status.short, "FINISHED");
 });
 
