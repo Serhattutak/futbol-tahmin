@@ -114,10 +114,17 @@ function parseTextResults(text, leagueName, season) {
   if (!meta) return [];
   let year = Number(String(season).slice(0, 4));
   let date = null;
+  let previousMonth = null;
   const results = [];
   for (const line of String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/)) {
     const header = parseDateHeader(line, year);
-    if (header) { date = header.date; year = header.year; continue; }
+    if (header) {
+      if (!header.explicitYear && previousMonth !== null && previousMonth - header.month > 6) year++;
+      if (header.explicitYear) year = header.year;
+      date = new Date(Date.UTC(year, header.month, Number(header.date.slice(8, 10)))).toISOString().slice(0, 10);
+      previousMonth = header.month;
+      continue;
+    }
     const result = parseResultLine(line, leagueName, meta, season, date);
     if (result) results.push(result);
   }
