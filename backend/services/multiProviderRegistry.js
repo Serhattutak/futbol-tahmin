@@ -55,7 +55,9 @@ function reconcileFixtures(fixtures) {
   for (const fixture of fixtures.filter(Boolean)) {
     const existing = [...merged.values()].find((item) => sameFixture(item, fixture));
     if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
-    merged.set(fixture.canonicalFixtureId, { ...fixture });
+    // Canonical IDs predate country-aware league matching. Keep distinct countries separate internally without changing persisted public IDs.
+    const mergeKey = `${normalize(fixture.league?.country)}:${fixture.canonicalFixtureId || `${fixture.provider}:${fixture.providerFixtureId}`}`;
+    merged.set(mergeKey, { ...fixture });
   }
   const values = [...merged.values()];
   const reconciled = [];
