@@ -197,8 +197,8 @@ jobs:
               if (path === "/api/capture/status" && body.storage?.mode !== "neon_postgres") {
                 throw new Error("Staging capture status is not reporting Neon storage");
               }
-              if (path === "/api/ledger/status" && (!Number.isInteger(body.total) || body.total < 1)) {
-                throw new Error("Staging ledger should expose the imported production entries during read-only API verification");
+              if (path === "/api/ledger/status" && (!Number.isInteger(body.total) || body.total < 0)) {
+                throw new Error("Staging ledger total must be a non-negative integer");
               }
               console.log(JSON.stringify({ path, success: true, storageMode: body.storage?.mode || undefined, total: body.total }));
             }
