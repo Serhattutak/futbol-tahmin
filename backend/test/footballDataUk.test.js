@@ -13,6 +13,7 @@ test("football-data.co.uk validates dates and maps dates to European seasons", (
   assert.equal(provider.parseDate("31/02/26"), null);
   assert.equal(provider.seasonFor("2026-10-15"), "2627");
   assert.equal(provider.seasonFor("2026-06-01"), "2526");
+  assert.equal(provider.turkeyDate("2026-10-15T22:30:00.000Z"), "2026-10-16");
 });
 
 test("football-data.co.uk fixtures preserve verified scores and never invent them", () => {
