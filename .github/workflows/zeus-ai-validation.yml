@@ -21,6 +21,20 @@ jobs:
         run: npm ci
       - name: Lint frontend
         run: npm run lint
+      - name: Report frontend npm audit details
+        if: always()
+        run: |
+          npm audit --json > /tmp/frontend-npm-audit.json || true
+          node <<'NODE'
+          const a = require("/tmp/frontend-npm-audit.json");
+          const vulnerabilities = Object.entries(a.vulnerabilities || {}).map(([name, v]) => ({
+            name, severity: v.severity, range: v.range, fixAvailable: v.fixAvailable,
+            via: (v.via || []).map(x => typeof x === "string" ? x : { title: x.title, url: x.url, range: x.range })
+          }));
+          console.log(JSON.stringify({ metadata: a.metadata?.vulnerabilities, vulnerabilities }, null, 2));
+          NODE
+      - name: Enforce frontend high/critical audit threshold
+        run: npm audit --audit-level=high
       - name: Build frontend
         env:
           VITE_API_BASE_URL: http://127.0.0.1:3001
@@ -28,6 +42,22 @@ jobs:
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
+      - name: Report backend npm audit details
+        if: always()
+        working-directory: backend
+        run: |
+          npm audit --json > /tmp/backend-npm-audit.json || true
+          node <<'NODE'
+          const a = require("/tmp/backend-npm-audit.json");
+          const vulnerabilities = Object.entries(a.vulnerabilities || {}).map(([name, v]) => ({
+            name, severity: v.severity, range: v.range, fixAvailable: v.fixAvailable,
+            via: (v.via || []).map(x => typeof x === "string" ? x : { title: x.title, url: x.url, range: x.range })
+          }));
+          console.log(JSON.stringify({ metadata: a.metadata?.vulnerabilities, vulnerabilities }, null, 2));
+          NODE
+      - name: Enforce backend high/critical audit threshold
+        working-directory: backend
+        run: npm audit --audit-level=high
       - name: Install Playwright for browser smoke test
         run: |
           npm install --no-save playwright
@@ -60,6 +90,55 @@ jobs:
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: node .github/scripts/live-api-smoke.cjs
+      - name: Read-only production ledger and provider diagnostics
+        if: github.event_name == 'push'
+        env:
+          ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
+        run: |
+          node <<'NODE'
+          const base = process.env.ZEUS_API_BASE_URL.replace(/\/$/, "");
+          const paths = ["/api/health", "/api/providers/status", "/api/ledger/status", "/api/ledger/performance", "/api/ledger/comparison", "/api/capture/status"];
+          (async () => {
+            for (const path of paths) {
+              try {
+                const response = await fetch(base + path, { signal: AbortSignal.timeout(15000) });
+                const body = await response.json().catch(() => null);
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                let summary = body;
+                if (path === "/api/ledger/performance" && body?.report) summary = { source: body.report.source, comparison: body.report.comparison, models: Object.fromEntries(Object.entries(body.report.models || {}).map(([key, value]) => [key, { totalPredictions: value.totalPredictions, settledPredictions: value.settledPredictions, pendingPredictions: value.pendingPredictions, conflictPredictions: value.conflictPredictions, sampleSize: value.sampleSize, accuracy: value["1X2"]?.accuracy, brier: value["1X2"]?.brier, logLoss: value["1X2"]?.logLoss, leagues: value.leagues }])) };
+                if (path === "/api/ledger/comparison" && body?.comparison) summary = body.comparison;
+                console.log(JSON.stringify({ path, status: response.status, data: summary }));
+              } catch (error) { console.log(JSON.stringify({ path, error: error.message })); process.exitCode = 1; }
+            }
+          })();
+          NODE
+      - name: Live fixture coverage by date and league
+        if: github.event_name == 'push'
+        env:
+          ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
+        run: |
+          node <<'NODE'
+          const base = process.env.ZEUS_API_BASE_URL.replace(/\/$/, "");
+          const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+          const p = Object.fromEntries(parts.map(x => [x.type, x.value]));
+          const today = new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day)));
+          const dates = ["2026-10-11", today.toISOString().slice(0, 10), new Date(today.getTime() + 86400000).toISOString().slice(0, 10)];
+          (async () => {
+            for (const date of [...new Set(dates)]) {
+              const response = await fetch(base + "/api/football-test?date=" + date, { signal: AbortSignal.timeout(25000) });
+              const body = await response.json();
+              if (!response.ok || body.success !== true || !Array.isArray(body.matches)) throw new Error("Fixture API invalid for " + date + ": HTTP " + response.status);
+              const leagues = {};
+              const providers = {};
+              for (const match of body.matches) {
+                const league = match.league?.name || "Unknown";
+                leagues[league] = (leagues[league] || 0) + 1;
+                for (const provider of (match.providers || match.sources || [match.provider]).filter(Boolean)) providers[provider] = (providers[provider] || 0) + 1;
+              }
+              console.log(JSON.stringify({ date, total: body.matches.length, source: body.source || null, stale: Boolean(body.stale), providerError: body.providerError || null, providers, leagueCounts: Object.fromEntries(Object.entries(leagues).sort((a,b)=>b[1]-a[1])) }));
+            }
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
