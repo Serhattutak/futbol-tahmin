@@ -103,3 +103,87 @@ button { -webkit-tap-highlight-color: transparent; }
 .expected-goals-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: 8px; color: var(--muted); font-size: 11px; }
 .expected-goals-line b { color: var(--text); font-weight: 600; }
 @media (max-width: 380px) { .one-x-two-strip { gap: 5px; } .one-x-two-strip > div { padding: 8px 6px; } .one-x-two-strip span { font-size: 9px; } .one-x-two-strip b { font-size: 13px; } }
+
+
+/* ZEUS AI visual simplification: quieter stadium-night palette, fewer competing surfaces. */
+:root {
+  --bg: #0a1220;
+  --surface: #111c2c;
+  --surface-2: #172538;
+  --line: #26374b;
+  --text: #f4f7fb;
+  --muted: #a0aec0;
+  --blue: #7aa7ff;
+  --cyan: #70dfc5;
+}
+.app-shell {
+  background: var(--bg);
+}
+.topbar {
+  border-bottom-color: #1d2b3e;
+}
+.home-simple-hero {
+  gap: 9px;
+  padding: 22px;
+  border-color: #263a4b;
+  background: linear-gradient(135deg, #142c35 0%, #101b2b 62%, #101827 100%);
+  box-shadow: none;
+}
+.home-simple-hero h1 {
+  max-width: 560px;
+  font-size: clamp(29px, 6vw, 43px);
+  letter-spacing: -1.2px;
+}
+.home-simple-hero p {
+  max-width: 540px;
+  font-size: 13px;
+}
+.home-hero-meta span {
+  border-color: #2b414f;
+  background: rgba(8, 18, 29, .28);
+}
+.match-card, .probability-group, .quick-stats div, .home-disclaimer {
+  box-shadow: none;
+}
+.match-card {
+  border-radius: 14px;
+  background: #111c2c;
+}
+.featured-card {
+  border-color: rgba(112, 223, 197, .34);
+}
+.home-view {
+  gap: 20px;
+}
+.home-all-matches {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.home-all-matches-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.home-all-matches-copy strong {
+  font-size: 13px;
+}
+.home-all-matches-copy span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.home-all-matches .primary-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .home-simple-hero { padding: 19px 16px; }
+  .home-all-matches { align-items: flex-start; flex-direction: column; }
+  .home-all-matches .primary-button { width: 100%; }
+}
