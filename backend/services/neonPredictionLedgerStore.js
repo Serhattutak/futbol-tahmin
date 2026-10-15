@@ -40,11 +40,14 @@ class NeonPredictionLedgerStore {
 
   async loadEvents() {
     const result = await this.pool.query(
-      `SELECT payload FROM ${this.table} ORDER BY created_at ASC, event_id ASC`
+      `SELECT event_id, ledger_id, event_type, payload FROM ${this.table} ORDER BY created_at ASC, event_id ASC`
     );
     return (result.rows || []).map(row => {
       const event = typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload;
-      stableEventId(event); // Validate persisted data before returning it to callers.
+      const expectedEventId = stableEventId(event);
+      if (row.ledger_id !== event.ledgerId || row.event_type !== event.type || row.event_id !== expectedEventId) {
+        throw new TypeError("LEDGER_EVENT_COLUMN_MISMATCH");
+      }
       return event;
     });
   }
