@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, zeus-single-model-experience]
+    branches: [main]
 
 jobs:
   test-and-build:
