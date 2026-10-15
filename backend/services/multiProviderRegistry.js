@@ -40,13 +40,35 @@ function reconcileFixtures(fixtures) {
     merged.set(fixture.canonicalFixtureId, { ...fixture });
   }
   const values = [...merged.values()];
+  const reconciled = [];
   for (const fixture of values) {
-    for (const other of values) {
-      if (fixture === other) continue;
-      if (fixture.homeTeam.canonicalTeamId === other.homeTeam.canonicalTeamId && fixture.awayTeam.canonicalTeamId === other.awayTeam.canonicalTeamId && normalize(fixture.league.name) === normalize(other.league.name) && fixture.kickoff.slice(0, 10) === other.kickoff.slice(0, 10) && kickoffKey(fixture.kickoff) !== kickoffKey(other.kickoff)) fixture.dataConflict = true;
+    const sameDay = reconciled.find((other) =>
+      canonicalTeamId(other.homeTeam) === canonicalTeamId(fixture.homeTeam)
+      && canonicalTeamId(other.awayTeam) === canonicalTeamId(fixture.awayTeam)
+      && leagueKey(other.league?.name) === leagueKey(fixture.league?.name)
+      && other.kickoff.slice(0, 10) === fixture.kickoff.slice(0, 10)
+    );
+    if (!sameDay) { reconciled.push({ ...fixture }); continue; }
+    const kickoffConflict = kickoffKey(sameDay.kickoff) !== kickoffKey(fixture.kickoff);
+    if (kickoffConflict) sameDay.dataConflict = true;
+    sameDay.sources = [...new Set([...(sameDay.sources || []), ...(fixture.sources || [])])];
+    sameDay.providerTeams = { ...(sameDay.providerTeams || {}), ...(fixture.providerTeams || {}) };
+    sameDay.providerFixtureIds = { ...(sameDay.providerFixtureIds || {}), ...(fixture.providerFixtureIds || {}) };
+    if (sameDay.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") {
+      sameDay.kickoff = fixture.kickoff;
+      sameDay.kickoffPrecision = fixture.kickoffPrecision;
+      sameDay.canonicalFixtureId = fixture.canonicalFixtureId;
+    }
+    if (sameDay.result && fixture.result && (sameDay.result.homeGoals !== fixture.result.homeGoals || sameDay.result.awayGoals !== fixture.result.awayGoals)) {
+      sameDay.result = null;
+      sameDay.status = "UNKNOWN";
+      sameDay.dataConflict = true;
+    } else if (!sameDay.result && fixture.result && !sameDay.dataConflict) {
+      sameDay.result = fixture.result;
+      sameDay.status = fixture.status;
     }
   }
-  return values;
+  return reconciled;
 }
 
 function reconcileResults(results) {
