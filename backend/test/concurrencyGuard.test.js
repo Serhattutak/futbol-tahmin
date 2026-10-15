@@ -10,7 +10,8 @@ function response() {
     on(event, callback) { listeners[event] = callback; return this; },
     status(code) { this.statusCode = code; return this; },
     json(payload) { this.payload = payload; return this; },
-    finish() { listeners.finish?.(); }
+    finish() { listeners.finish?.(); },
+    close() { listeners.close?.(); }
   };
 }
 
@@ -56,4 +57,31 @@ test("allows three concurrent dashboard reads without false 429s, then releases 
   middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, afterRelease, () => nextCount++);
   assert.equal(afterRelease.statusCode, 200);
   assert.equal(nextCount, 4);
+});
+
+test("releases a concurrency slot when the client closes before response finish", () => {
+  const guard = createConcurrencyGuard();
+  const middleware = guard(1);
+  let nextCount = 0;
+  const first = response();
+  middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, first, () => nextCount++);
+  first.close();
+  const afterClose = response();
+  middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, afterClose, () => nextCount++);
+  assert.equal(afterClose.statusCode, 200);
+  assert.equal(nextCount, 2);
+});
+
+test("finish and close together release a concurrency slot only once", () => {
+  const guard = createConcurrencyGuard();
+  const middleware = guard(1);
+  const first = response();
+  middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, first, () => {});
+  first.close();
+  first.finish();
+  const second = response();
+  middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, second, () => {});
+  const third = response();
+  middleware({ ip: "1.2.3.4", path: "/api/best-predictions" }, third, () => {});
+  assert.equal(third.statusCode, 429);
 });
