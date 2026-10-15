@@ -3,6 +3,7 @@ const test = require("node:test");
 const sportmonks = require("../providers/sportmonks");
 const footballData = require("../providers/footballData");
 const openFootball = require("../providers/openFootball");
+const espn = require("../providers/espn");
 
 test("Sportmonks fixture response canonical legacy formuna normalize edilir", () => {
   const fixture = sportmonks.toFixture({ id: 1, starting_at: "2026-09-20T18:00:00Z", state: { short_name: "NS" }, league: { id: 2, name: "League" }, season: { id: 3 }, participants: [{ id: 10, name: "Home", meta: { location: "home" } }, { id: 20, name: "Away", meta: { location: "away" } }] });
@@ -36,4 +37,37 @@ test("OpenFootball does not advertise historical leagues absent from its configu
 
 test("OpenFootball date filtering uses Turkey local calendar date for timed kickoffs", () => {
   assert.equal(openFootball.turkeyDate("2026-10-14T21:30:00.000Z"), "2026-10-15");
+});
+
+test("ESPN scheduled fixtures with null scores stay scoreless; real zero scores remain valid", () => {
+  const event = {
+    id: "scheduled-1",
+    date: "2026-10-16T18:00:00Z",
+    competitions: [{
+      status: { type: { name: "STATUS_SCHEDULED" } },
+      competitors: [
+        { homeAway: "home", team: { id: "1", displayName: "Home" }, score: null },
+        { homeAway: "away", team: { id: "2", displayName: "Away" }, score: null },
+      ],
+    }],
+  };
+  const scheduled = espn.toFixture(event, "League One", { code: "eng.3", country: "England" });
+  assert.equal(scheduled.goals.home, null);
+  assert.equal(scheduled.goals.away, null);
+  assert.equal(scheduled.fixture.status.short, "SCHEDULED");
+
+  const finished = espn.toFixture({
+    ...event,
+    id: "finished-1",
+    competitions: [{
+      status: { type: { name: "STATUS_FINAL" } },
+      competitors: [
+        { homeAway: "home", team: { id: "1", displayName: "Home" }, score: "0" },
+        { homeAway: "away", team: { id: "2", displayName: "Away" }, score: "0" },
+      ],
+    }],
+  }, "League One", { code: "eng.3", country: "England" });
+  assert.equal(finished.goals.home, 0);
+  assert.equal(finished.goals.away, 0);
+  assert.equal(finished.fixture.status.short, "FINISHED");
 });
