@@ -165,6 +165,33 @@ async function loadLeague(leagueName, season) {
   return promise;
 }
 
+function seasonForDate(meta, date) {
+  const year = Number(String(date).slice(0, 4));
+  const month = Number(String(date).slice(5, 7));
+  if (meta.calendarYear) return String(year);
+  const start = month < 7 ? year - 1 : year;
+  return `${start}-${String(start + 1).slice(-2)}`;
+}
+
+async function getFixtures(date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) return [];
+  const names = Object.keys(CATALOG).filter(name => CATALOG[name].seasons.includes(seasonForDate(CATALOG[name], date)));
+  const results = new Array(names.length).fill(null).map(() => []);
+  let lastError = null;
+  await forEachConcurrent(names, 4, async (name, index) => {
+    try {
+      const season = seasonForDate(CATALOG[name], date);
+      results[index] = (await loadLeague(name, season)).filter(match => match.fixture.date.slice(0, 10) === date);
+    } catch (error) {
+      lastError ||= error;
+      results[index] = [];
+    }
+  });
+  const fixtures = results.flat();
+  if (!fixtures.length && lastError) throw lastError;
+  return fixtures;
+}
+
 async function getTeamForm(_teamId, before, context = {}) {
   return collectDivisionHistory({
     team: context.team,
@@ -182,9 +209,10 @@ module.exports = {
   name: "openfootball-text",
   configured: true,
   enabled: true,
-  capabilities: ["historicalResults", "teamForm"],
+  capabilities: ["fixtures", "historicalResults", "teamForm"],
   historicalLeagues: CATALOG,
   getSeasonFixtures: loadLeague,
+  getFixtures,
   getTeamForm,
   parseTextResults,
   supportsHistoricalLeague: league => Boolean(league?.country && Object.values(CATALOG).some(meta => meta.country === league.country)) || Boolean(LEAGUE_ALIASES[league?.name]?.includes(league.country)),
