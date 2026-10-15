@@ -17,8 +17,8 @@ The existing `PredictionLedger` API is synchronous and filesystem-backed. The Ne
 
 Consumers that must be migrated together:
 
-1. `ProductionAnalysis.analyze()`: await prediction writes and preserve explicit storage-error reporting.
-2. `ForwardCapture.run()`: await writes and preserve duplicate detection, capture-window guards, and status persistence.
+1. `ProductionAnalysis.analyze()`: await prediction writes and preserve explicit storage-error reporting. The awaited call is now in place and remains compatible with the synchronous filesystem ledger.
+2. `ForwardCapture.run()`: await writes and preserve duplicate detection, capture-window guards, and status persistence. The capture callback now awaits the ledger write.
 3. `ForwardCapture.status()`: use an initialized in-memory event projection or an asynchronous route contract; it must not read a half-restored ledger.
 4. `forwardPerformance.mountLedgerRoutes()`: migrate status, entries, pending, settled, performance, and model-comparison handlers to async reads and explicit 503 errors.
 5. `server.js`: initialize the selected store and restore/validate all events before registering background schedulers or accepting traffic.
@@ -41,14 +41,14 @@ Consumers that must be migrated together:
 - [x] Adapter validates event payload against indexed DB columns.
 - [x] Startup facade validates required table columns and the event-ID unique index before restoring persisted events.
 - [x] Isolated PostgreSQL CI verifies append, idempotency, fresh-pool recovery, event types, status counts, and malformed-row rejection.
-- [x] Existing frontend/backend regression and historical replay checks pass on the latest tested adapter commit.
+- [x] Existing frontend/backend regression and historical replay checks passed on commit `f8f4160fa94e014282c9bf7b66276e2e74cd4d41` (workflow run #278).
 - [ ] Async ledger facade has full unit coverage for restore, append, entries projection, settlement, and failure propagation. The isolated facade and tests cover initialization gating, restore/projection, idempotent append, duplicate-ID rejection, DB read/write error propagation, final-result settlement, duplicate settlement, and contradictory-score auditing. A separate reconciliation helper now copies supplied source events idempotently, validates the resulting event-ID set, detects destination-only records, and supports safe retry after partial failure. Reading the existing filesystem ledger and invoking reconciliation during a real migration remain unwired.
-- [ ] All synchronous consumers and routes are migrated to awaited operations.
-- [ ] Filesystem-to-Neon reconciliation is implemented and tested against duplicate and partial-migration cases.
+- [ ] All synchronous consumers and routes are migrated to awaited operations. Partial progress: `ProductionAnalysis` and the `ForwardCapture` write callback now await `recordResponse`; server bootstrap, settlement wiring, and routes still need coordinated migration.
+- [x] Isolated reconciliation helper tests duplicate writes, partial-failure retry, source identity collisions, and destination-only events.\n- [ ] Read the current filesystem ledger, invoke reconciliation in the actual migration flow, and verify the full source/destination event-ID sets.
 - [ ] Startup ordering guarantees restore completes before listen/schedulers.
 - [ ] Staging/preview verification passes.
 - [ ] Production cutover approved and separately verified.
 
 ## Current validation
 
-The isolated PostgreSQL test and main CI passed on commit `8e521ff23408ca8c4b454edaff64f4b859483b36` (workflow run #259). The PR run intentionally skips live Render diagnostics; this does not establish production readiness. The Neon adapter, async facade, and reconciliation helper are not wired into the application and no production data has been written to Neon. Filesystem source extraction, consumer/route migration, and startup ordering remain outstanding.
+The isolated PostgreSQL test and full main CI passed on commit `f8f4160fa94e014282c9bf7b66276e2e74cd4d41` (workflow run #278). PR runs intentionally skip live Render diagnostics; this does not establish production readiness. The async facade and reconciliation helper remain outside server startup, and no production data has been written to Neon. Filesystem source extraction, complete consumer/route migration, startup ordering, and staging verification remain outstanding.
