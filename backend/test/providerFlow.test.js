@@ -178,7 +178,7 @@ test("free provider caches expire and retry changed fixture results", () => isol
   const provider = require('./providers/theSportsDb');
   (async () => {
     await provider.getFixtures('2026-09-20'); await provider.getFixtures('2026-09-20');
-    assert.equal(requests, 1); now += 6 * 60 * 1000;
+    assert.equal(requests, 1); now += 31 * 60 * 1000;
     await provider.getFixtures('2026-09-20'); assert.equal(requests, 2);
   })().catch(() => process.exitCode = 1);
 `));
