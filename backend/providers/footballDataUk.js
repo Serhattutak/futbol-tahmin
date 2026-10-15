@@ -122,11 +122,14 @@ async function getFixtures(date, league) {
   const names = league && LEAGUES[league] ? [league] : Object.keys(LEAGUES);
   const season = seasonFor(date);
   const results = new Array(names.length);
+  let lastError = null;
   await forEachConcurrent(names, 4, async (name, index) => {
     try { results[index] = (await loadLeague(name, season)).filter((fixture) => (fixture.fixture.kickoffPrecision === "date" ? fixture.fixture.date.slice(0, 10) : turkeyDate(fixture.fixture.date)) === date); }
-    catch { results[index] = []; }
+    catch (error) { results[index] = []; lastError ||= error; }
   });
-  return results.flat();
+  const fixtures = results.flat();
+  if (!fixtures.length && lastError) throw lastError;
+  return fixtures;
 }
 async function getFixture(fixtureId) {
   const match = String(fixtureId).match(/^fdu-[a-z0-9]+-(\d{4})-(\d{4}-\d{2}-\d{2})-/);
