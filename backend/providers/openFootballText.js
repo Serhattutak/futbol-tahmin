@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { collectDivisionHistory } = require("../services/divisionHistory");
 const { createProviderError } = require("../services/apiFootballClient");
+const { forEachConcurrent } = require("../services/forEachConcurrent");
 
 const EUROPE = "https://raw.githubusercontent.com/openfootball/europe/master";
 const WORLD = "https://raw.githubusercontent.com/openfootball/world/master";
@@ -30,6 +31,12 @@ const CATALOG = {
   "I Liga": { country: "Poland", root: EUROPE, path: "poland", file: "{season}_pl2.txt", seasons: ["2024-25"] },
   "Liga I": { country: "Romania", root: EUROPE, path: "romania", file: "{season}_ro1.txt", seasons: ["2024-25", "2023-24"] },
   "Major League Soccer": { country: "USA", root: WORLD, path: "north-america/major-league-soccer", file: "{season}_mls.txt", calendarYear: true, seasons: ["2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011", "2010"] },
+  "Ligue 1": { country: "France", root: EUROPE, path: "france", file: "{season}_fr1.txt", seasons: ["2026-27", "2025-26", "2024-25"] },
+  "Ligue 2": { country: "France", root: EUROPE, path: "france", file: "{season}_fr2.txt", seasons: ["2025-26", "2024-25"] },
+  Eredivisie: { country: "Netherlands", root: EUROPE, path: "netherlands", file: "{season}_nl1.txt", seasons: ["2026-27", "2025-26", "2024-25"] },
+  "Eerste Divisie": { country: "Netherlands", root: EUROPE, path: "netherlands", file: "{season}_nl2.txt", seasons: ["2024-25"] },
+  "Primeira Liga": { country: "Portugal", root: EUROPE, path: "portugal", file: "{season}_pt1.txt", seasons: ["2026-27", "2025-26", "2024-25"] },
+  "Liga Portugal 2": { country: "Portugal", root: EUROPE, path: "portugal", file: "{season}_pt2.txt", seasons: ["2024-25"] },
   "Albanian Superliga": { country: "Albania", root: EUROPE, path: "albania", file: "{season}_al1.txt", seasons: ["2024-25"] },
   "Andorran Primera Divisió": { country: "Andorra", root: EUROPE, path: "andorra", file: "{season}_ad1.txt", seasons: ["2024-25"] },
   "Armenian Premier League": { country: "Armenia", root: EUROPE, path: "armenia", file: "{season}_am1.txt", seasons: ["2024-25"] },
@@ -84,25 +91,34 @@ function parseResultLine(line, leagueName, meta, season, date) {
   let value = line.trim().replace(/^\d{1,2}:\d{2}\s+/, "");
   if (!date || !value || /^[#▪(=]/.test(value)) return null;
   const scoreMatch = /(\d{1,2})\s*-\s*(\d{1,2})/.exec(value);
-  if (!scoreMatch) return null;
-  const prefix = value.slice(0, scoreMatch.index).trim();
-  let away = value.slice(scoreMatch.index + scoreMatch[0].length).trim();
-  away = away.replace(/^\(\d{1,2}\s*-\s*\d{1,2}\)\s*/, "").replace(/\s+@\s+.*$/, "").trim();
-  let home = prefix;
-  const versus = /\s+v(?:s)?\.?\s+/i.exec(prefix);
-  if (versus) {
-    home = prefix.slice(0, versus.index).trim();
-    away = prefix.slice(versus.index + versus[0].length).trim();
+  let home = "", away = "", goalsHome = null, goalsAway = null;
+  if (scoreMatch) {
+    const prefix = value.slice(0, scoreMatch.index).trim();
+    away = value.slice(scoreMatch.index + scoreMatch[0].length).trim();
+    away = away.replace(/^\(\d{1,2}\s*-\s*\d{1,2}\)\s*/, "").replace(/\s+@\s+.*$/, "").trim();
+    home = prefix;
+    const versus = /\s+v(?:s)?\.?\s+/i.exec(prefix);
+    if (versus) {
+      home = prefix.slice(0, versus.index).trim();
+      away = prefix.slice(versus.index + versus[0].length).trim();
+    }
+    goalsHome = Number(scoreMatch[1]);
+    goalsAway = Number(scoreMatch[2]);
+  } else {
+    const versus = /\s+v(?:s)?\.?\s+/i.exec(value);
+    if (!versus) return null;
+    home = value.slice(0, versus.index).trim();
+    away = value.slice(versus.index + versus[0].length).trim();
   }
   home = home.replace(/^\(\w+\)\s*/, "").replace(/\s+@\s+.*$/, "").trim();
   away = away.replace(/^\(\w+\)\s*/, "").replace(/\s+@\s+.*$/, "").trim();
   if (!home || !away || normalizeName(home) === normalizeName(away)) return null;
-  const goalsHome = Number(scoreMatch[1]), goalsAway = Number(scoreMatch[2]);
   const id = "oftxt-" + normalizeName(leagueName) + "-" + date + "-" + normalizeName(home) + "-" + normalizeName(away);
+  const finished = Number.isFinite(goalsHome) && Number.isFinite(goalsAway);
   return {
     provider: "openfootball-text",
     providers: ["openfootball-text"],
-    fixture: { id, date, kickoffPrecision: "date", status: { short: "FINISHED" } },
+    fixture: { id, date, kickoffPrecision: "date", status: { short: finished ? "FINISHED" : "SCHEDULED" } },
     league: { id: "oftxt-league-" + normalizeName(leagueName), name: leagueName, country: meta.country, season },
     teams: { home: { id: "oftxt-team-" + normalizeName(home), name: home }, away: { id: "oftxt-team-" + normalizeName(away), name: away } },
     goals: { home: goalsHome, away: goalsAway },
