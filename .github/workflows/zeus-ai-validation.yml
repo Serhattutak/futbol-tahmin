@@ -107,6 +107,33 @@ jobs:
             }
           })();
           NODE
+      - name: One-time live fixture coverage by date and league
+        if: always()
+        env:
+          ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
+        run: |
+          node <<'NODE'
+          const base = process.env.ZEUS_API_BASE_URL.replace(/\\/$/, "");
+          const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+          const p = Object.fromEntries(parts.map(x => [x.type, x.value]));
+          const today = new Date(Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day)));
+          const dates = ["2026-10-11", today.toISOString().slice(0, 10), new Date(today.getTime() + 86400000).toISOString().slice(0, 10)];
+          (async () => {
+            for (const date of [...new Set(dates)]) {
+              const response = await fetch(base + "/api/football-test?date=" + date, { signal: AbortSignal.timeout(25000) });
+              const body = await response.json();
+              if (!response.ok || body.success !== true || !Array.isArray(body.matches)) throw new Error("Fixture API invalid for " + date + ": HTTP " + response.status);
+              const leagues = {};
+              const providers = {};
+              for (const match of body.matches) {
+                const league = match.league?.name || "Unknown";
+                leagues[league] = (leagues[league] || 0) + 1;
+                for (const provider of (match.providers || match.sources || [match.provider]).filter(Boolean)) providers[provider] = (providers[provider] || 0) + 1;
+              }
+              console.log(JSON.stringify({ date, total: body.matches.length, source: body.source || null, stale: Boolean(body.stale), providerError: body.providerError || null, providers, leagueCounts: Object.fromEntries(Object.entries(leagues).sort((a,b)=>b[1]-a[1])) }));
+            }
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
