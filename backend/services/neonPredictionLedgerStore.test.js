@@ -15,9 +15,7 @@ function fakePool() {
         events.set(eventId, { event_id: eventId, ledger_id: ledgerId, event_type: type, payload: JSON.parse(payload) });
         return { rowCount: 1, rows: [{ event_id: eventId }] };
       }
-      if (sql.startsWith("SELECT event_id")) {
-        return { rows: [...events.values()] };
-      }
+      if (sql.startsWith("SELECT event_id")) return { rows: [...events.values()] };
       if (sql.startsWith("SELECT COUNT")) {
         const rows = [...events.values()];
         return { rows: [{ event_count: rows.length, prediction_count: rows.filter(e => e.event_type === "prediction").length, settlement_count: rows.filter(e => e.event_type === "settlement").length, conflict_count: rows.filter(e => e.event_type === "conflict").length }] };
@@ -44,14 +42,22 @@ test("prediction and settlement writes are idempotent", async () => {
   assert.deepEqual(events[0], prediction);
 });
 
-test("distinct conflict observations are retained while exact repeats deduplicate", async () => {
+test("conflict identity matches filesystem ledger: deduplicates equivalent scores, preserves different scores", async () => {
   const store = new NeonPredictionLedgerStore({ pool: fakePool() });
-  const first = { type: "conflict", ledgerId: "entry-1", evidence: [{ score: "1:0" }] };
-  const second = { type: "conflict", ledgerId: "entry-1", evidence: [{ score: "2:0" }] };
-  assert.notEqual(stableEventId(first), stableEventId(second));
+  const first = { type: "conflict", ledgerId: "entry-1", evidence: [
+    { provider: "a", home: 1, away: 0 }, { provider: "b", home: 2, away: 0 }
+  ] };
+  const sameScoresDifferentEvidence = { type: "conflict", ledgerId: "entry-1", detectedAt: "later", evidence: [
+    { provider: "b", home: 2, away: 0 }, { provider: "c", home: 1, away: 0 }
+  ] };
+  const differentScores = { type: "conflict", ledgerId: "entry-1", evidence: [
+    { provider: "d", home: 3, away: 0 }
+  ] };
+  assert.equal(stableEventId(first), stableEventId(sameScoresDifferentEvidence));
+  assert.notEqual(stableEventId(first), stableEventId(differentScores));
   assert.equal((await store.append(first)).saved, true);
-  assert.equal((await store.append(first)).saved, false);
-  assert.equal((await store.append(second)).saved, true);
+  assert.equal((await store.append(sameScoresDifferentEvidence)).saved, false);
+  assert.equal((await store.append(differentScores)).saved, true);
   assert.equal((await store.loadEvents()).length, 2);
 });
 
@@ -82,15 +88,11 @@ test("rejects unsupported event types and missing ledger identifiers before data
   assert.equal(calls, 0);
 });
 
-
 test("rejects persisted rows whose indexed columns disagree with the payload", async () => {
   const pool = fakePool();
   const event = { type: "prediction", ledgerId: "actual-id", snapshot: { homeProbability: 0.5 } };
   pool.events.set("prediction:other-id", {
-    event_id: "prediction:other-id",
-    ledger_id: "other-id",
-    event_type: "prediction",
-    payload: event
+    event_id: "prediction:other-id", ledger_id: "other-id", event_type: "prediction", payload: event
   });
   const store = new NeonPredictionLedgerStore({ pool });
   await assert.rejects(store.loadEvents(), /LEDGER_EVENT_COLUMN_MISMATCH/);
