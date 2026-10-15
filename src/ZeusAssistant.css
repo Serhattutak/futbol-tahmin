@@ -25,4 +25,4 @@
 .zeus-assistant-input button { width: 42px; border: 0; border-radius: 11px; color: #08130b; background: #b4ff68; font-size: 20px; font-weight: 900; cursor: pointer; }
 .zeus-assistant-input button:disabled { opacity: .35; cursor: not-allowed; }
 .zeus-assistant-footnote { margin: 0; padding: 0 14px 12px; color: #71857e; font-size: 9px; }
-@media (max-width: 480px) { .zeus-assistant-root { right: 12px; bottom: 82px; }.zeus-assistant-panel { max-height: calc(100dvh - 155px); } }
+@media (max-width: 480px) { .zeus-assistant-root { right: 12px; bottom: 82px; }.zeus-assistant-panel { max-height: calc(100dvh - 155px); }.zeus-assistant-launcher:not(.open) { width: 48px; height: 48px; min-height: 48px; padding: 4px; justify-content: center; gap: 0; }.zeus-assistant-launcher:not(.open) > span:not(.zeus-launcher-orb) { display: none; }.zeus-assistant-launcher.open { min-height: 44px; padding: 5px 12px; }.zeus-assistant-launcher.open .zeus-launcher-orb { width: 32px; height: 32px; } }
