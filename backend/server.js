@@ -15,6 +15,7 @@ const { getBookmakerOddsDetails } = require("./services/bookmakerOdds");
 const { HOME_ADVANTAGE, MODEL_VERSION, buildReasons, calculateConfidence, rankMarket, blendHistoricalMarkets, weightedStrength } = require("./services/predictionModel");
 const { DEFAULT_PATH: historicalArchivePath, readArchive, reconciledSettlement, saveSnapshot, settlePending, summarizeArchive } = require("./services/historicalArchive");
 const openFootball = require("./providers/openFootball");
+const openFootballText = require("./providers/openFootballText");
 const theSportsDb = require("./providers/theSportsDb");
 const sportmonks = require("./providers/sportmonks");
 const footballData = require("./providers/footballData");
@@ -110,6 +111,7 @@ const providerRegistry = new MultiProviderRegistry([
   createLegacyAdapter(sportmonks),
   createLegacyAdapter(footballData),
   createLegacyAdapter(openFootball),
+  createLegacyAdapter(openFootballText),
   createLegacyAdapter(theSportsDb),
   createLegacyAdapter(espn),
 ], { fixtureCacheFile: path.join(__dirname, "data", "fixture-cache.json"), historicalCacheFile: path.join(__dirname, "data", "historical-cache.json") });
