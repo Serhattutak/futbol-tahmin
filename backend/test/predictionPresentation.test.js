@@ -8,10 +8,12 @@ test("Market heading follows the selected actual model, including 4.0 fallback",
     [MODEL41]: { modelVersion: MODEL41, probabilities: { home: 0.5133 } },
   } };
   const original = structuredClone(response);
-  assert.equal(modelLabel(selectModelAnalysis(response, MODEL40)), "MODEL 4.0");
-  assert.equal(modelLabel(selectModelAnalysis(response, MODEL41)), "MODEL 4.1");
-  assert.equal(modelLabel(selectModelAnalysis({ ...response, model41Available: false }, MODEL41)), "MODEL 4.0");
-  assert.equal(modelLabel({}), "MODEL 4.0");
+  assert.equal(modelLabel(selectModelAnalysis(response, MODEL40)), "ZEUS AI");
+  assert.equal(modelLabel(selectModelAnalysis(response, MODEL41)), "ZEUS AI");
+  assert.equal(modelLabel(selectModelAnalysis({ ...response, model41Available: false }, MODEL41)), "ZEUS AI");
+  assert.equal(modelLabel({}), "ZEUS AI");
+  assert.equal(selectModelAnalysis(response).modelVersion, MODEL41, "eligible calibrated model is selected automatically");
+  assert.equal(selectModelAnalysis({ ...response, model41Available: false }).modelVersion, MODEL40, "baseline safely handles unavailable advanced model");
   assert.deepEqual(response, original);
   const app = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../src/App.jsx"), "utf8");
   const marketSection = app.slice(app.indexOf("function ModelMarkets("), app.indexOf("const MARKET_SECTIONS"));
