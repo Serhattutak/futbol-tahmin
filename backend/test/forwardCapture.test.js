@@ -102,6 +102,25 @@ test("Scheduler catches run rejection and stays alive without overlap", async t 
   await new Promise(resolve => setTimeout(resolve, 45)); s.capture.stopScheduler();
   assert.ok(calls > 0); assert.equal(s.capture.state.lastError, "SCHEDULER_ERROR"); assert.equal(s.capture.status().schedulerActive, false);
 });
+test("Scheduler catches up immediately after cold start when no recent run exists", async t => {
+  const s = setup(t, { config: { intervalMs: 60_000 } });
+  let calls = 0;
+  s.capture.run = async () => { calls++; return { capturedPredictions: 0 }; };
+  s.capture.startScheduler();
+  assert.equal(calls, 1);
+  assert.equal(s.capture.status().schedulerActive, true);
+  s.capture.stopScheduler();
+});
+
+test("Capture status explicitly marks missing and stale runs", async t => {
+  const s = setup(t);
+  assert.equal(s.capture.status().captureHealth, "never_run");
+  fs.mkdirSync(s.args.config.directory, { recursive: true });
+  fs.writeFileSync(path.join(s.args.config.directory, "status.json"), JSON.stringify({ lastRunAt: "2026-09-17T00:00:00.000Z", lastAttempts: {} }));
+  assert.equal(s.capture.status().captureHealth, "stale");
+  assert.ok(s.capture.status().lastRunAgeMs > s.args.config.intervalMs * 2);
+});
+
 test("Per-run quota defers work and subsequent runs rotate past insufficient fixtures", async t => {
   const s = setup(t, { fixtures: [fixture("a"), fixture("b")], ineligible: true, config: { maxAnalysesPerRun: 1 } });
   const first = await s.capture.run(); assert.equal(first.deferredFixtures, 1);

@@ -71,7 +71,11 @@ class ForwardCapture {
     try { state = JSON.parse(fs.readFileSync(path.join(this.config.directory, "status.json"), "utf8")); } catch { /* No completed run. */ }
     const rows = this.ledger.entries();
     const { lastAttempts: _attempts, ...publicState } = state;
-    return { ...publicState, isRunning: Boolean(this.running) || fs.existsSync(path.join(this.config.directory, "run.lock")), schedulerActive: Boolean(this.timer), nextRunAt: this.nextRunAt || null,
+    const lastRunMs = Date.parse(state.lastRunAt || "");
+    const lastRunAgeMs = Number.isFinite(lastRunMs) ? Math.max(0, this.now() - lastRunMs) : null;
+    const captureHealth = lastRunAgeMs === null ? "never_run" : lastRunAgeMs > this.config.intervalMs * 2 ? "stale" : "fresh";
+    return { ...publicState, lastRunAgeMs, captureHealth,
+      isRunning: Boolean(this.running) || fs.existsSync(path.join(this.config.directory, "run.lock")), schedulerActive: Boolean(this.timer), nextRunAt: this.nextRunAt || null,
       recordedPredictions: rows.length, recordedFixtures: new Set(rows.map(r => r.fixtureId)).size,
       window: { minLeadMinutes: this.config.minLeadMinutes, maxLeadMinutes: this.config.maxLeadMinutes } };
   }
@@ -179,12 +183,19 @@ class ForwardCapture {
   }
   startScheduler() {
     if (this.timer) return;
-    this.nextRunAt = iso(this.now() + this.config.intervalMs);
+    const now = this.now();
+    this.nextRunAt = iso(now + this.config.intervalMs);
     this.timer = setInterval(() => {
       this.nextRunAt = iso(this.now() + this.config.intervalMs);
       this.run().catch(error => { this.state.lastError = "SCHEDULER_ERROR"; this.logger({ type: "FORWARD_CAPTURE_SCHEDULER_ERROR", error: error.message }); });
     }, this.config.intervalMs);
     this.timer.unref?.();
+    // Free web services may sleep before the first interval fires. Catch up on
+    // startup when there is no recent run, but do not duplicate a fresh run.
+    const lastRunMs = Date.parse(this.state.lastRunAt || "");
+    if (!Number.isFinite(lastRunMs) || now - lastRunMs >= this.config.intervalMs) {
+      this.run().catch(error => { this.state.lastError = "SCHEDULER_ERROR"; this.logger({ type: "FORWARD_CAPTURE_SCHEDULER_ERROR", error: error.message }); });
+    }
   }
   stopScheduler() { clearInterval(this.timer); this.timer = null; this.nextRunAt = null; }
 }
