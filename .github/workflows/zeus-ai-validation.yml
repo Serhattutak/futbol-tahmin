@@ -33,6 +33,8 @@ jobs:
           }));
           console.log(JSON.stringify({ metadata: a.metadata?.vulnerabilities, vulnerabilities }, null, 2));
           NODE
+      - name: Enforce frontend high/critical audit threshold
+        run: npm audit --audit-level=high
       - name: Build frontend
         env:
           VITE_API_BASE_URL: http://127.0.0.1:3001
@@ -53,6 +55,9 @@ jobs:
           }));
           console.log(JSON.stringify({ metadata: a.metadata?.vulnerabilities, vulnerabilities }, null, 2));
           NODE
+      - name: Enforce backend high/critical audit threshold
+        working-directory: backend
+        run: npm audit --audit-level=high
       - name: Install Playwright for browser smoke test
         run: |
           npm install --no-save playwright
@@ -86,7 +91,7 @@ jobs:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: node .github/scripts/live-api-smoke.cjs
       - name: Read-only production ledger and provider diagnostics
-        if: always()
+        if: github.event_name == 'push'
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: |
@@ -107,8 +112,8 @@ jobs:
             }
           })();
           NODE
-      - name: One-time live fixture coverage by date and league
-        if: always()
+      - name: Live fixture coverage by date and league
+        if: github.event_name == 'push'
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: |
