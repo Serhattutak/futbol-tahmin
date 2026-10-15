@@ -1,6 +1,7 @@
 "use strict";
 
-const { snapshot } = require("./predictionLedger");
+const { snapshot, evaluate } = require("./predictionLedger");
+const { normalizeStatus } = require("./fixtureNormalization");
 const { stableEventId } = require("./neonPredictionLedgerStore");
 
 /**
@@ -18,6 +19,8 @@ class AsyncPredictionLedger {
     this.initialized = false;
     this.initializing = null;
     this.eventMap = new Map();
+    this.runningSettlement = null;
+    this.settlementCursor = 0;
   }
 
   async initialize() {
@@ -114,6 +117,90 @@ class AsyncPredictionLedger {
       });
     }
     return results;
+  }
+
+  async settle(ledgerId, fixtures) {
+    this.assertInitialized();
+    const record = this.entries().find(row => row.ledgerId === ledgerId);
+    if (!record) return { reason: "NOT_FOUND" };
+    if (this.now() < Date.parse(record.kickoffTime)) return { reason: "NOT_STARTED" };
+    const finals = (fixtures || []).filter(fixture =>
+      fixture.provider &&
+      record.providerFixtureIds?.[fixture.provider] != null &&
+      fixture.providerFixtureId != null &&
+      String(record.providerFixtureIds[fixture.provider]) === String(fixture.providerFixtureId) &&
+      normalizeStatus(fixture.status) === "FINISHED" &&
+      normalizeStatus(fixture.result?.status) === "FINISHED" &&
+      Number.isInteger(fixture.result.homeGoals) && fixture.result.homeGoals >= 0 &&
+      Number.isInteger(fixture.result.awayGoals) && fixture.result.awayGoals >= 0
+    );
+    if (!finals.length) return { reason: "NO_FINAL_RESULT" };
+    const scores = [...new Set(finals.map(f => `${f.result.homeGoals}:${f.result.awayGoals}`))];
+    const [home, away] = scores[0].split(":").map(Number);
+    const evidence = finals.map(f => ({
+      provider: f.provider,
+      providerFixtureId: f.providerFixtureId,
+      home: f.result.homeGoals,
+      away: f.result.awayGoals,
+    }));
+    const scoreChanged = record.resultStatus &&
+      (record.actualHomeGoals !== home || record.actualAwayGoals !== away);
+    if (scores.length > 1 || finals.some(f => f.dataConflict) || scoreChanged) {
+      await this.appendEvent({
+        type: "conflict", ledgerId,
+        detectedAt: new Date(this.now()).toISOString(),
+        evidence,
+      });
+      return { reason: "RESULT_CONFLICT" };
+    }
+    const event = {
+      type: "settlement",
+      ledgerId,
+      result: {
+        ...evaluate(record, home, away, this.now()),
+        resultProviders: evidence,
+        resultVerification: new Set(finals.map(f => f.provider)).size > 1 ? "verified" : "single_provider",
+      },
+    };
+    const saved = await this.appendEvent(event);
+    if (saved.saved) return { saved: true, reason: null };
+    const current = this.entries().find(row => row.ledgerId === ledgerId);
+    if (current && (current.actualHomeGoals !== home || current.actualAwayGoals !== away)) {
+      await this.appendEvent({
+        type: "conflict", ledgerId,
+        detectedAt: new Date(this.now()).toISOString(),
+        evidence,
+      });
+      return { reason: "RESULT_CONFLICT" };
+    }
+    return { saved: false, reason: "ALREADY_SETTLED" };
+  }
+
+  async settleFromProviders(getResults, limit = 10) {
+    this.assertInitialized();
+    if (this.runningSettlement) return this.runningSettlement;
+    this.runningSettlement = (async () => {
+      const groups = new Map();
+      for (const row of this.entries().filter(row => Date.parse(row.kickoffTime) <= this.now())) {
+        groups.set(row.fixtureId, [...(groups.get(row.fixtureId) || []), row]);
+      }
+      const all = [...groups.values()];
+      const results = [];
+      const count = Math.min(Math.max(0, limit), all.length);
+      for (let i = 0; i < count; i++) {
+        const rows = all[(this.settlementCursor + i) % all.length];
+        try {
+          const fixtures = await getResults(rows[0].providerFixtureIds);
+          for (const row of rows) results.push(await this.settle(row.ledgerId, fixtures));
+        } catch (error) {
+          results.push({ fixtureId: rows[0].fixtureId, reason: error.category || "PROVIDER_UNAVAILABLE" });
+          if (error.category === "quota") break;
+        }
+      }
+      this.settlementCursor = all.length ? (this.settlementCursor + count) % all.length : 0;
+      return results;
+    })().finally(() => { this.runningSettlement = null; });
+    return this.runningSettlement;
   }
 
   status() {
