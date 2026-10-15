@@ -126,3 +126,19 @@ test("OpenFootball text catalogue contains additional verified country and divis
   ]) assert.equal(openFootballText.supportsHistoricalLeague(league), true, league.name);
   assert.equal(openFootballText.supportsHistoricalLeague({ name: "Unknown League", country: "Unknown" }), false);
 });
+
+test("OpenFootball text source advances inferred year across winter season rollover", () => {
+  const matches = openFootballText.parseTextResults([
+    "= Example League 2024/25",
+    "Fri Dec 20 2024",
+    "  Home FC  2-1 (1-0)  Away FC",
+    "Sat Jan 11",
+    "  Home FC  0-0 (0-0)  Away FC",
+  ].join("\n"), "Danish Superliga", "2024-25");
+  assert.deepEqual(matches.map(match => match.fixture.date), ["2024-12-20", "2025-01-11"]);
+});
+
+test("OpenFootball text history is eligible for different competitions in a covered country", () => {
+  assert.equal(openFootballText.supportsHistoricalLeague({ name: "Liga Profesional Argentina", country: "Argentina" }), true);
+  assert.equal(openFootballText.supportsHistoricalLeague({ name: "Unknown league", country: "Unknown country" }), false);
+});
