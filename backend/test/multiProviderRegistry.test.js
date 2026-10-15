@@ -23,6 +23,8 @@ test("bilinen Ispanyol takim adi varyantlari ayni canonical takima eslenir", () 
   assert.equal(canonicalTeamId({ name: "Albacete Balompié" }), canonicalTeamId({ name: "Albacete" }));
   assert.equal(canonicalTeamId({ name: "AD Ceuta FC" }), canonicalTeamId({ name: "Ceuta" }));
   assert.equal(canonicalTeamId({ name: "Real Sporting de Gijón" }), canonicalTeamId({ name: "Sporting Gijón" }));
+  assert.equal(canonicalTeamId({ name: "SD Eibar" }), canonicalTeamId({ name: "Eibar" }));
+  assert.equal(canonicalTeamId({ name: "SD Huesca" }), canonicalTeamId({ name: "Huesca" }));
 });
 test("date-only fixture and timed fixture merge into one row and retain exact kickoff", () => {
   const dateOnly = { ...fixture("openfootball", "2025-10-12T00:00:00Z"), kickoffPrecision: "date", league: { name: "Segunda División", country: "Spain" }, homeTeam: { canonicalTeamId: "team:burgos", name: "Burgos CF" }, awayTeam: { canonicalTeamId: "team:valladolid", name: "Real Valladolid" }, providerFixtureIds: { openfootball: "of-match" } };
