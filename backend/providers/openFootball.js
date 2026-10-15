@@ -118,12 +118,6 @@ function calculateStandingsRows(fixtures, before) {
   return rows;
 }
 
-function previousSeasonKey(meta, date) {
-  const current = seasonKeyFor(meta, date);
-  if (meta.calendarYear) return String(Number(current) - 1);
-  const start = Number(current.slice(0, 4)) - 1;
-  return `${start}-${String(start + 1).slice(-2)}`;
-}
 function historicalSeasonKeys(meta, date, count = 5) {
   const current = seasonKeyFor(meta, date);
   if (meta.calendarYear) return Array.from({ length: count }, (_, index) => String(Number(current) - index));
