@@ -113,6 +113,7 @@ function normalizeNewsForTeams(payload, homeName, awayName, limit = 8) {
   const rows = Array.isArray(payload?.articles) ? payload.articles : Array.isArray(payload?.headlines) ? payload.headlines : Array.isArray(payload?.items) ? payload.items : [];
   const normalize = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const home = normalize(homeName); const away = normalize(awayName);
+  if (!home && !away) return [];
   return rows.map(row => {
     const item = row?.data || row;
     const headline = item?.headline || item?.title || item?.story?.headline || "";
@@ -120,7 +121,7 @@ function normalizeNewsForTeams(payload, homeName, awayName, limit = 8) {
     const href = item?.links?.web?.href || item?.link || item?.url || null;
     const published = item?.published || item?.lastModified || item?.date || null;
     return { headline: String(headline).trim(), description: String(description).trim(), url: typeof href === "string" ? href : null, published: typeof published === "string" ? published : null };
-  }).filter(item => item.headline && (normalize(item.headline + " " + item.description).includes(home) || normalize(item.headline + " " + item.description).includes(away)))
+  }).filter(item => { const text = normalize(item.headline + " " + item.description); return Boolean(item.headline && ((home && text.includes(home)) || (away && text.includes(away))); })
     .slice(0, limit);
 }
 async function getNewsForFixture(fixture) {
