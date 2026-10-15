@@ -3,6 +3,7 @@ const test = require("node:test");
 const sportmonks = require("../providers/sportmonks");
 const footballData = require("../providers/footballData");
 const openFootball = require("../providers/openFootball");
+const openFootballText = require("../providers/openFootballText");
 const espn = require("../providers/espn");
 
 test("Sportmonks fixture response canonical legacy formuna normalize edilir", () => {
@@ -79,4 +80,40 @@ test("ESPN scheduled fixtures with null scores stay scoreless; real zero scores 
   assert.equal(finished.goals.home, 0);
   assert.equal(finished.goals.away, 0);
   assert.equal(finished.fixture.status.short, "FINISHED");
+});
+
+test("OpenFootball text source parses dated results in both supported match-line layouts", () => {
+  const turkey = openFootballText.parseTextResults([
+    "= Turkey | Süper Lig 2026/27",
+    "▪ Regular Season - 1",
+    "Fri Aug 14 2026",
+    "  21:30   Galatasaray  2-2 (0-0)  Çorum",
+    "Sat Aug 15",
+    "  19:00   Atiker Konyaspor  0-1 (0-0)  Çaykur Rizespor",
+  ].join("\n"), "Süper Lig", "2026-27");
+  assert.equal(turkey.length, 2);
+  assert.deepEqual(turkey.map(match => [match.fixture.date, match.teams.home.name, match.teams.away.name, match.goals.home, match.goals.away]), [
+    ["2026-08-14", "Galatasaray", "Çorum", 2, 2],
+    ["2026-08-15", "Atiker Konyaspor", "Çaykur Rizespor", 0, 1],
+  ]);
+  const finland = openFootballText.parseTextResults("= Finland Veikkausliiga 2025\nSat Apr 5 2025\n  15:00  Ilves Tampere v HJK Helsinki 3-2 (1-2)", "Veikkausliiga", "2025");
+  assert.equal(finland.length, 1);
+  assert.equal(finland[0].teams.home.name, "Ilves Tampere");
+  assert.equal(finland[0].teams.away.name, "HJK Helsinki");
+  assert.equal(finland[0].fixture.date, "2025-04-05");
+  assert.equal(finland[0].fixture.status.short, "FINISHED");
+});
+
+test("OpenFootball text catalogue contains additional verified country and division datasets", () => {
+  for (const league of [
+    { name: "Swiss Challenge League", country: "Switzerland" },
+    { name: "Czech First League", country: "Czech Republic" },
+    { name: "Veikkausliiga", country: "Finland" },
+    { name: "Primera División Argentina", country: "Argentina" },
+    { name: "J1 League", country: "Japan" },
+    { name: "Chinese Super League", country: "China" },
+    { name: "Liga MX", country: "Mexico" },
+    { name: "Major League Soccer", country: "USA" },
+  ]) assert.equal(openFootballText.supportsHistoricalLeague(league), true, league.name);
+  assert.equal(openFootballText.supportsHistoricalLeague({ name: "Unknown League", country: "Unknown" }), false);
 });
