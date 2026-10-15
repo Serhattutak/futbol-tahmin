@@ -4,6 +4,7 @@ const { PredictionLedger } = require("../services/predictionLedger");
 const { NeonPredictionLedgerStore } = require("../services/neonPredictionLedgerStore");
 const { reconcileFilesystemEvents, compareEventSets } = require("../services/reconcileFilesystemLedger");
 const { stableEventId } = require("../services/neonPredictionLedgerStore");
+const { normalizePostgresConnectionString } = require("../services/postgresConnectionConfig");
 
 const APPLY_FLAG = "--apply";
 const APPLY_CONFIRMATION = "I_HAVE_VERIFIED_SOURCE_AND_TARGET";
@@ -23,7 +24,7 @@ async function main() {
   // Use the current filesystem source read-only. Never delete or mutate it.
   const sourceEvents = new PredictionLedger().events();
   const { Pool } = require("pg");
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({ connectionString: normalizePostgresConnectionString(process.env.DATABASE_URL) });
   try {
     const destinationStore = new NeonPredictionLedgerStore({ pool });
     await destinationStore.validateSchema();
