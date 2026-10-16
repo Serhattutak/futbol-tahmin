@@ -107,17 +107,25 @@ function discoverFeatureRules(rows, {
     const testBaseline = rate(testing, event);
     for (const candidate of candidatesFromTraining(training, keys)) {
       const train = evaluateRule(training, candidate, event);
-      if (train.n < minTrainSamples || train.rate === null || trainBaseline.rate === null) continue;
-      const trainLift = train.rate - trainBaseline.rate;
+      const trainComplement = rate(training.filter(row => !matches(row, candidate)), event);
+      if (train.n < minTrainSamples || trainComplement.n < minTrainSamples || train.rate === null || trainComplement.rate === null) continue;
+      // Compare the rule subgroup to its disjoint complement; comparing a subgroup
+      // with a baseline that contains the subgroup exaggerates apparent lift.
+      const trainLift = train.rate - trainComplement.rate;
       if (trainLift < minTrainLift) continue;
       const test = evaluateRule(testing, candidate, event);
-      const testLift = test.rate === null || testBaseline.rate === null ? null : test.rate - testBaseline.rate;
+      const testComplement = rate(testing.filter(row => !matches(row, candidate)), event);
+      const testLift = test.rate === null || testComplement.rate === null ? null : test.rate - testComplement.rate;
+      const sufficientHoldout = test.n >= minTestSamples && testComplement.n >= minTestSamples;
+      const status = !sufficientHoldout ? "INSUFFICIENT_HOLDOUT"
+        : testLift > 0 && test.low > testComplement.high ? "PROMISING_HOLDOUT"
+        : testLift > 0 ? "POSITIVE_BUT_UNCERTAIN" : "NOT_REPLICATED";
       findings.push({
         market,
         rule: { feature: candidate.key, operator: candidate.operator, value: candidate.value },
-        training: { ...train, baselineRate: trainBaseline.rate, lift: trainLift },
-        holdout: { ...test, baselineRate: testBaseline.rate, lift: testLift },
-        status: test.n < minTestSamples ? "INSUFFICIENT_HOLDOUT" : testLift > 0 && test.low > testBaseline.rate ? "PROMISING_HOLDOUT" : testLift > 0 ? "POSITIVE_BUT_UNCERTAIN" : "NOT_REPLICATED"
+        training: { ...train, baselineRate: trainBaseline.rate, comparisonRate: trainComplement.rate, lift: trainLift, comparisonSampleSize: trainComplement.n },
+        holdout: { ...test, baselineRate: testBaseline.rate, comparisonRate: testComplement.rate, lift: testLift, comparisonSampleSize: testComplement.n },
+        status
       });
     }
   }
@@ -134,8 +142,8 @@ function discoverFeatureRules(rows, {
       split: "Chronological; earliest rows train, latest rows holdout",
       featureTiming: "Caller must supply only features available before kickoff",
       thresholds: "Numeric quantiles and category levels derived from training rows only",
-      confidenceInterval: "95% Wilson interval; exploratory, not multiple-testing adjusted",
-      limitations: ["Feature mining is hypothesis generation, not proof of causality", "Promising holdout rules require another untouched forward period", "Do not tune on the holdout and then report that same holdout as independent"]
+      confidenceInterval: "95% Wilson intervals; promising status requires the rule subgroup's lower bound to exceed the disjoint complement's upper bound; exploratory and not multiple-testing adjusted",
+      limitations: ["Feature mining is hypothesis generation, not proof of causality", "Promising status is a conservative interval-separation screen, not a multiple-testing-adjusted significance claim", "Promising holdout rules require another untouched forward period", "Do not tune on the holdout and then report that same holdout as independent"]
     },
     dataset: { supplied: rows.length, valid: clean.length, training: training.length, holdout: testing.length, firstDate: clean[0]?.date ?? null, splitDate: testing[0]?.date ?? null, lastDate: clean.at(-1)?.date ?? null, featureKeys: keys },
     baseline: Object.fromEntries(markets.filter(m => OUTCOMES[m]).map(m => [m, { training: rate(training, OUTCOMES[m]), holdout: rate(testing, OUTCOMES[m]) }])),
