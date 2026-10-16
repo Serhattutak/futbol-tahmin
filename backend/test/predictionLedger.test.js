@@ -131,6 +131,14 @@ test("Ledger records and settles one hybrid recommendation without duplicating c
   const noBetRow = ledger.entries().find(row => row.fixtureId === "hybrid-no-bet" && row.usedModel === MODELS[0]);
   assert.equal(noBetRow.hybridStatus, "NO_BET");
   assert.equal(noBetRow.hybridMarket, null);
+  const forward = report(ledger.entries()).hybridRobot;
+  assert.equal(forward.totalDecisions, 2);
+  assert.equal(forward.selectedRecommendations, 1);
+  assert.equal(forward.noBetDecisions, 1);
+  assert.equal(forward.coverage, .5);
+  assert.equal(forward.scoredRecommendations, 1);
+  assert.equal(forward.hitRate, 0);
+  assert.ok(Math.abs(forward.brier - .64) < 1e-12);
 });
 test("0-0 settlement yields draw, all unders, and BTTS no", t => {
   const { ledger, time } = setup(t); save(ledger); time(AFTER); const id = ledger.entries()[0].ledgerId; ledger.settle(id, final(0, 0));
