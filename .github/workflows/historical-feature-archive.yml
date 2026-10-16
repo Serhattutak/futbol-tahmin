@@ -1,0 +1,54 @@
+name: ZEUS historical feature archive
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_season:
+        description: First season (YYYY-YY)
+        required: true
+        default: "2006-07"
+      to_season:
+        description: Last season (YYYY-YY)
+        required: true
+        default: "2025-26"
+  schedule:
+    - cron: "30 4 1 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  build-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Build public-domain historical feature archive
+        working-directory: backend
+        env:
+          FROM_SEASON: ${{ github.event.inputs.from_season || '2006-07' }}
+          TO_SEASON: ${{ github.event.inputs.to_season || '2025-26' }}
+        run: npm run archive:historical -- --from-season "$FROM_SEASON" --to-season "$TO_SEASON" --concurrency 5
+      - name: Discover candidate rules on chronological holdout
+        working-directory: backend
+        run: npm run discover:historical
+      - name: Upload historical archive and research report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeus-historical-feature-archive
+          path: |
+            backend/data/historical-feature-archive/rows.jsonl
+            backend/data/historical-feature-archive/report.json
+            backend/data/historical-feature-archive/feature-discovery-report.json
+          if-no-files-found: error
+          retention-days: 90
