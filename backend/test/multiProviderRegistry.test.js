@@ -139,3 +139,31 @@ test("Cross-source fixture aliases merge only within the same country", () => {
     make("other", "Super League", "Greece"),
   ]).length, 2);
 });
+
+
+test("cross-provider scheduled versus postponed status conflict fails closed", () => {
+  const scheduled = { ...fixture("api-football", "2026-10-16T15:00:00Z"), status: "SCHEDULED", result: null };
+  const postponed = { ...fixture("espn", "2026-10-16T15:00:00Z"), status: "POSTPONED", result: null };
+  const [merged] = reconcileFixtures([scheduled, postponed]);
+  assert.equal(merged.dataConflict, true);
+  assert.equal(merged.status, "UNKNOWN");
+  assert.equal(merged.result, null);
+  assert.deepEqual(merged.sources.sort(), ["api-football", "espn"]);
+});
+
+test("cross-provider finished versus scheduled conflict cannot retain a result", () => {
+  const finished = { ...fixture("api-football", "2026-10-16T15:00:00Z", 2, 0), status: "FINISHED" };
+  const scheduled = { ...fixture("espn", "2026-10-16T15:00:00Z"), status: "SCHEDULED", result: null };
+  const [merged] = reconcileFixtures([finished, scheduled]);
+  assert.equal(merged.dataConflict, true);
+  assert.equal(merged.status, "UNKNOWN");
+  assert.equal(merged.result, null);
+});
+
+test("equivalent provider status aliases do not create a false conflict", () => {
+  const scheduled = { ...fixture("api-football", "2026-10-16T15:00:00Z"), status: "NS", result: null };
+  const scheduledAlias = { ...fixture("espn", "2026-10-16T15:00:00Z"), status: "SCHEDULED", result: null };
+  const [merged] = reconcileFixtures([scheduled, scheduledAlias]);
+  assert.equal(merged.dataConflict, false);
+  assert.notEqual(merged.status, "UNKNOWN");
+});

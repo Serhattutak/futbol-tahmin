@@ -21,6 +21,7 @@ const sportmonks = require("./providers/sportmonks");
 const footballData = require("./providers/footballData");
 const espn = require("./providers/espn");
 const { normalizeStatus } = require("./services/fixtureNormalization");
+const { assessPreMatchFixture } = require("./services/preMatchDataQuality");
 const { MultiProviderRegistry, createLegacyAdapter, toFrontendFixture } = require("./services/multiProviderRegistry");
 
 const app = express();
@@ -1297,6 +1298,20 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
     // fan out an unbounded number of provider requests or wait for 200 sequential analyses.
     const ANALYSIS_CONCURRENCY = 4;
     await forEachConcurrent(candidates, ANALYSIS_CONCURRENCY, async (match) => {
+      const preMatchQuality = assessPreMatchFixture(match);
+      if (!preMatchQuality.eligible) {
+        diagnosticAnalyses.push({
+          success: false,
+          predictionEligible: false,
+          model: { confidence: 0 },
+          dataQuality: { score: 0, missing: preMatchQuality.reasons },
+          dataAvailability: { fixture: false, teamForm: { home: false, away: false }, h2h: false, odds: false, standings: false, apiXg: false },
+          fixture: { id: match.fixture?.id, date: match.fixture?.date, league: match.league?.name, home: match.teams?.home?.name, away: match.teams?.away?.name },
+          preMatchQuality,
+        });
+        console.log(JSON.stringify({ type: "PRE_MATCH_QUALITY_REJECTED", fixtureId: match.fixture?.id, reasons: preMatchQuality.reasons }));
+        return;
+      }
       try {
         const analysis = await analyzeFixture(String(match.fixture.id), { includeMatchStatistics: false, modelVersion: "MODEL_4_0" });
         diagnosticAnalyses.push(analysis);

@@ -60,7 +60,7 @@ function reconcileFixtures(fixtures) {
   const merged = new Map();
   for (const fixture of fixtures.filter(Boolean)) {
     const existing = [...merged.values()].find((item) => sameFixture(item, fixture));
-    if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
+    if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (normalizeStatus(existing.status) !== normalizeStatus(fixture.status)) { existing.dataConflict = true; existing.status = "UNKNOWN"; existing.result = null; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) { existing.dataConflict = true; existing.status = "UNKNOWN"; existing.result = null; } continue; }
     // Canonical IDs predate country-aware league matching. Keep distinct countries separate internally without changing persisted public IDs.
     const mergeKey = `${normalize(fixture.league?.country)}:${fixture.canonicalFixtureId || `${fixture.provider}:${fixture.providerFixtureId}`}`;
     merged.set(mergeKey, { ...fixture });
@@ -77,7 +77,8 @@ function reconcileFixtures(fixtures) {
     );
     if (!sameDay) { reconciled.push({ ...fixture }); continue; }
     const kickoffConflict = kickoffKey(sameDay.kickoff) !== kickoffKey(fixture.kickoff);
-    if (kickoffConflict) sameDay.dataConflict = true;
+    const statusConflict = normalizeStatus(sameDay.status) !== normalizeStatus(fixture.status);
+    if (kickoffConflict || statusConflict) { sameDay.dataConflict = true; sameDay.status = "UNKNOWN"; sameDay.result = null; }
     sameDay.sources = [...new Set([...(sameDay.sources || []), ...(fixture.sources || [])])];
     sameDay.providerTeams = { ...(sameDay.providerTeams || {}), ...(fixture.providerTeams || {}) };
     sameDay.providerFixtureIds = { ...(sameDay.providerFixtureIds || {}), ...(fixture.providerFixtureIds || {}) };
