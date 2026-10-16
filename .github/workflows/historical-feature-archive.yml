@@ -1,6 +1,14 @@
 name: ZEUS historical feature archive
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/historical-feature-archive.yml"
+      - "backend/package.json"
+      - "backend/scripts/buildHistoricalFeatureArchive.js"
+      - "backend/scripts/discoverHistoricalRules.js"
+      - "backend/services/featureDiscovery.js"
   workflow_dispatch:
     inputs:
       from_season:
