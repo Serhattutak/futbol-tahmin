@@ -65,7 +65,7 @@ const api = axios.create({ baseURL: API_URL, timeout: 10000, headers: { "x-apisp
 // Ücretli api-football sağlayıcısı tamamen devre dışı bırakıldı (disabled: true).
 // Yalnızca ücretsiz kaynaklar (OpenFootball, football-data.org ücretsiz tier, TheSportsDB) kullanılır.
 const upstream = new ApiFootballClient({ client: api, apiKey: process.env.API_FOOTBALL_KEY, dailyBudget: process.env.API_FOOTBALL_DAILY_BUDGET || 100, cacheLimit: process.env.API_FOOTBALL_CACHE_LIMIT || 500, disabled: true });
-const predictionStorePath = path.join(__dirname, "data", "predictions.json");
+const predictionStorePath = process.env.ZEUS_PREDICTION_STORE || path.join(__dirname, "data", "predictions.json");
 
 function readPredictionStore() {
   try {
@@ -602,27 +602,66 @@ function isFinishedFixture(fixture) {
   return normalizeStatus(fixture.fixture?.status?.short) === "FINISHED";
 }
 
+const SETTLEMENT_GIVE_UP_MS = 3 * 24 * 60 * 60 * 1000;
+
+// Fallback when the provider that issued the fixture id cannot be queried any more
+// (e.g. the removed api-football feed): find the same match in the merged daily
+// fixture list (same teams, kickoff within 20 minutes) and use its final score
+// only if it is FINISHED and the providers do not disagree on the score.
+async function findFinishedByTeams(record) {
+  const kickoff = Date.parse(record.date);
+  if (!Number.isFinite(kickoff)) return null;
+  const { localDateKey, similarTeam } = require("./services/localDayFixtures");
+  const day = localDateKey(record.date);
+  const { matches } = await getLocalDayFixtures(providerRegistry, day, toFrontendFixture);
+  return matches.find(match => isFinishedFixture(match) && !match.dataConflict
+    && Number.isInteger(match.goals?.home) && Number.isInteger(match.goals?.away)
+    && Math.abs(Date.parse(match.fixture?.date) - kickoff) <= 20 * 60 * 1000
+    && similarTeam(match.teams?.home?.name, record.homeTeam || record.home)
+    && similarTeam(match.teams?.away?.name, record.awayTeam || record.away)) || null;
+}
+
+function settleRecord(record, fixture, source) {
+  const successful = evaluatePredictionMarket(record, fixture);
+  record.resultVerificationStatus = "verified";
+  record.resultSource = source;
+  record.status = successful === null ? "no_data" : successful ? "won" : "lost";
+  record.result = `${fixture.goals?.home ?? "—"}-${fixture.goals?.away ?? "—"}`;
+  record.resultStatus = fixture.fixture?.status?.short;
+  record.completedAt = new Date().toISOString();
+}
+
 async function checkPendingPredictions(limit = 10) {
   const records = readPredictionStore();
   const pending = records.filter((record) => record.status === "pending").slice(0, limit);
   let changed = false;
 
   for (const record of pending) {
+    let failure = null;
     try {
       const fixtures = await providerRegistry.getResults(record.providerFixtureIds || { "api-football": String(record.fixtureId) });
       const settlement = reconciledSettlement(fixtures);
-      if (!settlement || settlement.resultVerificationStatus !== "verified") continue;
-      const fixture = toFrontendFixture(fixtures[0]);
-      record.resultVerificationStatus = "verified";
-      if (!fixture || !isFinishedFixture(fixture)) continue;
-      const successful = evaluatePredictionMarket(record, fixture);
-      record.status = successful === null ? "no_data" : successful ? "won" : "lost";
-      record.result = `${fixture.goals?.home ?? "â€”"}-${fixture.goals?.away ?? "â€”"}`;
-      record.resultStatus = fixture.fixture?.status?.short;
+      const fixture = settlement?.resultVerificationStatus === "verified" ? toFrontendFixture(fixtures[0]) : null;
+      if (fixture && isFinishedFixture(fixture)) { settleRecord(record, fixture, "provider-fixture-id"); changed = true; continue; }
+    } catch (error) {
+      failure = error.category || "provider_unavailable";
+    }
+    if (Date.parse(record.date) > Date.now() - 2 * 60 * 60 * 1000) continue; // not over yet
+    try {
+      const match = await findFinishedByTeams(record);
+      if (match) { settleRecord(record, match, `fixture-list:${(match.providers || [match.provider]).join("+")}`); changed = true; continue; }
+    } catch (error) { failure ||= error.category || "provider_unavailable"; }
+    if (Date.parse(record.date) < Date.now() - SETTLEMENT_GIVE_UP_MS) {
+      // Never guess a result: after three days without a verifiable score the record is
+      // closed as unverifiable and excluded from success-rate statistics.
+      record.status = "unverifiable";
+      record.resultVerificationStatus = "unverifiable";
+      record.unverifiableReason = failure || "result_not_found";
       record.completedAt = new Date().toISOString();
       changed = true;
-    } catch (error) {
-      console.warn(`Tahmin sonucu kontrol edilemedi: ${record.fixtureId}`);
+      console.warn(JSON.stringify({ type: "SETTLEMENT_UNVERIFIABLE", fixtureId: record.fixtureId, reason: record.unverifiableReason }));
+    } else if (failure) {
+      console.warn(JSON.stringify({ type: "SETTLEMENT_RETRY", fixtureId: record.fixtureId, reason: failure }));
     }
   }
 
@@ -1500,6 +1539,6 @@ if (require.main === module) {
 // dışa aktarımlar (testlerin ve diğer modüllerin kullandığı) fonksiyona özellik
 // olarak eklenerek korunur; hiçbir mevcut import kırılmaz.
 module.exports = app;
-Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
+Object.assign(module.exports, { app, checkPendingPredictions, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
 
 
