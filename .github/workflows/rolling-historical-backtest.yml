@@ -54,13 +54,13 @@ jobs:
       - name: Compare OpenFootball results with ESPN
         working-directory: backend
         env:
-          ZEUS_CROSSCHECK_OUTPUT: artifacts/independent-result-crosscheck.json
-        run: node scripts/runIndependentResultCrosscheck.js
+          ZEUS_SOURCE_AUDIT_OUTPUT: ../artifacts/independent-result-crosscheck.json
+        run: node scripts/auditHistoricalSourceAgreement.js
       - name: Upload independent result cross-check
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zeus-independent-result-crosscheck
-          path: backend/artifacts/independent-result-crosscheck.json
+          path: artifacts/independent-result-crosscheck.json
           if-no-files-found: warn
           retention-days: 30
