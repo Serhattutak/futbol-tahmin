@@ -49,7 +49,6 @@ async function runIndependentResultCrosscheck({ now = new Date(), days = 30, lea
     }
   });
 
-  const archive = (await openFootball.getFixtures(to)).filter(isFinal);
   // Current-day archive endpoints are not sufficient for a rolling window; load each season's history.
   const archiveRows = [];
   const seasons = ["2025-26", "2026-27"];
