@@ -154,6 +154,9 @@ jobs:
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
+      - name: Evaluate fixed hybrid robot gates on locked Model 4.1 test set (read-only)
+        working-directory: backend
+        run: node scripts/evaluateHybridRobot.js
       - name: Run offline historical coverage replay (no provider calls or ledger writes)
         working-directory: backend
         run: node scripts/auditHistoricalCoverageV2.js
