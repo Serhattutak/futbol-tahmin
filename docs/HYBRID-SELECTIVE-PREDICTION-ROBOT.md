@@ -37,6 +37,9 @@ Interpretation: the observed aggregate result clears the 75% point-estimate targ
 
 - Model 4.0 remains the default model.
 - Model 4.1 remains the locked calibrated model.
-- Hybrid recommendations are exposed as a separate `hybridRobot` field and saved alongside shadow records; the existing model outputs are not overwritten.
+- Hybrid recommendations are exposed as a separate `hybridRobot` field and saved alongside shadow records.
+- Forward ledger capture stores one hybrid decision on the Model 4.0 snapshot per fixture, including `RECOMMEND` or `NO_BET`, selected market, model probabilities, and disagreement. Settlement calculates the selected-market hit and Brier score from the verified final score.
+- `/api/ledger/performance` reports hybrid total decisions, coverage, selected/pending/settled/conflicted counts, realised hit rate, Brier score, and market-level results. Hit rate is calculated only from settled, conflict-free selected recommendations; NO_BET decisions count toward coverage but not hit rate.
+- These forward metrics are live evidence only after new predictions are captured and later settled. Existing 20 staging events predate this change and contain no hybrid settlements.
 - Production deployment, production database writes, changing the active model, and merging release PRs remain separately gated by explicit approval.
 - This test set overlaps the historical window used by the earlier Model 4.0 benchmark and is not an external future-season validation. Live forward-performance collection remains necessary.
