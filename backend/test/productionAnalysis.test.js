@@ -99,6 +99,12 @@ test("Shadow uses real inputs, calibrated probabilities, and preserves Model 4.0
   const s = await service(); const result = await s.analyze("real-fixture");
   const original = analyzeCollectedFixture(sanitizeHistoryAsOf(await realInput(), now), { now, persist: false });
   assert.equal(result.modelVersion, MODEL_4_0); assert.equal(result.MODEL_4_1_READY, true);
+  assert.equal(result.hybridRobot.version, "HYBRID_SELECTIVE_1.0");
+  assert.ok(["RECOMMEND", "NO_BET"].includes(result.hybridRobot.status));
+  if (result.hybridRobot.status === "RECOMMEND") {
+    assert.ok(result.hybridRobot.recommendation.probability >= 0.75);
+    assert.ok(result.hybridRobot.recommendation.disagreement <= 0.10);
+  } else assert.ok(result.hybridRobot.reason);
   assert.deepEqual(result.probabilities, original.probabilities);
   const advanced = result.models[MODEL_4_1];
   const calibrated = M.calibrate(advanced.model.rawProbabilities, loadArtifact().artifact.calibration);
