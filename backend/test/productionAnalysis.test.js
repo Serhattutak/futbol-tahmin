@@ -278,3 +278,16 @@ test("Capture mode can retain actual 4.1 inference when the standalone 4.0 path 
   assert.equal(result.models[MODEL_4_0], null); assert.equal(result.modelVersion, MODEL_4_1); assert.ok(result.probabilities.home > 0);
   await assert.rejects(() => s.analyze("normal"), /standalone model 4.0 failed/);
 });
+
+
+test("ProductionAnalysis exposes the hybrid recommendation without replacing Model 4.0", async () => {
+  const s = await service();
+  const result = await s.analyze("hybrid-integration");
+  assert.equal(result.modelVersion, MODEL_4_0);
+  assert.equal(result.hybridRobot.version, "HYBRID_SELECTIVE_1.0");
+  assert.ok(["RECOMMEND", "NO_BET"].includes(result.hybridRobot.status));
+  assert.deepEqual(result.probabilities, result.models[MODEL_4_0].probabilities);
+  assert.ok(result.records || s.records.size === 1);
+  const stored = [...s.records.values()][0];
+  assert.equal(stored.hybridRobot.version, "HYBRID_SELECTIVE_1.0");
+});
