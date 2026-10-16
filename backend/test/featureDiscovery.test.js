@@ -31,7 +31,7 @@ test("feature discovery uses a chronological holdout and reports dataset provena
   assert.equal(report.dataset.training, 140);
   assert.equal(report.dataset.holdout, 60);
   assert.equal(report.dataset.splitDate, makeRows()[140].date);
-  assert.equal(report.methodology.split, "Chronological; earliest rows train, latest rows holdout");
+  assert.equal(report.methodology.split, "Chronological calendar-day boundary; all rows from a target day stay in one partition");
   assert.ok(report.findings.every(row => Number.isFinite(row.training.rate)));
 });
 
