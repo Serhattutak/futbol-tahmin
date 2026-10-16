@@ -94,9 +94,12 @@ function discoverFeatureRules(rows, {
     const expected = row.homeGoals > row.awayGoals ? "H" : row.homeGoals < row.awayGoals ? "A" : "D";
     return row.outcome === expected;
   }).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
-  const splitIndex = Math.floor(clean.length * trainFraction);
-  const training = clean.slice(0, splitIndex);
-  const testing = clean.slice(splitIndex);
+  // Split on a calendar-day boundary so matches played on the same day
+  // cannot be divided between training and holdout by row ordering.
+  const splitIndex = Math.min(clean.length - 1, Math.floor(clean.length * trainFraction));
+  const splitDate = splitIndex >= 0 ? clean[splitIndex]?.date.slice(0, 10) : null;
+  const training = splitDate ? clean.filter(row => row.date.slice(0, 10) < splitDate) : [];
+  const testing = splitDate ? clean.filter(row => row.date.slice(0, 10) >= splitDate) : [];
   const keys = featureKeys || [...new Set(training.flatMap(row => Object.keys(row.features || {})))].sort();
   const findings = [];
 
@@ -139,7 +142,7 @@ function discoverFeatureRules(rows, {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     methodology: {
-      split: "Chronological; earliest rows train, latest rows holdout",
+      split: "Chronological calendar-day boundary; all rows from a target day stay in one partition",
       featureTiming: "Caller must supply only features available before kickoff",
       thresholds: "Numeric quantiles and category levels derived from training rows only",
       confidenceInterval: "95% Wilson intervals; promising status requires the rule subgroup's lower bound to exceed the disjoint complement's upper bound; exploratory and not multiple-testing adjusted",
