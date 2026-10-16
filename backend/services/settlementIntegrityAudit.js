@@ -37,6 +37,10 @@ function auditSettlementIntegrity(events) {
       addIssue("EVENT_IDENTITY_MISSING", nonEmptyString(event.ledgerId) ? event.ledgerId : null, index);
       return;
     }
+    if (!["prediction", "settlement", "conflict"].includes(event.type)) {
+      addIssue("UNKNOWN_EVENT_TYPE", event.ledgerId, index);
+      return;
+    }
     let eventId;
     try {
       eventId = stableEventId(event);
@@ -59,8 +63,6 @@ function auditSettlementIntegrity(events) {
       settlementIds.add(event.ledgerId);
     } else if (event.type === "conflict") {
       conflictIds.add(event.ledgerId);
-    } else {
-      addIssue("UNKNOWN_EVENT_TYPE", event.ledgerId, index);
     }
   });
 
