@@ -59,6 +59,16 @@ async function runRollingHistoricalBacktest({ now = new Date(), load = loadHisto
   const run = (from, to) => runChronologicalBenchmark(fixtures.fixtures, { from, to, now: Date.parse(asOf + "T23:59:59.999Z") });
   const yearly = run(oneYearFrom, dateOffset(asOf, -1));
   const monthly = run(oneMonthFrom, dateOffset(asOf, -1));
+  const coverage = report => {
+    const actualTo = report.evaluation?.actualTo ? isoDay(report.evaluation.actualTo) : null;
+    const requestedTo = report.evaluation?.to || null;
+    const stalenessDays = actualTo && requestedTo
+      ? Math.round((Date.parse(requestedTo + "T00:00:00Z") - Date.parse(actualTo + "T00:00:00Z")) / DAY_MS)
+      : null;
+    return { requestedTo, actualTo, stalenessDays, freshWithinSevenDays: stalenessDays !== null && stalenessDays >= 0 && stalenessDays <= 7 };
+  };
+  const monthlyCoverage = coverage(monthly);
+  const yearlyCoverage = coverage(yearly);
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -70,13 +80,13 @@ async function runRollingHistoricalBacktest({ now = new Date(), load = loadHisto
         from: oneMonthFrom, to: dateOffset(asOf, -1),
         candidates: monthly.candidates, evaluated: monthly.evaluated, skipped: monthly.skipped,
         baselineModel: marketSummary(monthly, "baseline"), currentModel: marketSummary(monthly, "stats"),
-        evaluation: monthly.evaluation, datasetHash: monthly.datasetHash, pairedSampleHash: monthly.pairedSampleHash,
+        evaluation: monthly.evaluation, coverage: monthlyCoverage, datasetHash: monthly.datasetHash, pairedSampleHash: monthly.pairedSampleHash,
       },
       last365Days: {
         from: oneYearFrom, to: dateOffset(asOf, -1),
         candidates: yearly.candidates, evaluated: yearly.evaluated, skipped: yearly.skipped,
         baselineModel: marketSummary(yearly, "baseline"), currentModel: marketSummary(yearly, "stats"),
-        evaluation: yearly.evaluation, datasetHash: yearly.datasetHash, pairedSampleHash: yearly.pairedSampleHash,
+        evaluation: yearly.evaluation, coverage: yearlyCoverage, datasetHash: yearly.datasetHash, pairedSampleHash: yearly.pairedSampleHash,
       },
     },
     data: {
@@ -97,8 +107,14 @@ if (require.main === module) {
       fs.writeFileSync(output, JSON.stringify(report, null, 2) + "\n");
     }
     console.log(JSON.stringify(report, null, 2));
-    if (report.windows.last365Days.evaluated < 500) {
-      console.error("Historical eligible sample is below 500; report is incomplete.");
+    const staleWindows = Object.entries(report.windows).filter(([, window]) => !window.coverage?.freshWithinSevenDays).map(([name]) => name);
+    if (report.windows.last365Days.evaluated < 500 || staleWindows.length) {
+      console.error(JSON.stringify({
+        type: "ROLLING_HISTORICAL_BACKTEST_INCOMPLETE",
+        insufficientAnnualSample: report.windows.last365Days.evaluated < 500,
+        staleWindows,
+        message: "Do not treat stale or incomplete source coverage as a current performance result."
+      }));
       process.exitCode = 1;
     }
   }).catch(error => {
