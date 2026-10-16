@@ -204,3 +204,56 @@ test("validates destination schema before loading any events", async () => {
   await assert.rejects(invalidLedger.initialize(), /LEDGER_SCHEMA_INVALID/);
   assert.throws(() => invalidLedger.entries(), /ASYNC_LEDGER_NOT_INITIALIZED/);
 });
+
+
+test("settlement fails closed for missing or malformed kickoff timestamps", async () => {
+  for (const kickoffTime of [undefined, "not-a-date"]) {
+    const prediction = {
+      type: "prediction", ledgerId: "invalid-kickoff-" + String(kickoffTime),
+      snapshot: {
+        ledgerId: "invalid-kickoff-" + String(kickoffTime),
+        predictionCreatedAt: "2026-10-01T10:00:00.000Z",
+        kickoffTime,
+        fixtureId: "fixture-invalid-kickoff",
+        providerFixtureIds: { alpha: "alpha-id" },
+      },
+    };
+    const ledger = new AsyncPredictionLedger({
+      store: fakeStore([prediction]),
+      now: () => Date.parse("2026-10-05T00:00:00.000Z"),
+    });
+    await ledger.initialize();
+    const result = await ledger.settle(prediction.ledgerId, [{
+      provider: "alpha", providerFixtureId: "alpha-id", status: "FINISHED",
+      result: { status: "FINISHED", homeGoals: 2, awayGoals: 0 },
+    }]);
+    assert.deepEqual(result, { reason: "UNKNOWN_KICKOFF" });
+    assert.equal(ledger.status().settlementCount, 0);
+  }
+});
+
+test("settlement ignores unfinished, malformed-score, and mismatched fixture evidence", async () => {
+  const prediction = {
+    type: "prediction", ledgerId: "settle-invalid-evidence",
+    snapshot: {
+      ledgerId: "settle-invalid-evidence",
+      predictionCreatedAt: "2026-10-01T10:00:00.000Z",
+      kickoffTime: "2026-10-01T12:00:00.000Z",
+      fixtureId: "fixture-evidence",
+      providerFixtureIds: { alpha: "alpha-id" },
+    },
+  };
+  const ledger = new AsyncPredictionLedger({
+    store: fakeStore([prediction]),
+    now: () => Date.parse("2026-10-05T00:00:00.000Z"),
+  });
+  await ledger.initialize();
+  const invalidEvidence = [
+    { provider: "alpha", providerFixtureId: "alpha-id", status: "LIVE", result: { status: "LIVE", homeGoals: 2, awayGoals: 0 } },
+    { provider: "alpha", providerFixtureId: "alpha-id", status: "FINISHED", result: { status: "FINISHED", homeGoals: -1, awayGoals: 0 } },
+    { provider: "alpha", providerFixtureId: "wrong-id", status: "FINISHED", result: { status: "FINISHED", homeGoals: 2, awayGoals: 0 } },
+  ];
+  assert.deepEqual(await ledger.settle(prediction.ledgerId, invalidEvidence), { reason: "NO_FINAL_RESULT" });
+  assert.equal(ledger.status().settlementCount, 0);
+  assert.equal(ledger.status().conflictCount, 0);
+});
