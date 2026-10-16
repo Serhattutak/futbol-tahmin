@@ -11,7 +11,8 @@
     "model41:prepare": "node scripts/runModel41.js --prepare",
     "model41:final": "node scripts/runModel41.js --final",
     "archive:historical": "node scripts/buildHistoricalFeatureArchive.js",
-    "discover:historical": "node scripts/discoverHistoricalRules.js"
+    "discover:historical": "node scripts/discoverHistoricalRules.js",
+    "discover:historical:walk-forward": "node scripts/discoverHistoricalRulesWalkForward.js"
   },
   "keywords": [],
   "author": "",
