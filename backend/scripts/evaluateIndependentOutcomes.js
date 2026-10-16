@@ -223,10 +223,9 @@ function scoreBlendRows(rows, marketWeight) {
   for (const row of rows) {
     addProbabilities(model, row.model, row.winner);
     addProbabilities(market, row.market, row.winner);
-    addProbabilities(blend, averageProbabilities(
-      { home: row.model.home * (1 - marketWeight), draw: row.model.draw * (1 - marketWeight), away: row.model.away * (1 - marketWeight) },
-      { home: row.market.home * marketWeight, draw: row.market.draw * marketWeight, away: row.market.away * marketWeight }
-    ), row.winner);
+    const combined = Object.fromEntries(["home", "draw", "away"].map(key =>
+      [key, row.model[key] * (1 - marketWeight) + row.market[key] * marketWeight]));
+    addProbabilities(blend, combined, row.winner);
   }
   return { sampleSize: rows.length, model: summarize(model), market: summarize(market), blend: summarize(blend) };
 }
