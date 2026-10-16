@@ -198,4 +198,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { LEAGUES, SEASONS, loadHistoricalFixtures, marketSummary, compareModelOutputs, runRollingHistoricalBacktest };
+module.exports = { LEAGUES, SEASONS, loadHistoricalFixtures, loadRecentESPNFixtures, mergeHistoricalFixtures, fixtureIdentity, marketSummary, compareModelOutputs, runRollingHistoricalBacktest };
