@@ -154,6 +154,19 @@ jobs:
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
+      - name: Smoke-test public-domain historical archive and feature discovery (read-only)
+        if: github.event_name == 'pull_request'
+        working-directory: backend
+        run: |
+          npm run archive:historical -- --from-season 2024-25 --to-season 2024-25 --concurrency 5 --out /tmp/zeus-historical-smoke
+          node <<'NODE'
+          const report = require("/tmp/zeus-historical-smoke/report.json");
+          console.log(JSON.stringify({ totals: report.totals, firstDate: report.firstDate, lastDate: report.lastDate, featureCount: report.featureCount }));
+          if (!report.rowCount || !report.totals.downloaded) throw new Error("Historical source smoke test returned no completed matches.");
+          if (report.totals.errors / report.totals.requestedLeagueSeasons > 0.10) throw new Error("Too many source request errors; archive coverage is unreliable.");
+          NODE
+          npm run discover:historical -- --input /tmp/zeus-historical-smoke/rows.jsonl --out /tmp/zeus-historical-smoke/feature-discovery-report.json --min-train-samples 50 --min-holdout-samples 30
+          node -e 'const r=require("/tmp/zeus-historical-smoke/feature-discovery-report.json"); if(r.dataset.valid < 100) throw new Error("Too few rows for smoke test"); console.log(JSON.stringify({dataset:r.dataset,summary:r.summary}));'
       - name: Evaluate fixed hybrid robot gates on locked Model 4.1 test set (read-only)
         working-directory: backend
         run: node scripts/evaluateHybridRobot.js

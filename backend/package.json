@@ -9,7 +9,9 @@
     "capture:forward": "node scripts/runForwardCapture.js",
     "backtest": "node scripts/runBacktest.js",
     "model41:prepare": "node scripts/runModel41.js --prepare",
-    "model41:final": "node scripts/runModel41.js --final"
+    "model41:final": "node scripts/runModel41.js --final",
+    "archive:historical": "node scripts/buildHistoricalFeatureArchive.js",
+    "discover:historical": "node scripts/discoverHistoricalRules.js"
   },
   "keywords": [],
   "author": "",

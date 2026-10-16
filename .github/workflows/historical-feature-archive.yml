@@ -1,0 +1,73 @@
+name: ZEUS historical feature archive
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/historical-feature-archive.yml"
+      - "backend/package.json"
+      - "backend/scripts/buildHistoricalFeatureArchive.js"
+      - "backend/scripts/discoverHistoricalRules.js"
+      - "backend/services/featureDiscovery.js"
+  workflow_dispatch:
+    inputs:
+      from_season:
+        description: First season (YYYY-YY)
+        required: true
+        default: "2006-07"
+      to_season:
+        description: Last season (YYYY-YY)
+        required: true
+        default: "2025-26"
+  schedule:
+    - cron: "30 4 1 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  build-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Build public-domain historical feature archive
+        working-directory: backend
+        env:
+          FROM_SEASON: ${{ github.event.inputs.from_season || '2006-07' }}
+          TO_SEASON: ${{ github.event.inputs.to_season || '2025-26' }}
+        run: npm run archive:historical -- --from-season "$FROM_SEASON" --to-season "$TO_SEASON" --concurrency 5
+      - name: Validate archive coverage and provider errors
+        working-directory: backend
+        run: |
+          node <<'NODE'
+          const report = require("./data/historical-feature-archive/report.json");
+          const total = report.totals.requestedLeagueSeasons;
+          const errors = report.totals.errors;
+          console.log(JSON.stringify(report.totals));
+          if (!report.rowCount || !total) throw new Error("Historical archive is empty.");
+          if (errors / total > 0.10) throw new Error("More than 10% of source requests failed; inspect provider errors before trusting this run.");
+          NODE
+      - name: Discover candidate rules on chronological holdout
+        working-directory: backend
+        run: npm run discover:historical
+      - name: Upload historical archive and research report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeus-historical-feature-archive
+          path: |
+            backend/data/historical-feature-archive/rows.jsonl
+            backend/data/historical-feature-archive/report.json
+            backend/data/historical-feature-archive/feature-discovery-report.json
+          if-no-files-found: error
+          retention-days: 90
