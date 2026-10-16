@@ -35,7 +35,28 @@ function report(entries) {
     if (a && b) pairedCandidates.push({ ...a, pair: [a, b], predictionCreatedAt: a.predictionCreatedAt > b.predictionCreatedAt ? a.predictionCreatedAt : b.predictionCreatedAt });
   }
   const pairs = earliest(pairedCandidates, r => r.fixtureId).filter(r => r.pair.every(clean) && r.pair[0].actualHomeGoals === r.pair[1].actualHomeGoals && r.pair[0].actualAwayGoals === r.pair[1].actualAwayGoals);
-  return { source: "production_prediction_ledger", policy: "Earliest snapshot per fixture/model; paired comparison requires the same input fingerprint and kickoff. Conflicts excluded. No backtest data.", models,
+  // Hybrid decisions are attached only to the earliest Model 4.0 snapshot to
+  // avoid counting the same fixture twice. NO_BET decisions remain in the
+  // denominator for coverage but not in the hit-rate denominator.
+  const hybridDecisions = earliest(entries.filter(r => r.usedModel === MODELS[0] && r.hybridRobotVersion), r => r.fixtureId);
+  const hybridSelected = hybridDecisions.filter(r => r.hybridStatus === "RECOMMEND");
+  const hybridScored = hybridSelected.filter(r => clean(r) && typeof r.hybridPredictionCorrect === "boolean");
+  const hybridAverage = key => hybridScored.length ? hybridScored.reduce((sum, r) => sum + Number(r[key]), 0) / hybridScored.length : null;
+  const hybridRobot = {
+    totalDecisions: hybridDecisions.length,
+    selectedRecommendations: hybridSelected.length,
+    noBetDecisions: hybridDecisions.filter(r => r.hybridStatus === "NO_BET").length,
+    coverage: hybridDecisions.length ? hybridSelected.length / hybridDecisions.length : null,
+    settledRecommendations: hybridSelected.filter(r => r.resultStatus === "settled").length,
+    pendingRecommendations: hybridSelected.filter(r => !r.resultStatus).length,
+    conflictedRecommendations: hybridSelected.filter(r => r.conflicts.length).length,
+    scoredRecommendations: hybridScored.length,
+    smallSample: hybridScored.length < 100,
+    hitRate: hybridAverage("hybridPredictionCorrect"),
+    brier: hybridAverage("hybridBrier"),
+    markets: groupMetrics(hybridScored, r => r.hybridMarket || "Unknown"),
+  };
+  return { source: "production_prediction_ledger", policy: "Earliest snapshot per fixture/model; paired comparison requires the same input fingerprint and kickoff. Conflicts excluded. No backtest data.", models, hybridRobot,
     comparison: { sampleSize: pairs.length, smallSample: pairs.length < 100, models: Object.fromEntries(MODELS.map((m, i) => [m, metrics(pairs.map(r => r.pair[i]))])) } };
 }
 function mountLedgerRoutes(app, ledger) {
