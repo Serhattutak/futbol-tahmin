@@ -1,0 +1,102 @@
+"use strict";
+
+const crypto = require("node:crypto");
+
+const TABLE = "public.zeus_prediction_ledger_events";
+const EVENT_TYPES = new Set(["prediction", "settlement", "conflict"]);
+
+function stableEventId(event) {
+  if (!event || !EVENT_TYPES.has(event.type) || typeof event.ledgerId !== "string" || !event.ledgerId) {
+    throw new TypeError("INVALID_LEDGER_EVENT");
+  }
+  if (event.type === "prediction" || event.type === "settlement") {
+    return `${event.type}:${event.ledgerId}`;
+  }
+  // Match the filesystem ledger's conflict identity: distinct score outcomes,
+  // not provider evidence ordering or incidental metadata.
+  if (!Array.isArray(event.evidence)) throw new TypeError("INVALID_CONFLICT_EVIDENCE");
+  const scores = [...new Set(event.evidence.map(item => {
+    if (!Number.isInteger(item?.home) || item.home < 0 || !Number.isInteger(item?.away) || item.away < 0) {
+      throw new TypeError("INVALID_CONFLICT_EVIDENCE");
+    }
+    return `${item.home}:${item.away}`;
+  }))].sort();
+  if (scores.length < 1) throw new TypeError("INVALID_CONFLICT_EVIDENCE");
+  return `conflict:${event.ledgerId}:${crypto.createHash("sha256").update(JSON.stringify(scores)).digest("hex")}`;
+}
+
+/**
+ * PostgreSQL event-store adapter. The caller owns the Pool lifecycle.
+ * It is intentionally independent from PredictionLedger's synchronous
+ * filesystem API until async startup/restore semantics are wired and tested.
+ */
+class NeonPredictionLedgerStore {
+  constructor({ pool, table = TABLE } = {}) {
+    if (!pool || typeof pool.query !== "function") throw new TypeError("POSTGRES_POOL_REQUIRED");
+    if (typeof table !== "string" || !/^public\.[a-z_][a-z0-9_]*$/.test(table)) throw new TypeError("INVALID_LEDGER_TABLE");
+    this.pool = pool;
+    this.table = table;
+  }
+
+  async validateSchema() {
+    const tableName = this.table.slice("public.".length);
+    const result = await this.pool.query(
+      "SELECT column_name, data_type, udt_name, is_nullable FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2",
+      ["public", tableName]
+    );
+    const columns = new Map((result.rows || []).map(row => [row.column_name, row]));
+    const required = {
+      event_id: { data_type: "text", is_nullable: "NO" },
+      ledger_id: { data_type: "text", is_nullable: "NO" },
+      event_type: { data_type: "text", is_nullable: "NO" },
+      payload: { data_type: "jsonb", is_nullable: "NO" },
+      created_at: { data_type: "timestamp with time zone", is_nullable: "NO" },
+    };
+    for (const [name, expected] of Object.entries(required)) {
+      const actual = columns.get(name);
+      if (!actual || actual.data_type !== expected.data_type || actual.is_nullable !== expected.is_nullable) {
+        throw new Error("LEDGER_SCHEMA_INVALID");
+      }
+    }
+    const indexResult = await this.pool.query(
+      "SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2",
+      ["public", tableName]
+    );
+    if (!(indexResult.rows || []).some(row => /CREATE UNIQUE INDEX\b/i.test(row.indexdef || "") && /\(event_id\)/i.test(row.indexdef || ""))) {
+      throw new Error("LEDGER_SCHEMA_IDEMPOTENCY_CONSTRAINT_MISSING");
+    }
+    return { valid: true, table: this.table };
+  }
+
+  async append(event) {
+    const eventId = stableEventId(event);
+    const result = await this.pool.query(
+      `INSERT INTO ${this.table} (event_id, ledger_id, event_type, payload) VALUES ($1, $2, $3, $4::jsonb) ON CONFLICT (event_id) DO NOTHING RETURNING event_id`,
+      [eventId, event.ledgerId, event.type, JSON.stringify(event)]
+    );
+    return { saved: result.rowCount === 1, eventId };
+  }
+
+  async loadEvents() {
+    const result = await this.pool.query(
+      `SELECT event_id, ledger_id, event_type, payload FROM ${this.table} ORDER BY created_at ASC, event_id ASC`
+    );
+    return (result.rows || []).map(row => {
+      const event = typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload;
+      const expectedEventId = stableEventId(event);
+      if (row.ledger_id !== event.ledgerId || row.event_type !== event.type || row.event_id !== expectedEventId) {
+        throw new TypeError("LEDGER_EVENT_COLUMN_MISMATCH");
+      }
+      return event;
+    });
+  }
+
+  async status() {
+    const result = await this.pool.query(
+      `SELECT COUNT(*)::int AS event_count, COUNT(*) FILTER (WHERE event_type = 'prediction')::int AS prediction_count, COUNT(*) FILTER (WHERE event_type = 'settlement')::int AS settlement_count, COUNT(*) FILTER (WHERE event_type = 'conflict')::int AS conflict_count FROM ${this.table}`
+    );
+    return { connected: true, ...(result.rows?.[0] || {}) };
+  }
+}
+
+module.exports = { NeonPredictionLedgerStore, stableEventId, TABLE };

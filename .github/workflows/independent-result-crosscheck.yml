@@ -1,0 +1,42 @@
+name: ZEUS independent result cross-check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/scripts/runIndependentResultCrosscheck.js"
+      - "backend/providers/espn.js"
+      - "backend/providers/openFootball.js"
+      - ".github/workflows/independent-result-crosscheck.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  result-crosscheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Compare OpenFootball results with ESPN
+        working-directory: backend
+        env:
+          ZEUS_CROSSCHECK_OUTPUT: artifacts/independent-result-crosscheck.json
+        run: node scripts/runIndependentResultCrosscheck.js
+      - name: Upload independent result cross-check
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeus-independent-result-crosscheck
+          path: backend/artifacts/independent-result-crosscheck.json
+          if-no-files-found: warn
+          retention-days: 30
