@@ -102,6 +102,36 @@ test("Settlement evaluates 1X2, total goals, BTTS, Brier and log loss exactly", 
   for (const k of ["Over15", "Over25", "Over35", "BTTS"]) assert.equal(r[`predictionCorrect${k}`], true);
   assert.ok(Math.abs(r.brierBTTS - .09) < 1e-12);
 });
+test("Ledger records and settles one hybrid recommendation without duplicating coverage", t => {
+  const { ledger, time } = setup(t);
+  const value = input("hybrid-forward");
+  value.response.hybridRobot = {
+    version: "HYBRID_SELECTIVE_1.0", status: "RECOMMEND",
+    recommendation: { market: "OVER_1_5", probability: .8, model40Probability: .82, model41Probability: .78, disagreement: .04 },
+  };
+  assert.ok(save(ledger, value).every(row => row.saved));
+  const rows = ledger.entries();
+  assert.equal(rows.length, 2);
+  const hybridRow = rows.find(row => row.usedModel === MODELS[0]);
+  const otherRow = rows.find(row => row.usedModel === MODELS[1]);
+  assert.equal(hybridRow.hybridStatus, "RECOMMEND");
+  assert.equal(hybridRow.hybridMarket, "OVER_1_5");
+  assert.equal(hybridRow.hybridProbability, .8);
+  assert.equal(otherRow.hybridStatus, null, "hybrid decision must not be double-counted");
+  time(AFTER);
+  assert.equal(ledger.settle(hybridRow.ledgerId, final(1, 0)).saved, true);
+  const settled = ledger.entries().find(row => row.ledgerId === hybridRow.ledgerId);
+  assert.equal(settled.hybridPredictionCorrect, false);
+  assert.ok(Math.abs(settled.hybridBrier - .64) < 1e-12);
+  assert.ok(settled.hybridSettledAt);
+
+  const noBet = input("hybrid-no-bet");
+  noBet.response.hybridRobot = { version: "HYBRID_SELECTIVE_1.0", status: "NO_BET", recommendation: null, reason: "NO_MARKET_PASSES_CONSENSUS_GATES" };
+  assert.ok(save(ledger, noBet).every(row => row.saved));
+  const noBetRow = ledger.entries().find(row => row.fixtureId === "hybrid-no-bet" && row.usedModel === MODELS[0]);
+  assert.equal(noBetRow.hybridStatus, "NO_BET");
+  assert.equal(noBetRow.hybridMarket, null);
+});
 test("0-0 settlement yields draw, all unders, and BTTS no", t => {
   const { ledger, time } = setup(t); save(ledger); time(AFTER); const id = ledger.entries()[0].ledgerId; ledger.settle(id, final(0, 0));
   const r = ledger.entries().find(r => r.ledgerId === id); assert.equal(r.actual1X2, "draw");
