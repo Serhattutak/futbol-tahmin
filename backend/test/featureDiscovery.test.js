@@ -45,7 +45,8 @@ test("calendar-day boundaries keep all same-day fixtures in one partition", () =
   });
   const report = discoverFeatureRules(rows, { minTrainSamples: 10, minTestSamples: 10, minTrainLift: -1 });
   assert.equal(report.dataset.splitDate.slice(0, 10), targetDate.slice(0, 10));
-  assert.ok(report.dataset.firstDate < report.dataset.splitDate);
+  assert.ok(report.dataset.firstDate < report.dataset.trainingLastDate);
+  assert.ok(report.dataset.trainingLastDate < report.dataset.splitDate);
   assert.ok(report.dataset.lastDate >= report.dataset.splitDate);
   assert.equal(report.dataset.training + report.dataset.holdout, report.dataset.valid);
 });
