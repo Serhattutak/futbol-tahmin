@@ -187,3 +187,14 @@ button { -webkit-tap-highlight-color: transparent; }
   .home-all-matches { align-items: flex-start; flex-direction: column; }
   .home-all-matches .primary-button { width: 100%; }
 }
+
+
+/* Selective Model 4.0 + Model 4.1 hybrid recommendation */
+.hybrid-robot-panel { border: 1px solid rgba(74, 222, 128, 0.28); background: linear-gradient(135deg, rgba(20, 83, 45, 0.12), rgba(15, 23, 42, 0.18)); }
+.hybrid-robot-pick { padding: 16px; border-radius: 14px; background: rgba(20, 83, 45, 0.12); }
+.hybrid-robot-status { display: inline-flex; align-items: center; margin-bottom: 10px; color: #4ade80; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.07em; }
+.hybrid-robot-pick h3 { margin: 0 0 14px; font-size: 1.2rem; }
+.hybrid-robot-no-bet { padding: 14px 16px; border-radius: 12px; background: rgba(148, 163, 184, 0.09); }
+.hybrid-robot-no-bet strong { display: block; margin-bottom: 6px; }
+.hybrid-robot-no-bet p { margin: 0; color: var(--muted, #94a3b8); line-height: 1.5; }
+@media (max-width: 560px) { .hybrid-robot-pick { padding: 12px; } .hybrid-robot-pick .pick-metrics { gap: 8px; } }
