@@ -122,7 +122,7 @@ class ProductionAnalysis {
     const cache = { statisticsVersion: STATISTICS_VERSION, artifactVersion: fingerprint, inputVersion: inputHash, expiresAt: this.now() + this.ttl, inputHit: input.hit, model40Hit: base.hit, model41Hit: advancedHit };
     const hybridRobot = base.value && advanced
       ? buildHybridRecommendation(base.value.probabilities, advanced.probabilities,
-        readiness.statisticsQuality ?? base.value.statisticsProfile?.dataQuality ?? base.value.dataQuality,
+        readiness.statisticsQuality?.score ?? base.value.statisticsProfile?.dataQuality?.score ?? base.value.dataQuality?.score,
         readiness.historicalSampleSize || base.value.historicalSampleSize)
       : { version: "HYBRID_SELECTIVE_1.0", status: "NO_BET", targetHitRate: 0.75, recommendation: null, reason: "BOTH_MODELS_REQUIRED" };
     const response = { ...models[actual], requestedModelVersion: requested, models, hybridRobot, cache };
