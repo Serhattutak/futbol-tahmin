@@ -369,3 +369,10 @@ input,select{border-radius:10px!important;border-color:var(--line)!important;bac
 .data-coverage-meta b {
   color: var(--text);
 }
+
+/* Live and final scores */
+.versus:has(small) { width: auto; min-width: 54px; height: auto; padding: 4px 8px; gap: 1px; color: var(--text); font-size: 15px; font-weight: 900; }
+.versus small { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .6px; }
+.versus.live-score, .versus.live-score small { color: var(--red, #ed737f); border-color: rgba(237,115,127,.45); }
+.row-time.live small, .row-time.live b { color: var(--red, #ed737f); }
+.row-time small + b + small { margin-top: 2px; opacity: .75; }

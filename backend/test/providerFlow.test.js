@@ -187,7 +187,9 @@ test("best-predictions retains non-numeric discovery as explicit insufficient as
   const { app, providerRegistry } = require("../server");
   const original = providerRegistry.providers;
   const originalDiscovery = providerRegistry.fixtureDiscovery;
-  const kickoff = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  // Midday UTC keeps the kickoff on the same Europe/Istanbul calendar day whatever time the suite runs.
+  const kickoffDate = new Date(Date.now() + 24 * 3600 * 1000); kickoffDate.setUTCHours(12, 0, 0, 0);
+  const kickoff = kickoffDate.toISOString();
   const current = fixture("sportmonks", "sm-endpoint-test", "Manchester United", kickoff);
   let oddsRequests = 0;
   providerRegistry.providers = [{ name: "sportmonks", enabled: true, capabilities: ["fixtures", "odds"], getFixtures: async () => [current], getOdds: async () => { oddsRequests++; return []; } }];

@@ -22,6 +22,7 @@ const footballData = require("./providers/footballData");
 const espn = require("./providers/espn");
 const { normalizeStatus } = require("./services/fixtureNormalization");
 const { MultiProviderRegistry, createLegacyAdapter, toFrontendFixture } = require("./services/multiProviderRegistry");
+const { getLocalDayFixtures, todayKey: localTodayKey } = require("./services/localDayFixtures");
 
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
@@ -114,7 +115,7 @@ const providerRegistry = new MultiProviderRegistry([
   createLegacyAdapter(openFootballText),
   createLegacyAdapter(theSportsDb),
   createLegacyAdapter(espn),
-], { fixtureCacheFile: path.join(__dirname, "data", "fixture-cache.json"), historicalCacheFile: path.join(__dirname, "data", "historical-cache.json") });
+], { fixtureCacheFile: path.join(__dirname, "data", "fixture-cache.json"), historicalCacheFile: path.join(__dirname, "data", "historical-cache.json"), fixtureTtlMs: 90_000 });
 
 async function optionalApiGet(pathname, params) {
   try {
@@ -192,7 +193,8 @@ function isValidDateKey(value) {
 
 function getRequestedDate(value) {
   if (typeof value === "string" && isValidDateKey(value)) return value;
-  return getDateString(new Date());
+  // "Today" is the product's local day (Europe/Istanbul), not the server's UTC day.
+  return localTodayKey();
 }
 
 // --------------------------------------------------
@@ -206,8 +208,8 @@ app.get("/api/football-test", async (req, res) => {
     }
     const dateString = getRequestedDate(req.query.date);
     console.log(`Maçlar çekiliyor: ${dateString}`);
-    const discovery = await providerRegistry.getFixturesByDate(dateString);
-    const matches = discovery.fixtures.map(toFrontendFixture);
+    const discovery = await getLocalDayFixtures(providerRegistry, dateString, toFrontendFixture);
+    const matches = discovery.matches;
 
     res.json({
       success: true,
@@ -218,6 +220,7 @@ app.get("/api/football-test", async (req, res) => {
       stale: discovery.stale,
       providerError: discovery.providerError,
       matches,
+      timeZone: discovery.timeZone,
       dailyResults: [{ date: dateString, results: matches.length }],
     });
   } catch (error) {
@@ -1280,7 +1283,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
   }
 
   try {
-    const pool = (await providerRegistry.getFixtures(requestedDate)).map(toFrontendFixture);
+    const pool = (await getLocalDayFixtures(providerRegistry, requestedDate, toFrontendFixture)).matches;
 
     const candidates = [...new Map(
       pool
