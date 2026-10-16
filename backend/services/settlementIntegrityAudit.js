@@ -1,5 +1,7 @@
 "use strict";
 
+const { stableEventId } = require("./neonPredictionLedgerStore");
+
 function nonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
@@ -35,11 +37,15 @@ function auditSettlementIntegrity(events) {
       addIssue("EVENT_IDENTITY_MISSING", nonEmptyString(event.ledgerId) ? event.ledgerId : null, index);
       return;
     }
-    const eventId = nonEmptyString(event.eventId) ? event.eventId : null;
-    if (!eventId) {
+    let eventId;
+    try {
+      eventId = stableEventId(event);
+    } catch {
       malformedEvents += 1;
-      addIssue("EVENT_ID_MISSING", event.ledgerId, index);
-    } else if (eventIds.has(eventId)) {
+      addIssue("EVENT_PAYLOAD_INVALID", event.ledgerId, index);
+      return;
+    }
+    if (eventIds.has(eventId)) {
       addIssue("DUPLICATE_EVENT_ID", event.ledgerId, index);
     } else {
       eventIds.add(eventId);
