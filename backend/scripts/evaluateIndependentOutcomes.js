@@ -154,6 +154,27 @@ function findIndependentResult(target, source) {
   if (candidates.length > 1 && candidates[0].score - candidates[1].score < 0.06) return null;
   return candidates[0].row;
 }
+function marketProbabilityFor(probabilities, market) {
+  return ({
+    "1": probabilities.home, X: probabilities.draw, "2": probabilities.away,
+    "1X": probabilities.home + probabilities.draw,
+    X2: probabilities.draw + probabilities.away,
+    "12": probabilities.home + probabilities.away,
+  })[market];
+}
+function buildThreeSourceRecommendation(model40, model41, market) {
+  const candidates = ["1", "X", "2", "1X", "X2", "12"].map(key => {
+    const p40 = marketProbabilityFor(model40, key);
+    const p41 = marketProbabilityFor(model41, key);
+    const pMarket = marketProbabilityFor(market, key);
+    const values = [p40, p41, pMarket];
+    return { market: key, model40Probability: p40, model41Probability: p41,
+      marketProbability: pMarket, probability: values.reduce((a, b) => a + b, 0) / values.length,
+      disagreement: Math.max(...values) - Math.min(...values), minimumProbability: Math.min(...values) };
+  }).filter(row => row.minimumProbability >= 0.72 && row.probability >= 0.75 && row.disagreement <= 0.10);
+  candidates.sort((a, b) => b.probability - a.probability);
+  return candidates[0] || null;
+}
 function topClass(probabilities) {
   const values = [probabilities.home, probabilities.draw, probabilities.away];
   return ["home", "draw", "away"][values.indexOf(Math.max(...values))];
@@ -260,6 +281,8 @@ async function main() {
   const markets = {};
   let exactNameDateMatch = 0, independentlyVerified = 0, scoreConflicts = 0, unmatched = 0;
   let hybridSelected = 0, hybridCorrect = 0, hybridWrong = 0;
+  let threeSourceSelected = 0, threeSourceCorrect = 0, threeSourceWrong = 0;
+  const threeSourceMarkets = {};
   let marketOddsAvailable = 0;
   const crossCheckedExamples = [];
   for (const row of testRows) {
@@ -298,6 +321,17 @@ async function main() {
       if (!markets[pick.market]) markets[pick.market] = { selected: 0, correct: 0 };
       markets[pick.market].selected++;
       if (hit) markets[pick.market].correct++;
+    }
+    if (market) {
+      const threeSource = buildThreeSourceRecommendation(row.model40.probabilities, row.calibrated.probabilities, market);
+      if (threeSource) {
+        const hit = actualMarket(threeSource.market, external.homeGoals, external.awayGoals);
+        threeSourceSelected++;
+        if (hit) threeSourceCorrect++; else threeSourceWrong++;
+        if (!threeSourceMarkets[threeSource.market]) threeSourceMarkets[threeSource.market] = { selected: 0, correct: 0 };
+        threeSourceMarkets[threeSource.market].selected++;
+        if (hit) threeSourceMarkets[threeSource.market].correct++;
+      }
     }
     if (crossCheckedExamples.length < 10) crossCheckedExamples.push({
       date: row.date, league: row.league, home: target.teams.home.name, away: target.teams.away.name,
@@ -345,6 +379,16 @@ async function main() {
       coverageOfVerified: hybridSelected / Math.max(1, independentlyVerified),
       hitRate: hybridSelected ? hybridCorrect / hybridSelected : null,
       wilson95: wilson(hybridCorrect, hybridSelected) },
+    threeSourceSelective: {
+      rule: "For 1X2/double-chance markets only: Model 4.0, Model 4.1, and no-vig bookmaker probabilities each >=72%, equal mean >=75%, and max disagreement <=10 percentage points. Fixed gates; not tuned on locked test.",
+      selected: threeSourceSelected, correct: threeSourceCorrect, incorrect: threeSourceWrong,
+      coverageOfVerified: threeSourceSelected / Math.max(1, independentlyVerified),
+      hitRate: threeSourceSelected ? threeSourceCorrect / threeSourceSelected : null,
+      wilson95: wilson(threeSourceCorrect, threeSourceSelected),
+      markets: Object.fromEntries(Object.entries(threeSourceMarkets).map(([key, value]) => [key, {
+        ...value, hitRate: value.correct / value.selected,
+      }])),
+    },
     markets: Object.fromEntries(Object.entries(markets).map(([key, value]) => [key, {
       ...value, hitRate: value.correct / value.selected,
     }])),
