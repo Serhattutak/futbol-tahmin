@@ -119,14 +119,40 @@ async function fetchResults(league, code) {
     && Number.isInteger(row.awayGoals) && row.awayGoals >= 0);
   return { league, code, url, rows };
 }
+function editDistance(a, b) {
+  const previous = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let diagonal = previous[0]; previous[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const old = previous[j];
+      previous[j] = Math.min(previous[j] + 1, previous[j - 1] + 1, diagonal + Number(a[i - 1] !== b[j - 1]));
+      diagonal = old;
+    }
+  }
+  return previous[b.length];
+}
+function teamSimilarity(a, b) {
+  if (a === b) return 1;
+  if (ALIASES[a] && ALIASES[a] === b || ALIASES[b] && ALIASES[b] === a) return 1;
+  if (a.includes(b) || b.includes(a)) {
+    const shorter = Math.min(a.length, b.length);
+    if (shorter >= 4) return 0.92;
+  }
+  return 1 - editDistance(a, b) / Math.max(a.length, b.length, 1);
+}
 function findIndependentResult(target, source) {
   const home = normalizeTeam(target.teams.home.name);
   const away = normalizeTeam(target.teams.away.name);
   const targetDay = String(target.fixture.date || "").slice(0, 10);
-  const candidates = source.rows.filter(row => row.home === home && row.away === away
-    && Math.abs(Date.parse(row.date + "T00:00:00Z") - Date.parse(targetDay + "T00:00:00Z")) <= 86400000);
-  if (candidates.length !== 1) return null;
-  return candidates[0];
+  const targetTime = Date.parse(targetDay + "T00:00:00Z");
+  const candidates = source.rows.filter(row => Math.abs(Date.parse(row.date + "T00:00:00Z") - targetTime) <= 86400000)
+    .map(row => ({ row, homeScore: teamSimilarity(home, row.home), awayScore: teamSimilarity(away, row.away) }))
+    .filter(candidate => candidate.homeScore >= 0.68 && candidate.awayScore >= 0.68)
+    .map(candidate => ({ ...candidate, score: candidate.homeScore + candidate.awayScore }))
+    .sort((a, b) => b.score - a.score);
+  if (!candidates.length || candidates[0].score < 1.55) return null;
+  if (candidates.length > 1 && candidates[0].score - candidates[1].score < 0.06) return null;
+  return candidates[0].row;
 }
 function topClass(probabilities) {
   const values = [probabilities.home, probabilities.draw, probabilities.away];
