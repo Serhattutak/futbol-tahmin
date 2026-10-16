@@ -39,9 +39,9 @@ The public-domain results archive does not supply all historical injuries, lineu
 1. Validate and sort rows chronologically.
 2. Use the earliest 70% as the research/training period and the latest 30% as a chronological holdout.
 3. Derive candidate numeric thresholds (training quartiles) and category values from the training period only.
-4. Measure market outcome rate, sample size, 95% Wilson interval and lift over the corresponding period's baseline.
+4. Report the overall market baseline and compare each rule's subgroup with its disjoint complement, including sample sizes, 95% Wilson intervals, and lift. The complement comparison avoids comparing a subgroup with a baseline that contains the subgroup.
 5. Keep holdout results visible for each candidate; do not promote a rule solely because it looked good in training.
-6. Treat every discovered rule as exploratory. Multiple-testing correction and a second untouched forward period are required before any model or threshold changes.
+6. A rule is labelled promising only when its holdout subgroup has at least the configured minimum sample and its 95% Wilson lower bound exceeds the complement's upper bound. Treat this as a conservative exploratory screen, not a multiple-testing-adjusted significance claim. A second untouched forward period is required before any model or threshold changes.
 
 Markets currently scored: 1X2, 1X, X2, no-draw, over 1.5, over 2.5, under 3.5, and BTTS yes/no.
 
