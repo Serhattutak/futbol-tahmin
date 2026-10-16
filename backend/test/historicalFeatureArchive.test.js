@@ -35,7 +35,10 @@ test("feature rows use only completed matches from strictly earlier calendar day
   const day3 = rows.filter(row => row.date === "2024-08-03");
   assert.equal(day1[0].features.home_history_matches, 0);
   assert.equal(day2.length, 2);
-  assert.ok(day2.every(row => row.features.home_history_matches === 0 || row.features.away_history_matches === 0));
+  assert.equal(day2[0].features.home_history_matches, 1);
+  assert.equal(day2[0].features.away_history_matches, 0);
+  assert.equal(day2[1].features.home_history_matches, 1);
+  assert.equal(day2[1].features.away_history_matches, 1);
   assert.equal(day3[0].features.home_history_matches, 3);
   assert.equal(day3[0].features.home_home_last5_win_rate, 0.5);
   assert.equal(day3[0].features.h2h_last5_matches, 2);
