@@ -50,7 +50,7 @@ async function main() {
     const input = replayInput(fixtures, target);
     const profile = buildMatchStatistics(input.collected.fixture, { ...input.collected, now: input.now });
     const recommendation = buildHybridRecommendation(row.model40.probabilities, row.calibrated.probabilities,
-      profile.dataQuality, { home: profile.home.sampleSize, away: profile.away.sampleSize });
+      profile.dataQuality?.score, { home: profile.home.sampleSize, away: profile.away.sampleSize });
     const actualWinner = row.goals.home > row.goals.away ? "home" : row.goals.home === row.goals.away ? "draw" : "away";
     if (topClass(row.model40.probabilities) === actualWinner) baseCorrect++;
     if (topClass(row.calibrated.probabilities) === actualWinner) calibratedCorrect++;
