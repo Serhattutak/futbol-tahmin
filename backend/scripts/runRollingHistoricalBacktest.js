@@ -1,6 +1,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const openFootball = require("../providers/openFootball");
+const espn = require("../providers/espn");
+const { forEachConcurrent } = require("../services/forEachConcurrent");
 const { runChronologicalBenchmark } = require("../services/chronologicalBenchmark");
 
 const LEAGUES = [
@@ -84,13 +86,49 @@ function marketSummary(report, modelKey) {
   };
 }
 
-async function runRollingHistoricalBacktest({ now = new Date(), load = loadHistoricalFixtures } = {}) {
+function normalizedTeam(value) {
+  return String(value || "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()
+    .replace(/\\b(fc|cf|afc|sc|ac|as|club|football|de|the)\\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim().replace(/\\s+/g, " ");
+}
+function fixtureIdentity(fixture) {
+  const home = normalizedTeam(fixture?.teams?.home?.name);
+  const away = normalizedTeam(fixture?.teams?.away?.name);
+  const date = String(fixture?.fixture?.date || "").slice(0, 10);
+  return [fixture?.league?.country || "", fixture?.league?.name || "", date, home, away].join("|");
+}
+async function loadRecentESPNFixtures({ from, to, leagues = LEAGUES }) {
+  const dates = [];
+  for (let date = from; date <= to; date = dateOffset(date, 1)) dates.push(date);
+  const tasks = dates.flatMap(date => leagues.map(league => ({ date, league })));
+  const fixtures = [], failures = [];
+  await forEachConcurrent(tasks, 5, async ({ date, league }) => {
+    try { fixtures.push(...(await espn.getLeagueFixtures(date, league))); }
+    catch (error) { failures.push({ date, league, reason: error.category || error.code || "fetch_failed" }); }
+  });
+  return { fixtures: fixtures.filter(f => f?.fixture?.status?.short === "FINISHED" &&
+    Number.isInteger(f?.goals?.home) && Number.isInteger(f?.goals?.away) &&
+    String(f.fixture.date).slice(0, 10) >= from && String(f.fixture.date).slice(0, 10) <= to), failures };
+}
+function mergeHistoricalFixtures(primary, supplemental) {
+  const merged = [];
+  const identities = new Set();
+  for (const fixture of [...primary, ...supplemental]) {
+    const identity = fixtureIdentity(fixture);
+    if (identities.has(identity)) continue;
+    identities.add(identity);
+    merged.push(fixture);
+  }
+  return merged;
+}
+async function runRollingHistoricalBacktest({ now = new Date(), load = loadHistoricalFixtures, loadRecent = loadRecentESPNFixtures } = {}) {
   const asOf = isoDay(now);
   const fixtures = await load();
   if (!fixtures.fixtures.length) throw new Error("NO_HISTORICAL_FIXTURES_LOADED");
   const oneYearFrom = dateOffset(asOf, -365);
   const oneMonthFrom = dateOffset(asOf, -30);
-  const run = (from, to) => runChronologicalBenchmark(fixtures.fixtures, { from, to, now: Date.parse(asOf + "T23:59:59.999Z") });
+  const recent = await loadRecent({ from: oneMonthFrom, to: dateOffset(asOf, -1) });
+  const combinedFixtures = mergeHistoricalFixtures(fixtures.fixtures, recent.fixtures);
+  const run = (from, to) => runChronologicalBenchmark(combinedFixtures, { from, to, now: Date.parse(asOf + "T23:59:59.999Z") });
   const yearly = run(oneYearFrom, dateOffset(asOf, -1));
   const monthly = run(oneMonthFrom, dateOffset(asOf, -1));
   const coverage = report => {
@@ -107,8 +145,8 @@ async function runRollingHistoricalBacktest({ now = new Date(), load = loadHisto
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     asOf,
-    provider: "openfootball",
-    sourcePolicy: "Public historical results archive; only previous calendar days enter model history; same-day results excluded.",
+    provider: "openfootball+espn",
+    sourcePolicy: "OpenFootball historical archive supplemented by ESPN completed fixtures in the last 30 days; only previous calendar days enter model history; same-day results excluded.",
     windows: {
       last30Days: {
         from: oneMonthFrom, to: dateOffset(asOf, -1),
@@ -125,10 +163,13 @@ async function runRollingHistoricalBacktest({ now = new Date(), load = loadHisto
     },
     data: {
       loadedFixtures: fixtures.fixtures.length,
+      supplementalESPNFixtures: recent.fixtures.length,
+      supplementalESPNFailures: recent.failures,
+      mergedFixturesUsed: combinedFixtures.length,
       sources: fixtures.sources,
       unavailable: fixtures.unavailable,
-      uniqueProviders: [...new Set(fixtures.sources.map(source => source.provider))],
-      limitation: "Historical prediction inputs come from the cited archive; independent source result agreement is not inferred from this report. Conflicting or unavailable external results must be reconciled separately before being labelled verified.",
+      uniqueProviders: [...new Set([...fixtures.sources.map(source => source.provider), ...(recent.fixtures.length ? ["espn"] : [])])],
+      limitation: "OpenFootball supplies long-range history; ESPN supplements completed fixtures in the last 30 days. Matched results are independently cross-checked in the separate result-crosscheck report; unmatched rows remain source-specific.",
     },
   };
 }
