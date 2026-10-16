@@ -169,6 +169,19 @@ jobs:
           node -e 'const r=require("/tmp/zeus-historical-smoke/feature-discovery-report.json"); if(r.dataset.valid < 100) throw new Error("Too few rows for smoke test"); console.log(JSON.stringify({dataset:r.dataset,summary:r.summary}));'
           npm run discover:historical:walk-forward -- --input /tmp/zeus-historical-smoke/rows.jsonl --out /tmp/zeus-historical-smoke/walk-forward-report.json --min-train-samples 50 --min-validation-samples 30 --min-test-samples 30 --min-season-samples 20
           node -e 'const r=require("/tmp/zeus-historical-smoke/walk-forward-report.json"); if(r.dataset.valid < 100 || r.dataset.training+r.dataset.validation+r.dataset.test!==r.dataset.valid || !(r.dataset.trainingLastDate<r.dataset.validationFirstDate && r.dataset.validationLastDate<r.dataset.testFirstDate)) throw new Error("Walk-forward partition integrity failed"); console.log(JSON.stringify({dataset:r.dataset,selection:r.selection,summary:r.summary}));'
+      - name: Set up Python for historical model benchmark smoke test
+        if: github.event_name == 'pull_request'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install optional historical research dependencies
+        if: github.event_name == 'pull_request'
+        run: python -m pip install -r research/requirements.txt
+      - name: Smoke-test historical model benchmark on real-source archive
+        if: github.event_name == 'pull_request'
+        run: |
+          python research/benchmark_historical_model.py --input /tmp/zeus-historical-smoke/rows.jsonl --out /tmp/zeus-historical-smoke/historical-model-benchmark.json
+          python -c 'import json; r=json.load(open("/tmp/zeus-historical-smoke/historical-model-benchmark.json")); assert r["split"]["test"] > 100; assert r["results"]["1X2"]["testLogLoss"] < r["results"]["1X2"]["constantPriorTestLogLoss"]; print(json.dumps({"split":r["split"],"1X2":r["results"]["1X2"],"over_1_5":r["results"]["over_1_5"]},indent=2))'
       - name: Evaluate fixed hybrid robot gates on locked Model 4.1 test set (read-only)
         working-directory: backend
         run: node scripts/evaluateHybridRobot.js

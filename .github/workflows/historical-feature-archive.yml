@@ -13,6 +13,8 @@ on:
       - "backend/scripts/discoverHistoricalRulesWalkForward.js"
       - "backend/test/walkForwardFeatureDiscovery.test.js"
       - "backend/test/discoverHistoricalRulesWalkForward.test.js"
+      - "research/benchmark_historical_model.py"
+      - "research/requirements.txt"
   workflow_dispatch:
     inputs:
       from_season:
@@ -65,6 +67,14 @@ jobs:
       - name: Discover rules with train-validation-untouched-test walk-forward evaluation
         working-directory: backend
         run: npm run discover:historical:walk-forward
+      - name: Set up Python for research benchmark
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install optional research dependencies
+        run: python -m pip install -r research/requirements.txt
+      - name: Benchmark historical feature model (research-only)
+        run: python research/benchmark_historical_model.py --input backend/data/historical-feature-archive/rows.jsonl --out backend/data/historical-feature-archive/historical-model-benchmark.json
       - name: Upload historical archive and research report
         uses: actions/upload-artifact@v4
         with:
@@ -74,5 +84,6 @@ jobs:
             backend/data/historical-feature-archive/report.json
             backend/data/historical-feature-archive/feature-discovery-report.json
             backend/data/historical-feature-archive/walk-forward-feature-discovery-report.json
+            backend/data/historical-feature-archive/historical-model-benchmark.json
           if-no-files-found: error
           retention-days: 90
