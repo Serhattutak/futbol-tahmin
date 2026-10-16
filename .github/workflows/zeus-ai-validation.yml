@@ -155,6 +155,20 @@ jobs:
       - name: Run offline historical coverage replay (no provider calls or ledger writes)
         working-directory: backend
         run: node scripts/auditHistoricalCoverageV2.js
+      - name: Run rolling one-month and one-year historical backtest
+        if: startsWith(github.head_ref, 'feat/rolling-historical-backtest')
+        working-directory: backend
+        env:
+          ZEUS_BACKTEST_OUTPUT: ../artifacts/rolling-historical-backtest.json
+        run: node scripts/runRollingHistoricalBacktest.js
+      - name: Upload rolling historical backtest report
+        if: always() && startsWith(github.head_ref, 'feat/rolling-historical-backtest')
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeus-rolling-historical-backtest
+          path: artifacts/rolling-historical-backtest.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Verify live Neon staging API (read-only)
         if: github.event_name == 'pull_request' && github.head_ref == 'feat/neon-durable-prediction-ledger'
         env:
