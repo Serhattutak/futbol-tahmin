@@ -167,6 +167,8 @@ jobs:
           NODE
           npm run discover:historical -- --input /tmp/zeus-historical-smoke/rows.jsonl --out /tmp/zeus-historical-smoke/feature-discovery-report.json --min-train-samples 50 --min-holdout-samples 30
           node -e 'const r=require("/tmp/zeus-historical-smoke/feature-discovery-report.json"); if(r.dataset.valid < 100) throw new Error("Too few rows for smoke test"); console.log(JSON.stringify({dataset:r.dataset,summary:r.summary}));'
+          npm run discover:historical:walk-forward -- --input /tmp/zeus-historical-smoke/rows.jsonl --out /tmp/zeus-historical-smoke/walk-forward-report.json --min-train-samples 50 --min-validation-samples 30 --min-test-samples 30 --min-season-samples 20
+          node -e 'const r=require("/tmp/zeus-historical-smoke/walk-forward-report.json"); if(r.dataset.valid < 100 || r.dataset.training+r.dataset.validation+r.dataset.test!==r.dataset.valid || !(r.dataset.trainingLastDate<r.dataset.validationFirstDate && r.dataset.validationLastDate<r.dataset.testFirstDate)) throw new Error("Walk-forward partition integrity failed"); console.log(JSON.stringify({dataset:r.dataset,selection:r.selection,summary:r.summary}));'
       - name: Evaluate fixed hybrid robot gates on locked Model 4.1 test set (read-only)
         working-directory: backend
         run: node scripts/evaluateHybridRobot.js

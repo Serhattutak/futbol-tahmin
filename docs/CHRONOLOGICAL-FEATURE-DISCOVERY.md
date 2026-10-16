@@ -4,9 +4,9 @@
 
 This is an offline research component for discovering potentially useful pre-match football patterns. It is not connected to production recommendations and does not change Model 4.0, Model 4.1, hybrid gates, or live user-facing picks.
 
-## Historical archive builder
+## Historical archive and observed coverage
 
-The first archive builder is `backend/scripts/buildHistoricalFeatureArchive.js`. It downloads available season files from OpenFootball's public-domain `football.json` archive and creates pre-kickoff features plus verified final-score labels.
+The archive builder is `backend/scripts/buildHistoricalFeatureArchive.js`. It downloads available season files from OpenFootball's public-domain `football.json` archive and creates pre-kickoff features plus verified final-score labels.
 
 Example command, run from `backend/`:
 
@@ -14,41 +14,43 @@ Example command, run from `backend/`:
 node scripts/buildHistoricalFeatureArchive.js --from-season 2006-07 --to-season 2025-26 --concurrency 5
 ```
 
-Outputs are written under `backend/data/historical-feature-archive/` by default:
+The first full archive run (2026-10-16) produced **72,896 completed fixtures**, spanning **2010-07-17 through 2026-05-24**, with **54 features**. It requested 380 league-season files across 19 leagues: **203 downloaded, 177 unavailable, 0 request errors**. This is roughly 16 calendar seasons in the data, not a complete 20-season archive. Coverage varies by league; the artifact report is the source of truth.
+
+Outputs are written under `backend/data/historical-feature-archive/`:
 - `rows.jsonl`: one row per completed match, including features, target label, source URL, and cutoff;
-- `report.json`: requested league-seasons, downloaded/unavailable files, row counts, date range, and feature count.
+- `report.json`: requested league-seasons, downloaded/unavailable files, row counts, date range, and feature count;
+- `feature-discovery-report.json`: earlier 70/30 exploratory screen, retained for comparison only;
+- `walk-forward-feature-discovery-report.json`: newer three-period research report with validation selection, untouched test, multiple-testing correction, and season stability diagnostics.
 
-The builder attempts the configured leagues and season range, records 404/missing seasons as unavailable, and skips invalid/incomplete score rows. **A requested 20-season window is not proof that all 20 seasons or every league exists in the source.** The report is the source of truth for actual coverage. The builder does not write to production databases or influence live picks.
+The builder attempts the configured leagues and season range, records missing seasons as unavailable, and skips invalid/incomplete score rows. **A requested 20-season window is not proof that all 20 seasons or every league exists in the source.** The report is the source of truth for actual coverage. The builder does not write to production databases or influence live picks.
 
-OpenFootball's football.json data is dedicated to the public domain (CC0). Do not bulk-ingest Football-Data.co.uk data into this commercial AI training archive: its own data page states that free spreadsheet data is intended for private individuals and not commercial data-training products. Any additional source must be reviewed for license/terms before use.
+OpenFootball's `football.json` data is dedicated to the public domain (CC0). Any additional source must be reviewed for license/terms before use. Do not bulk-ingest data whose terms do not permit commercial training.
 
-## Input contract
+## Feature inputs and leakage controls
 
-Each research row represents one completed fixture and must contain:
-- `date`: ISO-8601 date or kickoff timestamp;
-- `outcome`: verified full-time 1X2 result (`H`, `D`, `A`);
-- `homeGoals`, `awayGoals`: verified full-time goals;
-- `features`: numeric/categorical values calculated using only information available before kickoff.
-
-The archive builder currently calculates prior form over the last 5/10 overall matches, venue-specific home/away form, goals for/against, head-to-head results, and recent league-wide outcome rates. It excludes every match on the target calendar day from the target's feature history because kickoff times may be absent or inconsistent. This is conservative, and means the generated features are based on prior calendar days only.
+The archive currently calculates prior form over the last 5/10 overall matches, venue-specific home/away form, goals for/against, head-to-head results, and recent league-wide outcome rates. It excludes every match on the target calendar day from the target's feature history because kickoff times may be absent or inconsistent. Final scores are labels only, never features.
 
 The public-domain results archive does not supply all historical injuries, lineups, xG, shots, standings snapshots, or timestamped odds. Missing fields stay missing; current values must not be backfilled into past matches.
 
-## Feature discovery method
+## Walk-forward evaluation method
 
-1. Validate and sort rows chronologically.
-2. Use the earliest 70% as the research/training period and the latest 30% as a chronological holdout.
-3. Derive candidate numeric thresholds (training quartiles) and category values from the training period only.
-4. Report the overall market baseline and compare each rule's subgroup with its disjoint complement, including sample sizes, 95% Wilson intervals, and lift. The complement comparison avoids comparing a subgroup with a baseline that contains the subgroup.
-5. Keep holdout results visible for each candidate; do not promote a rule solely because it looked good in training.
-6. A rule is labelled promising only when its holdout subgroup has at least the configured minimum sample and its 95% Wilson lower bound exceeds the complement's upper bound. Treat this as a conservative exploratory screen, not a multiple-testing-adjusted significance claim. A second untouched forward period is required before any model or threshold changes.
+Run from `backend/`:
 
-Markets currently scored: 1X2, 1X, X2, no-draw, over 1.5, over 2.5, under 3.5, and BTTS yes/no.
+```bash
+npm run discover:historical:walk-forward
+```
 
-## No-leakage contract
+The default split uses chronological calendar-day boundaries:
+1. **60% training:** feature thresholds and candidate rules are derived here only.
+2. **20% validation:** candidates with positive training lift are screened; only rules with positive lift against a disjoint complement proceed.
+3. **20% final test:** untouched during threshold generation and validation selection. It is used once to estimate the selected rules' performance.
+4. **Multiple testing:** a one-sided two-proportion test is Bonferroni-corrected across all validation-selected rule/market hypotheses evaluated on the final test.
+5. **Season stability:** the report also measures each selected rule's lift within sufficiently sampled seasons in the final test. `REPLICATED_TEST` requires adjusted p <= 0.05 and positive lift in at least two adequately sampled test seasons.
 
-Final scores can be used as labels only after features have been frozen. Final score, post-match shots, post-match xG, later standings, or any feature derived from the target match outcome must never be included as a feature. The feature-discovery module also verifies that the declared 1X2 outcome matches the supplied final score.
+The report includes each partition's dates and sample sizes, baseline market rates, rule subgroup and disjoint-complement rates, lift, adjusted p-value, and per-season diagnostics. If a feature does not replicate on the final test or across seasons, it must not be promoted based on the earlier exploratory screen.
 
-## Production and membership policy
+This is historical cross-validation, not prospective future performance. Bonferroni correction is conservative; the rules are correlated and do not prove causality. The archive has incomplete league-season coverage and the results are not independent future-season validation. Do not tune thresholds after inspecting the final test. Any subsequent changes require a new later chronological period or forward-only timestamped predictions.
 
-Keep this module research-only until data coverage, chronological holdout performance, confidence calibration, and live forward tracking have been independently verified. Paid membership should wait until users receive consistent, explainable value and the product's terms, privacy, and payment handling are ready.
+## Markets and production policy
+
+Markets currently scored include 1X2, double chance, over/under goals, and BTTS. This feature-discovery pipeline remains research-only until coverage, chronological performance, probability calibration, and forward tracking are independently verified. It does not modify production model weights, recommendation gates, or live picks. Paid membership should wait until consistent value is demonstrated.

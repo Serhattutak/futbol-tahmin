@@ -9,6 +9,10 @@ on:
       - "backend/scripts/buildHistoricalFeatureArchive.js"
       - "backend/scripts/discoverHistoricalRules.js"
       - "backend/services/featureDiscovery.js"
+      - "backend/services/walkForwardFeatureDiscovery.js"
+      - "backend/scripts/discoverHistoricalRulesWalkForward.js"
+      - "backend/test/walkForwardFeatureDiscovery.test.js"
+      - "backend/test/discoverHistoricalRulesWalkForward.test.js"
   workflow_dispatch:
     inputs:
       from_season:
@@ -58,9 +62,9 @@ jobs:
           if (!report.rowCount || !total) throw new Error("Historical archive is empty.");
           if (errors / total > 0.10) throw new Error("More than 10% of source requests failed; inspect provider errors before trusting this run.");
           NODE
-      - name: Discover candidate rules on chronological holdout
+      - name: Discover rules with train-validation-untouched-test walk-forward evaluation
         working-directory: backend
-        run: npm run discover:historical
+        run: npm run discover:historical:walk-forward
       - name: Upload historical archive and research report
         uses: actions/upload-artifact@v4
         with:
@@ -69,5 +73,6 @@ jobs:
             backend/data/historical-feature-archive/rows.jsonl
             backend/data/historical-feature-archive/report.json
             backend/data/historical-feature-archive/feature-discovery-report.json
+            backend/data/historical-feature-archive/walk-forward-feature-discovery-report.json
           if-no-files-found: error
           retention-days: 90
