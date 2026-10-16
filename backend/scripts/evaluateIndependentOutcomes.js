@@ -202,9 +202,49 @@ function marketProbabilities(row) {
   const total = inverse.reduce((a, b) => a + b, 0);
   return { home: inverse[0] / total, draw: inverse[1] / total, away: inverse[2] / total };
 }
+function crossCheckedRows(records, targets, sources, getModelProbabilities) {
+  const output = [];
+  for (const record of records) {
+    const target = targets.get(String(record.id));
+    const source = sources[record.league];
+    if (!target || !source) continue;
+    const external = findIndependentResult(target, source);
+    if (!external || external.homeGoals !== record.goals?.home || external.awayGoals !== record.goals?.away) continue;
+    const model = getModelProbabilities(record);
+    const market = marketProbabilities(external);
+    if (!model || !market || ["home", "draw", "away"].some(key => !Number.isFinite(model[key]) || model[key] < 0 || model[key] > 1)) continue;
+    output.push({ id: record.id, date: record.date, model, market,
+      winner: actualWinner(external.homeGoals, external.awayGoals) });
+  }
+  return output;
+}
+function scoreBlendRows(rows, marketWeight) {
+  const model = accumulator(), market = accumulator(), blend = accumulator();
+  for (const row of rows) {
+    addProbabilities(model, row.model, row.winner);
+    addProbabilities(market, row.market, row.winner);
+    addProbabilities(blend, averageProbabilities(
+      { home: row.model.home * (1 - marketWeight), draw: row.model.draw * (1 - marketWeight), away: row.model.away * (1 - marketWeight) },
+      { home: row.market.home * marketWeight, draw: row.market.draw * marketWeight, away: row.market.away * marketWeight }
+    ), row.winner);
+  }
+  return { sampleSize: rows.length, model: summarize(model), market: summarize(market), blend: summarize(blend) };
+}
+function fitMarketWeight(rows) {
+  if (rows.length < 100) throw new Error("Too few independently reconciled training rows for market-weight fit: " + rows.length);
+  let best = { weight: 0, logLoss: Infinity };
+  for (let step = 0; step <= 20; step++) {
+    const weight = step / 20;
+    const scored = scoreBlendRows(rows, weight).blend;
+    if (scored.logLoss < best.logLoss - 1e-12) best = { weight, logLoss: scored.logLoss };
+  }
+  return best;
+}
 async function main() {
   const testRows = JSON.parse(fs.readFileSync(path.join(DATA, "model41-test-predictions.json"), "utf8"))
     .filter(row => splitOf(row.date) === "test");
+  const developmentRows = JSON.parse(fs.readFileSync(path.join(DATA, "model41-development-rows.json"), "utf8"))
+    .filter(row => ["train", "validation"].includes(splitOf(row.date)));
   const { fixtures, sources } = await loadDataset({ offline: true });
   const targets = new Map(fixtures.map(fixture => [String(fixture.fixture.id), fixture]));
   const leagueSources = {};
@@ -261,8 +301,13 @@ async function main() {
       independentOdds: Boolean(market),
     });
   }
+  const developmentScored = crossCheckedRows(developmentRows, targets, leagueSources, row => row.stats?.probabilities);
+  const trainScored = developmentScored.filter(row => splitOf(row.date) === "train");
+  const validationScored = developmentScored.filter(row => splitOf(row.date) === "validation");
+  const testScored = crossCheckedRows(testRows, targets, leagueSources, row => row.model40?.probabilities);
+  const fittedWeight = fitMarketWeight(trainScored);
   const report = {
-    evaluator: "independent-football-data-crosscheck-v1",
+    evaluator: "independent-football-data-crosscheck-v2",
     generatedAt: new Date().toISOString(),
     methodology: "Frozen Model 4.0/4.1 predictions; external scores from football-data.co.uk; score conflicts excluded; no fitting or threshold tuning. Market odds are evaluated as a comparator and in two fixed diagnostic blends (50/50 Model 4.1 + market; equal-weight Model 4.0 + Model 4.1 + market); these blends are not production recommendations.",
     predictionDataset: { provider: "OpenFootball", lockedTestRows: testRows.length, sources },
@@ -271,6 +316,21 @@ async function main() {
     model1X2: { model40: summarize(models.model40), model41: summarize(models.model41), bookmakerAverageOdds: summarize(models.market),
       model41PlusMarket50_50: summarize(models.model41MarketBlend), model40Model41MarketEqualWeight: summarize(models.threeWayEqualBlend),
       oddsSampleSize: marketOddsAvailable },
+    marketAwareWeightExperiment: {
+      model: "Model 4.0 stats probabilities + bookmaker average odds",
+      weightMeaning: "marketWeight is the fraction of no-vig bookmaker probability in the blend",
+      selectedMetric: "multiclass log loss",
+      fitMethod: "grid search from 0.00 to 1.00 in 0.05 increments using only the chronological training split",
+      trainingPeriod: ["2025-08-15", "2025-12-31"],
+      validationPeriod: ["2026-01-01", "2026-02-28"],
+      lockedTestPeriod: ["2026-03-01", "2026-05-24"],
+      fittedMarketWeight: fittedWeight.weight,
+      trainingFitLogLoss: fittedWeight.logLoss,
+      train: scoreBlendRows(trainScored, fittedWeight.weight),
+      validation: scoreBlendRows(validationScored, fittedWeight.weight),
+      lockedTest: scoreBlendRows(testScored, fittedWeight.weight),
+      guardrail: "Weight is fitted only on training rows; validation and locked test are not used for fitting. Do not retune on the locked test."
+    },
     hybridSelective: { selected: hybridSelected, correct: hybridCorrect, incorrect: hybridWrong,
       coverageOfVerified: hybridSelected / Math.max(1, independentlyVerified),
       hitRate: hybridSelected ? hybridCorrect / hybridSelected : null,
@@ -287,7 +347,7 @@ async function main() {
     ],
   };
   console.log(JSON.stringify(report, null, 2));
-  if (independentlyVerified < 250) {
+  if (independentlyVerified < 250 || trainScored.length < 100 || validationScored.length < 100 || testScored.length < 250) {
     console.error("Too few independently verified matches to treat this as a useful cross-check.");
     process.exitCode = 2;
   }
