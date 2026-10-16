@@ -61,6 +61,25 @@ test("inconsistent result labels are excluded to prevent mislabeled training row
   assert.equal(report.dataset.valid, 100);
 });
 
+test("holdout lift compares the rule subgroup against a disjoint complement", () => {
+  const rows = makeRows();
+  const report = discoverFeatureRules(rows, {
+    featureKeys: ["home_strength_flag"],
+    markets: ["home_win"],
+    minTrainSamples: 10,
+    minTestSamples: 10,
+    minTrainLift: -1
+  });
+  const finding = report.findings.find(item => item.rule.feature === "home_strength_flag" && item.rule.operator === ">" && item.rule.value === 0);
+  assert.ok(finding);
+  const holdout = rows.slice(140);
+  const complement = holdout.filter(row => row.features.home_strength_flag <= 0);
+  const expectedRate = complement.filter(row => row.outcome === "H").length / complement.length;
+  assert.equal(finding.holdout.comparisonSampleSize, complement.length);
+  assert.equal(finding.holdout.comparisonRate, expectedRate);
+  assert.equal(finding.holdout.lift, finding.holdout.rate - expectedRate);
+});
+
 test("invalid configuration is rejected", () => {
   assert.throws(() => discoverFeatureRules({}, {}), /rows must be an array/);
   assert.throws(() => discoverFeatureRules([], { trainFraction: 1 }), /trainFraction/);
