@@ -39,6 +39,17 @@ jobs:
           FROM_SEASON: ${{ github.event.inputs.from_season || '2006-07' }}
           TO_SEASON: ${{ github.event.inputs.to_season || '2025-26' }}
         run: npm run archive:historical -- --from-season "$FROM_SEASON" --to-season "$TO_SEASON" --concurrency 5
+      - name: Validate archive coverage and provider errors
+        working-directory: backend
+        run: |
+          node <<'NODE'
+          const report = require("./data/historical-feature-archive/report.json");
+          const total = report.totals.requestedLeagueSeasons;
+          const errors = report.totals.errors;
+          console.log(JSON.stringify(report.totals));
+          if (!report.rowCount || !total) throw new Error("Historical archive is empty.");
+          if (errors / total > 0.10) throw new Error("More than 10% of source requests failed; inspect provider errors before trusting this run.");
+          NODE
       - name: Discover candidate rules on chronological holdout
         working-directory: backend
         run: npm run discover:historical
