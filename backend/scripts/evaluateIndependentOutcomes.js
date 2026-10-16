@@ -204,18 +204,25 @@ function marketProbabilities(row) {
 }
 function crossCheckedRows(records, targets, sources, getModelProbabilities) {
   const output = [];
+  const diagnostics = { input: records.length, missingTarget: 0, missingSource: 0, noExternalMatch: 0,
+    scoreConflict: 0, missingModelProbabilities: 0, missingMarketOdds: 0, verified: 0 };
   for (const record of records) {
     const target = targets.get(String(record.id));
+    if (!target) { diagnostics.missingTarget++; continue; }
     const source = sources[record.league];
-    if (!target || !source) continue;
+    if (!source) { diagnostics.missingSource++; continue; }
     const external = findIndependentResult(target, source);
-    if (!external || external.homeGoals !== record.goals?.home || external.awayGoals !== record.goals?.away) continue;
+    if (!external) { diagnostics.noExternalMatch++; continue; }
+    if (external.homeGoals !== record.goals?.home || external.awayGoals !== record.goals?.away) { diagnostics.scoreConflict++; continue; }
     const model = getModelProbabilities(record);
+    if (!model || ["home", "draw", "away"].some(key => !Number.isFinite(model[key]) || model[key] < 0 || model[key] > 1)) { diagnostics.missingModelProbabilities++; continue; }
     const market = marketProbabilities(external);
-    if (!model || !market || ["home", "draw", "away"].some(key => !Number.isFinite(model[key]) || model[key] < 0 || model[key] > 1)) continue;
+    if (!market) { diagnostics.missingMarketOdds++; continue; }
     output.push({ id: record.id, date: record.date, model, market,
       winner: actualWinner(external.homeGoals, external.awayGoals) });
   }
+  diagnostics.verified = output.length;
+  output.diagnostics = diagnostics;
   return output;
 }
 function scoreBlendRows(rows, marketWeight) {
@@ -304,7 +311,7 @@ async function main() {
   const trainScored = developmentScored.filter(row => splitOf(row.date) === "train");
   const validationScored = developmentScored.filter(row => splitOf(row.date) === "validation");
   const testScored = crossCheckedRows(testRows, targets, leagueSources, row => row.model40?.probabilities);
-  const fittedWeight = fitMarketWeight(trainScored);
+  const fittedWeight = trainScored.length >= 100 ? fitMarketWeight(trainScored) : null;
   const report = {
     evaluator: "independent-football-data-crosscheck-v2",
     generatedAt: new Date().toISOString(),
@@ -323,11 +330,14 @@ async function main() {
       trainingPeriod: ["2025-08-15", "2025-12-31"],
       validationPeriod: ["2026-01-01", "2026-02-28"],
       lockedTestPeriod: ["2026-03-01", "2026-05-24"],
-      fittedMarketWeight: fittedWeight.weight,
-      trainingFitLogLoss: fittedWeight.logLoss,
-      train: scoreBlendRows(trainScored, fittedWeight.weight),
-      validation: scoreBlendRows(validationScored, fittedWeight.weight),
-      lockedTest: scoreBlendRows(testScored, fittedWeight.weight),
+      fittedMarketWeight: fittedWeight?.weight ?? null,
+      trainingFitLogLoss: fittedWeight?.logLoss ?? null,
+      trainCrossCheck: trainScored.diagnostics,
+      validationCrossCheck: validationScored.diagnostics,
+      lockedTestCrossCheck: testScored.diagnostics,
+      train: fittedWeight ? scoreBlendRows(trainScored, fittedWeight.weight) : null,
+      validation: fittedWeight ? scoreBlendRows(validationScored, fittedWeight.weight) : null,
+      lockedTest: fittedWeight ? scoreBlendRows(testScored, fittedWeight.weight) : null,
       guardrail: "Weight is fitted only on training rows; validation and locked test are not used for fitting. Do not retune on the locked test."
     },
     hybridSelective: { selected: hybridSelected, correct: hybridCorrect, incorrect: hybridWrong,
