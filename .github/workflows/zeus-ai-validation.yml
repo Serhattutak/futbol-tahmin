@@ -2,9 +2,9 @@ name: ZEUS AI validation
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/neon-durable-prediction-ledger]
   push:
-    branches: [main]
+    branches: [main, feat/hybrid-ledger-integration]
 
 jobs:
   test-and-build:
@@ -88,12 +88,12 @@ jobs:
           retention-days: 7
       # Keep production-provider quota use low: run the live check after a main-branch deployment.
       - name: Verify live Render API compatibility
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: node .github/scripts/live-api-smoke.cjs
       - name: Read-only production ledger and provider diagnostics
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: |
@@ -123,7 +123,7 @@ jobs:
           })();
           NODE
       - name: Live fixture coverage by date and league
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ZEUS_API_BASE_URL: https://zeus-one-betting-api.onrender.com
         run: |
@@ -152,6 +152,9 @@ jobs:
       - name: Run backend and UI regression tests
         working-directory: backend
         run: npm test
+      - name: Evaluate fixed hybrid robot gates on locked Model 4.1 test set (read-only)
+        working-directory: backend
+        run: node scripts/evaluateHybridRobot.js
       - name: Run offline historical coverage replay (no provider calls or ledger writes)
         working-directory: backend
         run: node scripts/auditHistoricalCoverageV2.js
