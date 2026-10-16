@@ -40,12 +40,13 @@ async function main() {
   const targets = new Map(fixtures.map(f => [String(f.fixture.id), f]));
   const baseById = new Map(baseRecords.map(r => [String(r.id), r]));
   const evaluated = testRows.filter(r => splitOf(r.date) === "test");
-  let eligible = 0; let correct = 0; let noBet = 0; let missing = 0;
+  let eligible = 0; let correct = 0; let noBet = 0; let missing = 0; let matched = 0;
   let baseCorrect = 0; let calibratedCorrect = 0;
   const markets = {}; const examples = [];
   for (const row of evaluated) {
     const target = targets.get(String(row.id)); const baseline = baseById.get(String(row.id));
     if (!target || !baseline) { missing++; continue; }
+    matched++;
     const input = replayInput(fixtures, target);
     const profile = buildMatchStatistics(input.collected.fixture, { ...input.collected, now: input.now });
     const recommendation = buildHybridRecommendation(row.model40.probabilities, row.calibrated.probabilities,
@@ -67,8 +68,8 @@ async function main() {
     version: "HYBRID_SELECTIVE_1.0",
     evaluatedAt: new Date().toISOString(),
     data: { testFixtures: evaluated.length, matchedAndEvaluated: evaluated.length - missing, missing, sources },
-    baseline1X2: { correct: baseCorrect, total: evaluated.length, hitRate: baseCorrect / evaluated.length },
-    calibrated41_1X2: { correct: calibratedCorrect, total: evaluated.length, hitRate: calibratedCorrect / evaluated.length },
+    baseline1X2: { correct: baseCorrect, total: matched, hitRate: matched ? baseCorrect / matched : null },
+    calibrated41_1X2: { correct: calibratedCorrect, total: matched, hitRate: matched ? calibratedCorrect / matched : null },
     hybridSelective: { targetHitRate: 0.75, selected: eligible, noBet, coverage: eligible / Math.max(1, evaluated.length),
       correct, incorrect: eligible - correct, hitRate: eligible ? correct / eligible : null, wilson95: wilson(correct, eligible),
       targetReached: eligible > 0 && correct / eligible >= 0.75 },
