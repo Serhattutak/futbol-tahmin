@@ -32,10 +32,10 @@ python research/benchmark_historical_model.py \\
 | Metric | Feature model | Training-prior baseline |
 |---|---:|---:|
 | Test accuracy | **48.63%** | 43.47% majority-class accuracy |
-| Multiclass log loss | **1.0219** | 1.0753 |
-| Multiclass Brier score | **0.6124** | 0.6506 |
+| Multiclass log loss | **1.0225** | 1.0753 |
+| Multiclass Brier score | **0.6129** | 0.6506 |
 
-At a fixed raw model-confidence threshold of 75%, the 1X2 model selected 352 of 14,585 test matches (2.41% coverage). It correctly predicted 294/352 (**83.52%**, Wilson 95% interval 79.29%–87.03%). This is a very selective subset, not an 83.52% all-match success rate.
+At a fixed raw model-confidence threshold of 75%, the 1X2 model selected 351 of 14,585 test matches (2.41% coverage). It correctly predicted 294/351 (**83.76%**, Wilson 95% interval 79.54%–87.25%). This is a very selective subset, not an 83.52% all-match success rate.
 
 ### Binary markets
 
@@ -43,13 +43,13 @@ The confidence-gated hit rate counts a pick on either side of each binary market
 
 | Market | Test accuracy at 50% | Log loss (model / baseline) | Brier (model / baseline) | Picks at 75% | Hit rate (Wilson 95% interval) | Coverage |
 |---|---:|---:|---:|---:|---:|---:|
-| Home or draw (1X) | 71.16% | 0.5761 / 0.6154 | 0.1957 / 0.2121 | 4,343 | **83.31%** (82.17%–84.39%) | 29.78% |
-| Away or draw (X2) | 63.09% | 0.6417 / 0.6847 | 0.2255 / 0.2458 | 1,240 | **83.39%** (81.21%–85.36%) | 8.50% |
-| No draw | 73.95% | 0.5709 / 0.5738 | 0.1917 / 0.1927 | 4,446 | **77.58%** (76.33%–78.78%) | 30.48% |
-| Over 1.5 goals | 75.73% | 0.5486 / 0.5552 | 0.1819 / 0.1842 | 6,936 | **79.80%** (78.84%–80.73%) | 47.56% |
-| Over 2.5 goals | 55.04% | 0.6853 / 0.6940 | 0.2461 / 0.2504 | 41 | 80.49% (65.99%–89.77%) | 0.28% |
-| Under 3.5 goals | 70.52% | 0.5979 / 0.6077 | 0.2043 / 0.2084 | 4,340 | **76.73%** (75.45%–77.96%) | 29.76% |
-| Both teams to score (yes/no) | 53.32% | 0.6888 / 0.6913 | 0.2478 / 0.2491 | 0 | No qualifying picks | 0.00% |
+| Home or draw (1X) | 71.27% | 0.5760 / 0.6154 | 0.1956 / 0.2121 | 4,516 | **82.73%** (81.60%–83.80%) | 30.96% |
+| Away or draw (X2) | 62.69% | 0.6423 / 0.6847 | 0.2258 / 0.2458 | 1,304 | **82.98%** (80.84%–84.92%) | 8.94% |
+| No draw | 73.95% | 0.5709 / 0.5738 | 0.1917 / 0.1927 | 4,263 | **77.76%** (76.49%–78.99%) | 29.23% |
+| Over 1.5 goals | 75.73% | 0.5484 / 0.5552 | 0.1818 / 0.1842 | 6,810 | **79.69%** (78.72%–80.63%) | 46.69% |
+| Over 2.5 goals | 55.07% | 0.6851 / 0.6940 | 0.2460 / 0.2504 | 40 | 90.00% (76.95%–96.04%) | 0.27% |
+| Under 3.5 goals | 70.59% | 0.5981 / 0.6077 | 0.2044 / 0.2084 | 3,844 | **76.51%** (75.14%–77.82%) | 26.36% |
+| Both teams to score (yes/no) | 54.01% | 0.6888 / 0.6913 | 0.2478 / 0.2491 | 0 | No qualifying picks | 0.00% |
 
 ## Interpretation
 
