@@ -22,7 +22,7 @@ function historyPrecedesPrediction(row, now) {
   }
   return instant(value) && Date.parse(value) < now;
 }
-const RESULT_FIELDS = ["resultStatus", "actualHomeGoals", "actualAwayGoals", "actual1X2", "actualOver15", "actualOver25", "actualOver35", "actualBTTS", "settledAt", "predictionCorrect1X2", "brier1X2", "logLoss1X2", "predictionCorrectOver15", "predictionCorrectOver25", "predictionCorrectOver35", "predictionCorrectBTTS"];
+const RESULT_FIELDS = ["resultStatus", "actualHomeGoals", "actualAwayGoals", "actual1X2", "actualOver15", "actualOver25", "actualOver35", "actualBTTS", "settledAt", "predictionCorrect1X2", "brier1X2", "logLoss1X2", "predictionCorrectOver15", "predictionCorrectOver25", "predictionCorrectOver35", "predictionCorrectBTTS", "hybridPredictionCorrect", "hybridBrier", "hybridSettledAt"];
 function snapshot(analysis, response, collected, now) {
   const fixture = collected?.fixture;
   if (!fixture || !instant(fixture.kickoff) || fixture.kickoffPrecision === "date") return { reason: "UNKNOWN_KICKOFF" };
@@ -42,6 +42,10 @@ function snapshot(analysis, response, collected, now) {
   const fixtureId = String(analysis.fixture.id);
   const fallbackUsed = response.requestedModelVersion === MODELS[1] && !response.model41Available && usedModel === MODELS[0];
   const best = analysis.strongestPrediction;
+  // Record one hybrid decision alongside the Model 4.0 snapshot only, so the
+  // same fixture-level decision is not duplicated across both model snapshots.
+  const hybrid = usedModel === MODELS[0] ? response.hybridRobot : null;
+  const hybridRecommendation = hybrid?.status === "RECOMMEND" ? hybrid.recommendation : null;
   const record = {
     schemaVersion: 1, ledgerId: hash([fixtureId, usedModel, artifactFingerprint, cache.inputVersion]), fixtureId,
     canonicalFixtureId: fixture.canonicalFixtureId || null, providerFixtureIds: fixture.providerFixtureIds || {},
@@ -61,6 +65,14 @@ function snapshot(analysis, response, collected, now) {
     expectedHomeGoals: analysis.expectedGoals?.home ?? null, expectedAwayGoals: analysis.expectedGoals?.away ?? null, predictedScore: analysis.estimatedScore ?? null,
     strongestPrediction: best?.market ?? null, strongestPredictionProbability: best?.probability ?? null, modelConfidence: analysis.model?.confidence ?? null,
     fallbackUsed, fallbackReason: fallbackUsed ? response.model41FallbackReason : null,
+    hybridRobotVersion: hybrid?.version ?? null,
+    hybridStatus: hybrid?.status ?? null,
+    hybridReason: hybrid?.reason ?? null,
+    hybridMarket: hybridRecommendation?.market ?? null,
+    hybridProbability: hybridRecommendation?.probability ?? null,
+    hybridModel40Probability: hybridRecommendation?.model40Probability ?? null,
+    hybridModel41Probability: hybridRecommendation?.model41Probability ?? null,
+    hybridDisagreement: hybridRecommendation?.disagreement ?? null,
     ...Object.fromEntries(RESULT_FIELDS.map(k => [k, null])),
   };
   return { record: clone(record) };
@@ -71,6 +83,21 @@ function evaluate(record, home, away, now) {
   const index = ["home", "draw", "away"].indexOf(actual1X2);
   const total = home + away;
   const result = { resultStatus: "settled", actualHomeGoals: home, actualAwayGoals: away, actual1X2, actualOver15: total > 1.5, actualOver25: total > 2.5, actualOver35: total > 3.5, actualBTTS: home > 0 && away > 0, settledAt: new Date(now).toISOString(), predictionCorrect1X2: ps.indexOf(Math.max(...ps)) === index, brier1X2: ps.reduce((sum, p, i) => sum + (p - Number(i === index)) ** 2, 0), logLoss1X2: -Math.log(Math.max(1e-15, Math.min(1 - 1e-15, ps[index]))) };
+  if (record.hybridStatus === "RECOMMEND" && typeof record.hybridMarket === "string" && probability(record.hybridProbability)) {
+    const hybridWon = ({
+      "1": home > away, "X": home === away, "2": away > home,
+      "1X": home >= away, "X2": away >= home, "12": home !== away,
+      "OVER_1_5": total >= 2, "UNDER_1_5": total <= 1,
+      "OVER_2_5": total >= 3, "UNDER_2_5": total <= 2,
+      "OVER_3_5": total >= 4, "UNDER_3_5": total <= 3,
+      "BTTS_YES": home > 0 && away > 0, "BTTS_NO": home === 0 || away === 0,
+    })[record.hybridMarket];
+    if (typeof hybridWon === "boolean") {
+      result.hybridPredictionCorrect = hybridWon;
+      result.hybridBrier = (record.hybridProbability - Number(hybridWon)) ** 2;
+      result.hybridSettledAt = new Date(now).toISOString();
+    }
+  }
   for (const [name, key, outcome] of [["Over15", "over15", "actualOver15"], ["Over25", "over25", "actualOver25"], ["Over35", "over35", "actualOver35"], ["BTTS", "bttsYes", "actualBTTS"]]) {
     result[`predictionCorrect${name}`] = (record[key] >= .5) === result[outcome];
     result[`brier${name}`] = (record[key] - Number(result[outcome])) ** 2;
