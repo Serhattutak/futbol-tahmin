@@ -185,6 +185,10 @@ function summarize(acc) {
   return { sampleSize: acc.n, correct: acc.correct, hitRate: acc.n ? acc.correct / acc.n : null,
     multiclassBrier: acc.n ? acc.brierSum / acc.n : null, logLoss: acc.n ? acc.logLossSum / acc.n : null };
 }
+function averageProbabilities(...sets) {
+  const keys = ["home", "draw", "away"];
+  return Object.fromEntries(keys.map(key => [key, sets.reduce((sum, set) => sum + set[key], 0) / sets.length]));
+}
 function wilson(successes, n) {
   if (!n) return null;
   const z = 1.959963984540054, p = successes / n, d = 1 + z * z / n;
@@ -205,7 +209,8 @@ async function main() {
   const targets = new Map(fixtures.map(fixture => [String(fixture.fixture.id), fixture]));
   const leagueSources = {};
   await Promise.all(Object.entries(CODES).map(async ([league, code]) => { leagueSources[league] = await fetchResults(league, code); }));
-  const models = { model40: accumulator(), model41: accumulator(), market: accumulator() };
+  const models = { model40: accumulator(), model41: accumulator(), market: accumulator(),
+    model41MarketBlend: accumulator(), threeWayEqualBlend: accumulator() };
   const markets = {};
   let exactNameDateMatch = 0, independentlyVerified = 0, scoreConflicts = 0, unmatched = 0;
   let hybridSelected = 0, hybridCorrect = 0, hybridWrong = 0;
@@ -227,7 +232,13 @@ async function main() {
     addProbabilities(models.model40, row.model40.probabilities, winner);
     addProbabilities(models.model41, row.calibrated.probabilities, winner);
     const market = marketProbabilities(external);
-    if (market) { marketOddsAvailable++; addProbabilities(models.market, market, winner); }
+    if (market) {
+      marketOddsAvailable++;
+      addProbabilities(models.market, market, winner);
+      // Fixed, pre-declared diagnostic blends; no weights are fitted on the locked test set.
+      addProbabilities(models.model41MarketBlend, averageProbabilities(row.calibrated.probabilities, market), winner);
+      addProbabilities(models.threeWayEqualBlend, averageProbabilities(row.model40.probabilities, row.calibrated.probabilities, market), winner);
+    }
 
     const input = replayInput(fixtures, target);
     const profile = buildMatchStatistics(input.collected.fixture, { ...input.collected, now: input.now });
@@ -253,11 +264,13 @@ async function main() {
   const report = {
     evaluator: "independent-football-data-crosscheck-v1",
     generatedAt: new Date().toISOString(),
-    methodology: "Frozen Model 4.0/4.1 predictions; external scores from football-data.co.uk; score conflicts excluded; no fitting or threshold tuning; bookmaker average odds are a comparator only.",
+    methodology: "Frozen Model 4.0/4.1 predictions; external scores from football-data.co.uk; score conflicts excluded; no fitting or threshold tuning. Market odds are evaluated as a comparator and in two fixed diagnostic blends (50/50 Model 4.1 + market; equal-weight Model 4.0 + Model 4.1 + market); these blends are not production recommendations.",
     predictionDataset: { provider: "OpenFootball", lockedTestRows: testRows.length, sources },
     outcomeSource: { provider: "football-data.co.uk", season: "2025/26", leagueFiles: Object.values(leagueSources).map(s => ({ league: s.league, url: s.url, rows: s.rows.length })) },
     reconciliation: { exactNameDateMatch, independentlyVerified, scoreConflicts, unmatched, verifiedShareOfTest: independentlyVerified / Math.max(1, testRows.length) },
-    model1X2: { model40: summarize(models.model40), model41: summarize(models.model41), bookmakerAverageOdds: summarize(models.market), oddsSampleSize: marketOddsAvailable },
+    model1X2: { model40: summarize(models.model40), model41: summarize(models.model41), bookmakerAverageOdds: summarize(models.market),
+      model41PlusMarket50_50: summarize(models.model41MarketBlend), model40Model41MarketEqualWeight: summarize(models.threeWayEqualBlend),
+      oddsSampleSize: marketOddsAvailable },
     hybridSelective: { selected: hybridSelected, correct: hybridCorrect, incorrect: hybridWrong,
       coverageOfVerified: hybridSelected / Math.max(1, independentlyVerified),
       hitRate: hybridSelected ? hybridCorrect / hybridSelected : null,
