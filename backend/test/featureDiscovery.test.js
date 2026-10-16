@@ -35,6 +35,21 @@ test("feature discovery uses a chronological holdout and reports dataset provena
   assert.ok(report.findings.every(row => Number.isFinite(row.training.rate)));
 });
 
+test("calendar-day boundaries keep all same-day fixtures in one partition", () => {
+  const rows = makeRows(200);
+  const targetDate = rows[140].date;
+  rows.push({
+    ...rows[140],
+    date: targetDate,
+    features: { ...rows[140].features, duplicate_fixture_on_split_day: 1 }
+  });
+  const report = discoverFeatureRules(rows, { minTrainSamples: 10, minTestSamples: 10, minTrainLift: -1 });
+  assert.equal(report.dataset.splitDate.slice(0, 10), targetDate.slice(0, 10));
+  assert.ok(report.dataset.firstDate < report.dataset.splitDate);
+  assert.ok(report.dataset.lastDate >= report.dataset.splitDate);
+  assert.equal(report.dataset.training + report.dataset.holdout, report.dataset.valid);
+});
+
 test("thresholds are derived from training data, not future holdout values", () => {
   const rows = makeRows(200).map((row, i) => i >= 140
     ? { ...row, features: { ...row.features, later_only_measure: 1000 + i } }
