@@ -24,6 +24,8 @@ function assessForwardPerformanceReadiness({
   const comparison = report.comparison && typeof report.comparison === "object" ? report.comparison : {};
   const integrity = reconciliation && typeof reconciliation === "object" ? reconciliation : {};
 
+  const thresholdsValid = nonNegativeInteger(minSettledPerModel) && nonNegativeInteger(minPairedSamples);
+  add("VALID_THRESHOLDS", thresholdsValid, { minSettledPerModel, minPairedSamples });
   add("NEON_STORAGE_ACTIVE", storageMode === "neon_postgres", { storageMode: storageMode ?? null });
   const countsValid = ["total", "pending", "settled", "conflicts"].every(key => nonNegativeInteger(status[key]));
   add("LEDGER_COUNTS_VALID", countsValid, {
@@ -54,14 +56,13 @@ function assessForwardPerformanceReadiness({
   });
   const modelSamplesValid = modelResults.every(model =>
     nonNegativeInteger(model.sampleSize) && nonNegativeInteger(model.settledPredictions));
-  const enoughPerModel = modelSamplesValid && modelResults.every(model =>
+  const enoughPerModel = thresholdsValid && modelSamplesValid && modelResults.every(model =>
     model.sampleSize >= minSettledPerModel && model.settledPredictions >= minSettledPerModel);
   add("MIN_SETTLED_SAMPLE_PER_MODEL", enoughPerModel, { minimum: minSettledPerModel, models: modelResults });
 
   const pairedSample = comparison.sampleSize;
-  add("MIN_PAIRED_COMPARISON_SAMPLE", nonNegativeInteger(pairedSample) && pairedSample >= minPairedSamples, {
-    minimum: minPairedSamples, sampleSize: pairedSample ?? null,
-  });
+  add("MIN_PAIRED_COMPARISON_SAMPLE", thresholdsValid && nonNegativeInteger(pairedSample) &&
+    pairedSample >= minPairedSamples, { minimum: minPairedSamples, sampleSize: pairedSample ?? null });
 
   const passed = checks.every(check => check.passed);
   return {

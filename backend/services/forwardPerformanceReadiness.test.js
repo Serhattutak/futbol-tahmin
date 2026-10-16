@@ -88,3 +88,13 @@ test("supports stricter explicitly configured thresholds", () => {
   });
   assert.equal(result.ready, false);
 });
+
+test("rejects invalid custom thresholds", () => {
+  const result = assessForwardPerformanceReadiness({
+    ...readyInput(),
+    minSettledPerModel: -1,
+    minPairedSamples: 100.5,
+  });
+  assert.equal(result.ready, false);
+  assert.ok(result.blockingReasons.includes("VALID_THRESHOLDS"));
+});
