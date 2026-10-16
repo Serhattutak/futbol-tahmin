@@ -1,6 +1,6 @@
 # ZEUS AI — Stage 13: Data coverage gates and prediction eligibility
 
-Status: in progress. This stage follows Stage 12 and must not be described as complete until the acceptance checks below have evidence.
+Status: implementation in progress; automated execution evidence and live coverage audit remain required. This stage must not be described as complete until every acceptance check below has evidence.
 
 ## Goal
 
@@ -16,17 +16,17 @@ Turn the live-data failures observed on 2026-10-15 into explicit, testable eligi
 
 ## Work items
 
-1. Define a single explicit coverage report for each fixture: fixture identity/kickoff confidence, home and away history counts, field-level availability/provenance, provider errors and freshness.
+1. Implement `summarizeDataCoverage` as a deterministic per-fixture report with kickoff confidence, history counts, field status, freshness, provider failure categories, and stable reasons. This helper is currently standalone; production analysis wiring remains pending.
 2. Distinguish unavailable provider data from valid empty results and provider failures. Preserve HTTP status/category in safe diagnostics; never log tokens or raw credential-bearing headers.
-3. Add regression tests for zero/low history, stale data, provider conflicts, unsupported leagues, HTTP 400/429, and missing optional versus critical fields.
+3. Add regression tests for zero/low history, stale data, unsupported leagues, HTTP 400/429, authentication failures, and missing fields. Provider-conflict and full live provider-path tests remain outstanding.
 4. Ensure recommendation eligibility is fail-closed for insufficient history, conflicting fixture identity, unknown kickoff, stale critical data, or missing required model inputs. Surface an explicit NO BET / insufficient-data reason rather than manufacturing values.
 5. Keep the existing production model and provider configuration unchanged. Do not enable paid providers or write to production ledger as part of implementation.
-6. Run full backend tests and CI; perform read-only live checks and save redacted evidence. Clearly separate code/test success from external provider limitations.
+6. Run the targeted and full backend tests plus CI; perform read-only live checks and save redacted evidence. These executions have not yet been confirmed for the current Stage 13 head.
 
 ## Acceptance criteria
 
-- Every fixture diagnostic includes stable reason codes and data provenance without secrets.
-- Tests prove that critical data gaps cannot become confident recommendations and that optional gaps are accurately reported.
+- The standalone coverage helper returns stable reason codes and field status without raw payloads or credentials. Runtime integration and per-provider provenance remain open.
+- Added unit cases cover critical history/kickoff gaps, field availability, staleness, and 400/429/auth/configuration/league/matching classification. Test execution and runtime integration remain open.
 - HTTP 400, 429, authentication, league coverage, and fixture matching failures remain distinguishable.
 - Existing model outputs are unchanged when input data and eligibility are unchanged.
 - Full backend tests and CI pass.

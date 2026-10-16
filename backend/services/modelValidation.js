@@ -63,10 +63,70 @@ function assessPredictionEligibility({ dataQuality, sampleSize, probabilities, c
   return { eligible: reasons.length === 0, reasons };
 }
 
+function classifyProviderFailure({ status, code, configured = true, leagueSupported = true, fixtureMatched = true } = {}) {
+  if (!configured) return "PROVIDER_NOT_CONFIGURED";
+  if (!leagueSupported) return "LEAGUE_NOT_SUPPORTED";
+  if (!fixtureMatched) return "FIXTURE_NOT_MATCHED";
+  const numericStatus = Number(status);
+  const normalizedCode = String(code || "").toUpperCase();
+  if (numericStatus === 401 || numericStatus === 403 || /AUTH|API_KEY|UNAUTHORIZED|FORBIDDEN/.test(normalizedCode)) return "PROVIDER_AUTH_ERROR";
+  if (numericStatus === 429 || /RATE_LIMIT|QUOTA|TOO_MANY_REQUESTS/.test(normalizedCode)) return "PROVIDER_RATE_LIMITED";
+  if (numericStatus === 400 || /BAD_REQUEST|INVALID_REQUEST/.test(normalizedCode)) return "PROVIDER_BAD_REQUEST";
+  if (numericStatus >= 500 && numericStatus <= 599) return "PROVIDER_SERVER_ERROR";
+  if (numericStatus > 0) return "PROVIDER_HTTP_ERROR";
+  if (normalizedCode) return "PROVIDER_REQUEST_FAILED";
+  return "PROVIDER_RESULT_UNAVAILABLE";
+}
+
+function summarizeDataCoverage({ fixture = {}, historyCounts = {}, fieldStatus = {}, providerAttempts = [], now = Date.now(), maxAgeMs = 6 * 60 * 60 * 1000 } = {}) {
+  const fields = {};
+  const missingFields = [];
+  for (const [field, status] of Object.entries(fieldStatus)) {
+    const normalized = ["available", "empty", "unavailable", "error"].includes(status) ? status : "unavailable";
+    fields[field] = normalized;
+    if (normalized !== "available") missingFields.push(field);
+  }
+  const counts = {
+    home: Number.isFinite(historyCounts.home) && historyCounts.home >= 0 ? historyCounts.home : null,
+    away: Number.isFinite(historyCounts.away) && historyCounts.away >= 0 ? historyCounts.away : null,
+    h2h: Number.isFinite(historyCounts.h2h) && historyCounts.h2h >= 0 ? historyCounts.h2h : null,
+  };
+  if (counts.home === null || counts.home < 5) missingFields.push("homeHistory");
+  if (counts.away === null || counts.away < 5) missingFields.push("awayHistory");
+  if (counts.h2h === null || counts.h2h < 1) missingFields.push("h2h");
+  const kickoffMs = typeof fixture.kickoff === "string" ? Date.parse(fixture.kickoff) : NaN;
+  const kickoffKnown = Number.isFinite(kickoffMs) && fixture.kickoffPrecision !== "date";
+  const ageMs = Number.isFinite(fixture.dataUpdatedAt) ? Math.max(0, now - fixture.dataUpdatedAt)
+    : typeof fixture.dataUpdatedAt === "string" ? Math.max(0, now - Date.parse(fixture.dataUpdatedAt)) : null;
+  const stale = ageMs !== null && Number.isFinite(ageMs) && ageMs > maxAgeMs;
+  const providerErrors = providerAttempts.map(attempt => ({
+    provider: String(attempt?.provider || "unknown"),
+    category: classifyProviderFailure(attempt || {}),
+  }));
+  const reasons = [];
+  if (!kickoffKnown) reasons.push("UNKNOWN_KICKOFF");
+  if (counts.home === null || counts.home < 5 || counts.away === null || counts.away < 5) reasons.push("INSUFFICIENT_HISTORY");
+  if (stale) reasons.push("STALE_CRITICAL_DATA");
+  if (providerErrors.some(item => item.category === "PROVIDER_AUTH_ERROR")) reasons.push("PROVIDER_AUTH_ERROR");
+  if (providerErrors.some(item => item.category === "PROVIDER_RATE_LIMITED")) reasons.push("PROVIDER_RATE_LIMITED");
+  if (providerErrors.some(item => item.category === "LEAGUE_NOT_SUPPORTED")) reasons.push("LEAGUE_NOT_SUPPORTED");
+  if (providerErrors.some(item => item.category === "FIXTURE_NOT_MATCHED")) reasons.push("FIXTURE_NOT_MATCHED");
+  return {
+    eligibleForAnalysis: reasons.length === 0,
+    reasons: [...new Set(reasons)],
+    fixture: { id: fixture.id ?? null, kickoff: kickoffKnown ? new Date(kickoffMs).toISOString() : null, kickoffPrecision: fixture.kickoffPrecision || "unknown" },
+    historyCounts: counts,
+    fields,
+    missingFields: [...new Set(missingFields)],
+    dataAgeMs: ageMs !== null && Number.isFinite(ageMs) ? ageMs : null,
+    providerErrors,
+  };
+}
+
 function shouldNoBet(options = {}) {
   return !assessPredictionEligibility(options).eligible;
 }
 
 function oddsValue(probability, odds) { if (!Number.isFinite(probability) || !Number.isFinite(odds) || probability <= 0 || probability >= 1 || odds <= 1) return null; return { impliedProbability: 1 / odds, fairOdds: 1 / probability, value: probability * odds - 1 }; }
 
-module.exports = { assessPredictionEligibility, bayesianSmoothedRate, binaryMetrics, calibrationSummary, dixonColesTau, oddsValue, shouldNoBet, walkForwardSplit };
+module.exports = { assessPredictionEligibility, bayesianSmoothedRate, binaryMetrics, calibrationSummary, classifyProviderFailure, dixonColesTau, oddsValue, shouldNoBet, summarizeDataCoverage, walkForwardSplit };
