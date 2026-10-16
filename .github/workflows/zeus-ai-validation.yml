@@ -21,6 +21,16 @@ jobs:
         run: npm ci
       - name: Lint frontend
         run: npm run lint
+      - name: Verify safe ad configuration defaults
+        run: npm run ads:check
+      - name: Verify required ad configuration fails closed
+        run: |
+          if ZEUS_ADS_REQUIRED=true npm run ads:check; then
+            echo "Expected required ad configuration check to fail with empty IDs."
+            exit 1
+          else
+            echo "Required ad configuration correctly blocked without publisher setup."
+          fi
       - name: Report frontend npm audit details
         if: always()
         run: |
