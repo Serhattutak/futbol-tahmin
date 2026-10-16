@@ -307,9 +307,10 @@ async function main() {
       independentOdds: Boolean(market),
     });
   }
-  const developmentScored = crossCheckedRows(developmentRows, targets, leagueSources, row => row.stats?.probabilities);
-  const trainScored = developmentScored.filter(row => splitOf(row.date) === "train");
-  const validationScored = developmentScored.filter(row => splitOf(row.date) === "validation");
+  const trainInputs = developmentRows.filter(row => splitOf(row.date) === "train");
+  const validationInputs = developmentRows.filter(row => splitOf(row.date) === "validation");
+  const trainScored = crossCheckedRows(trainInputs, targets, leagueSources, row => row.stats?.probabilities);
+  const validationScored = crossCheckedRows(validationInputs, targets, leagueSources, row => row.stats?.probabilities);
   const testScored = crossCheckedRows(testRows, targets, leagueSources, row => row.model40?.probabilities);
   const fittedWeight = trainScored.length >= 100 ? fitMarketWeight(trainScored) : null;
   const report = {
