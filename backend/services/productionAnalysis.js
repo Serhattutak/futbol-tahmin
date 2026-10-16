@@ -5,6 +5,7 @@ const { buildMatchStatistics } = require("./teamStatistics");
 const { features } = require("./model41");
 const { normalizeStatus } = require("./fixtureNormalization");
 const { MODEL_4_0, MODEL_4_1, loadArtifact, selectedModel } = require("./modelVersions");
+const { buildHybridRecommendation } = require("./hybridPredictionRobot");
 const { VERSION: HISTORY_VERSION, provenance } = require("./divisionHistory");
 const STATISTICS_VERSION = `${HISTORY_VERSION}-previous-day`;
 const hash = value => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -119,11 +120,16 @@ class ProductionAnalysis {
     const metadata = { history: provenance(collected.homeMatches || [], collected.awayMatches || []), model41Available: Boolean(advanced), MODEL_4_1_READY: Boolean(advanced), model41FallbackReason: reason, statisticsQuality: readiness.statisticsQuality, historicalSampleSize: readiness.historicalSampleSize };
     const models = { [MODEL_4_0]: base.value ? { ...base.value, modelVersion: MODEL_4_0, ...metadata } : null, [MODEL_4_1]: advanced ? { ...advanced, modelVersion: MODEL_4_1, ...metadata } : null };
     const cache = { statisticsVersion: STATISTICS_VERSION, artifactVersion: fingerprint, inputVersion: inputHash, expiresAt: this.now() + this.ttl, inputHit: input.hit, model40Hit: base.hit, model41Hit: advancedHit };
-    const response = { ...models[actual], requestedModelVersion: requested, models, cache };
+    const hybridRobot = base.value && advanced
+      ? buildHybridRecommendation(base.value.probabilities, advanced.probabilities,
+        readiness.statisticsQuality?.score ?? base.value.statisticsProfile?.dataQuality?.score ?? base.value.dataQuality?.score,
+        readiness.historicalSampleSize || base.value.historicalSampleSize)
+      : { version: "HYBRID_SELECTIVE_1.0", status: "NO_BET", targetHitRate: 0.75, recommendation: null, reason: "BOTH_MODELS_REQUIRED" };
+    const response = { ...models[actual], requestedModelVersion: requested, models, hybridRobot, cache };
     const key = `${fixtureId}:${STATISTICS_VERSION}:${fingerprint || "unavailable"}:${reason || "ready"}:${inputHash}`;
     if (persist && !this.records.has(key)) {
       const compact = result => result ? { modelVersion: result.modelVersion, probabilities: result.probabilities || null, rawProbabilities: result.model?.rawProbabilities || null, confidence: result.model?.confidence ?? null, statisticsQuality: result.statisticsQuality, historicalSampleSize: result.historicalSampleSize } : null;
-      this.records.set(key, { key, fixtureId, kickoff: collected.fixture.kickoff, createdAt: new Date(this.now()).toISOString(), statisticsVersion: STATISTICS_VERSION, artifactVersion: fingerprint, fallbackReason: reason, model40: compact(models[MODEL_4_0]), model41: compact(models[MODEL_4_1]) });
+      this.records.set(key, { key, fixtureId, kickoff: collected.fixture.kickoff, createdAt: new Date(this.now()).toISOString(), statisticsVersion: STATISTICS_VERSION, artifactVersion: fingerprint, fallbackReason: reason, model40: compact(models[MODEL_4_0]), model41: compact(models[MODEL_4_1]), hybridRobot });
       while (this.records.size > 2000) this.records.delete(this.records.keys().next().value);
       if (this.file) { try { fs.mkdirSync(path.dirname(this.file), { recursive: true }); const tmp = `${this.file}.${process.pid}.tmp`; fs.writeFileSync(tmp, JSON.stringify([...this.records.values()], null, 2), "utf8"); fs.renameSync(tmp, this.file); } catch (error) { this.logger({ type: "SHADOW_STORE_FAILED", fixture: fixtureId, error: error.message }); } }
     }
