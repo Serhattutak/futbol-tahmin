@@ -124,7 +124,9 @@ class AsyncPredictionLedger {
     this.assertInitialized();
     const record = this.entries().find(row => row.ledgerId === ledgerId);
     if (!record) return { reason: "NOT_FOUND" };
-    if (this.now() < Date.parse(record.kickoffTime)) return { reason: "NOT_STARTED" };
+    const kickoffTime = Date.parse(record.kickoffTime);
+    if (!Number.isFinite(kickoffTime)) return { reason: "UNKNOWN_KICKOFF" };
+    if (this.now() < kickoffTime) return { reason: "NOT_STARTED" };
     const finals = (fixtures || []).filter(fixture =>
       fixture.provider &&
       record.providerFixtureIds?.[fixture.provider] != null &&
