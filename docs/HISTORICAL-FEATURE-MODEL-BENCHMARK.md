@@ -6,7 +6,7 @@
 
 The public-domain OpenFootball archive contains 72,896 completed matches from 19 leagues, with 54 pre-match numeric features. Available coverage spans 2010-07-17 to 2026-05-24; this is not a complete 20-season archive.
 
-The benchmark uses chronological calendar-day partitions:
+The benchmark uses chronological calendar-day partitions. The pinned full-archive run and downloadable evidence artifact are recorded in [GitHub Actions run 38904714553](https://github.com/Serhattutak/futbol-tahmin/actions/runs/38904714553).
 
 | Partition | Matches | Date range |
 |---|---:|---|
@@ -14,16 +14,16 @@ The benchmark uses chronological calendar-day partitions:
 | Validation | 14,592 | 2020-07-04 to 2023-08-25 |
 | Later test | 14,585 | 2023-08-26 to 2026-05-24 |
 
-A \`HistGradientBoostingClassifier\` was trained on all 54 numeric pre-match features. Validation log loss selected between 100 and 200 maximum iterations; both settings produced the same validation score, so the lower-complexity 100-iteration option was selected. The final estimator was refit on training plus validation and scored on the later period. The baseline uses only training-period class prevalence.
+A `HistGradientBoostingClassifier` was trained on all 54 numeric pre-match features. Validation log loss selected between 100 and 200 maximum iterations; both settings produced the same validation score, so the lower-complexity 100-iteration option was selected. The final estimator was refit on training plus validation and scored on the later period. The baseline uses only training-period class prevalence.
 
 Reproduce the research run:
 
-\`\`\`bash
+```bash
 python -m pip install -r research/requirements.txt
 python research/benchmark_historical_model.py \\
   --input /path/to/rows.jsonl \\
   --out /path/to/historical-model-benchmark.json
-\`\`\`
+```
 
 ## Results
 
@@ -31,11 +31,11 @@ python research/benchmark_historical_model.py \\
 
 | Metric | Feature model | Training-prior baseline |
 |---|---:|---:|
-| Test accuracy | **48.63%** | 43.47% majority-class accuracy |
-| Multiclass log loss | **1.0225** | 1.0753 |
-| Multiclass Brier score | **0.6129** | 0.6506 |
+| Test accuracy | **48.57%** | 43.47% majority-class accuracy |
+| Multiclass log loss | **1.0217** | 1.0753 |
+| Multiclass Brier score | **0.6124** | 0.6506 |
 
-At a fixed raw model-confidence threshold of 75%, the 1X2 model selected 351 of 14,585 test matches (2.41% coverage). It correctly predicted 294/351 (**83.76%**, Wilson 95% interval 79.54%–87.25%). This is a very selective subset, not an 83.52% all-match success rate.
+At a fixed raw model-confidence threshold of 75%, the 1X2 model selected 370 of 14,585 test matches (2.54% coverage). It correctly predicted 312/370 (**84.32%**, Wilson 95% interval 80.27%–87.67%). This is a very selective subset, not an all-match success rate.
 
 ### Binary markets
 
@@ -43,18 +43,18 @@ The confidence-gated hit rate counts a pick on either side of each binary market
 
 | Market | Test accuracy at 50% | Log loss (model / baseline) | Brier (model / baseline) | Picks at 75% | Hit rate (Wilson 95% interval) | Coverage |
 |---|---:|---:|---:|---:|---:|---:|
-| Home or draw (1X) | 71.27% | 0.5760 / 0.6154 | 0.1956 / 0.2121 | 4,516 | **82.73%** (81.60%–83.80%) | 30.96% |
-| Away or draw (X2) | 62.69% | 0.6423 / 0.6847 | 0.2258 / 0.2458 | 1,304 | **82.98%** (80.84%–84.92%) | 8.94% |
-| No draw | 73.95% | 0.5709 / 0.5738 | 0.1917 / 0.1927 | 4,263 | **77.76%** (76.49%–78.99%) | 29.23% |
-| Over 1.5 goals | 75.73% | 0.5484 / 0.5552 | 0.1818 / 0.1842 | 6,810 | **79.69%** (78.72%–80.63%) | 46.69% |
-| Over 2.5 goals | 55.07% | 0.6851 / 0.6940 | 0.2460 / 0.2504 | 40 | 90.00% (76.95%–96.04%) | 0.27% |
-| Under 3.5 goals | 70.59% | 0.5981 / 0.6077 | 0.2044 / 0.2084 | 3,844 | **76.51%** (75.14%–77.82%) | 26.36% |
-| Both teams to score (yes/no) | 54.01% | 0.6888 / 0.6913 | 0.2478 / 0.2491 | 0 | No qualifying picks | 0.00% |
+| Home or draw (1X) | 71.35% | 0.5757 / 0.6154 | 0.1956 / 0.2121 | 4,462 | **83.35%** (82.23%–84.41%) | 30.59% |
+| Away or draw (X2) | 62.91% | 0.6419 / 0.6847 | 0.2257 / 0.2458 | 1,302 | **82.57%** (80.41%–84.53%) | 8.93% |
+| No draw | 73.95% | 0.5709 / 0.5738 | 0.1917 / 0.1927 | 4,404 | **77.91%** (76.66%–79.11%) | 30.20% |
+| Over 1.5 goals | 75.73% | 0.5483 / 0.5552 | 0.1818 / 0.1842 | 6,875 | **80.04%** (79.08%–80.97%) | 47.14% |
+| Over 2.5 goals | 54.87% | 0.6853 / 0.6940 | 0.2461 / 0.2504 | 28 | 89.29% (72.80%–96.29%) | 0.19% |
+| Under 3.5 goals | 70.56% | 0.5981 / 0.6077 | 0.2044 / 0.2084 | 4,012 | **77.02%** (75.69%–78.29%) | 27.51% |
+| Both teams to score (yes/no) | 53.59% | 0.6889 / 0.6913 | 0.2479 / 0.2491 | 0 | No qualifying picks | 0.00% |
 
 ## Interpretation
 
 - The feature model improves the training-prior baseline on 1X2 log loss and Brier score, but its all-match 1X2 accuracy remains below 50%.
-- Some binary markets show observed hit rates above 75% at a fixed raw-probability threshold, with materially different coverage. Over 2.5 has only 41 selected picks and a wide interval; it is not sufficient evidence for promotion.
+- Some binary markets show observed hit rates above 75% at a fixed raw-probability threshold, with materially different coverage. Over 2.5 has only 28 selected picks and a wide interval; it is not sufficient evidence for promotion.
 - The probabilities have **not** been separately calibrated. A raw 75% model probability is not a guarantee of 75% realised accuracy.
 - Feature-rule association tests and classifier performance are different questions. A feature can correlate with an outcome without adding value to a production model once other features are included.
 
@@ -64,4 +64,4 @@ The later test spans 2023-08-26 through 2026-05-24. The same archive and overlap
 
 ## Promotion gate
 
-Do not promote this research model based on this report. Freeze the code and probability threshold, then collect a forward-only ledger where predictions and timestamps are saved before kickoff and settled against verified results afterward. Report accuracy, log loss, Brier score, calibration, confidence-gated hit rate, and coverage for all eligible picks including \`NO BET\`. Only a later, unseen forward period can provide independent evidence for a production decision.
+Do not promote this research model based on this report. Freeze the code and probability threshold, then collect a forward-only ledger where predictions and timestamps are saved before kickoff and settled against verified results afterward. Report accuracy, log loss, Brier score, calibration, confidence-gated hit rate, and coverage for all eligible picks including `NO BET`. Only a later, unseen forward period can provide independent evidence for a production decision.
