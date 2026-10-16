@@ -157,6 +157,9 @@ jobs:
       - name: Evaluate fixed hybrid robot gates on locked Model 4.1 test set (read-only)
         working-directory: backend
         run: node scripts/evaluateHybridRobot.js
+      - name: Independently cross-check locked predictions against football-data.co.uk (read-only)
+        working-directory: backend
+        run: node scripts/evaluateIndependentOutcomes.js
       - name: Run offline historical coverage replay (no provider calls or ledger writes)
         working-directory: backend
         run: node scripts/auditHistoricalCoverageV2.js
