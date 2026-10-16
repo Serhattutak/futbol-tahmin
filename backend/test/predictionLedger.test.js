@@ -125,6 +125,7 @@ test("Ledger records and settles one hybrid recommendation without duplicating c
   assert.ok(Math.abs(settled.hybridBrier - .64) < 1e-12);
   assert.ok(settled.hybridSettledAt);
 
+  time(BEFORE);
   const noBet = input("hybrid-no-bet");
   noBet.response.hybridRobot = { version: "HYBRID_SELECTIVE_1.0", status: "NO_BET", recommendation: null, reason: "NO_MARKET_PASSES_CONSENSUS_GATES" };
   assert.ok(save(ledger, noBet).every(row => row.saved));
