@@ -7,7 +7,6 @@ const { discoverFeatureRules, wilson } = require("../services/featureDiscovery")
 function makeRows(count = 200) {
   return Array.from({ length: count }, (_, i) => {
     const strong = i % 4 !== 0;
-    // The signal is intentionally stable in both chronological periods.
     const homeWin = strong ? i % 5 !== 0 : i % 5 === 0;
     return {
       date: new Date(Date.UTC(2020, 0, 1 + i)).toISOString(),
@@ -27,7 +26,7 @@ test("Wilson interval is bounded and handles empty samples", () => {
 });
 
 test("feature discovery uses a chronological holdout and reports dataset provenance", () => {
-  const report = discoverFeatureRules(makeRows(), { minTrainSamples: 10, minTestSamples: 10, minTrainLift: 0 });
+  const report = discoverFeatureRules(makeRows(), { minTrainSamples: 10, minTestSamples: 10, minTrainLift: -1 });
   assert.equal(report.dataset.valid, 200);
   assert.equal(report.dataset.training, 140);
   assert.equal(report.dataset.holdout, 60);
@@ -40,7 +39,7 @@ test("thresholds are derived from training data, not future holdout values", () 
   const rows = makeRows(200).map((row, i) => i >= 140
     ? { ...row, features: { ...row.features, later_only_measure: 1000 + i } }
     : { ...row, features: { ...row.features, later_only_measure: i } });
-  const report = discoverFeatureRules(rows, { featureKeys: ["later_only_measure"], minTrainSamples: 10, minTestSamples: 10, minTrainLift: 0 });
+  const report = discoverFeatureRules(rows, { featureKeys: ["later_only_measure"], minTrainSamples: 10, minTestSamples: 10, minTrainLift: -1 });
   const thresholds = report.findings.map(f => f.rule.value).filter(v => typeof v === "number");
   assert.ok(thresholds.length > 0);
   assert.ok(thresholds.every(value => value < 140));
@@ -48,7 +47,16 @@ test("thresholds are derived from training data, not future holdout values", () 
 
 test("invalid rows are excluded instead of silently counted", () => {
   const rows = [...makeRows(100), { date: "not-a-date", outcome: "H", homeGoals: 1, awayGoals: 0, features: { x: 1 } }];
-  const report = discoverFeatureRules(rows, { minTrainSamples: 5, minTestSamples: 5, minTrainLift: 0 });
+  const report = discoverFeatureRules(rows, { minTrainSamples: 5, minTestSamples: 5, minTrainLift: -1 });
+  assert.equal(report.dataset.supplied, 101);
+  assert.equal(report.dataset.valid, 100);
+});
+
+test("inconsistent result labels are excluded to prevent mislabeled training rows", () => {
+  const rows = [...makeRows(100), {
+    date: "2026-01-01T12:00:00Z", outcome: "H", homeGoals: 0, awayGoals: 2, features: { x: 1 }
+  }];
+  const report = discoverFeatureRules(rows, { minTrainSamples: 5, minTestSamples: 5, minTrainLift: -1 });
   assert.equal(report.dataset.supplied, 101);
   assert.equal(report.dataset.valid, 100);
 });
