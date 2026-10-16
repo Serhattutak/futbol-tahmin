@@ -36,6 +36,40 @@ async function loadHistoricalFixtures({ leagues = LEAGUES, seasons = SEASONS, lo
   return { fixtures, sources, unavailable };
 }
 
+function compareModelOutputs(report) {
+  const rows = (report.records || []).filter(row => row.baseline?.probabilities && row.stats?.probabilities);
+  let sameProbabilities = 0;
+  let sameTopPick = 0;
+  let totalAbsoluteProbabilityDelta = 0;
+  let maxAbsoluteProbabilityDelta = 0;
+  let comparisons = 0;
+  for (const row of rows) {
+    const keys = ["home", "draw", "away"];
+    const base = row.baseline.probabilities;
+    const current = row.stats.probabilities;
+    let rowDelta = 0;
+    for (const key of keys) {
+      const delta = Math.abs(Number(base[key]) - Number(current[key]));
+      rowDelta += delta;
+      totalAbsoluteProbabilityDelta += delta;
+      maxAbsoluteProbabilityDelta = Math.max(maxAbsoluteProbabilityDelta, delta);
+      comparisons++;
+    }
+    if (rowDelta < 1e-12) sameProbabilities++;
+    if (keys.reduce((best, key) => current[key] > current[best] ? key : best, keys[0]) ===
+        keys.reduce((best, key) => base[key] > base[best] ? key : best, keys[0])) sameTopPick++;
+  }
+  return {
+    sampleSize: rows.length,
+    same1X2Probabilities: sameProbabilities,
+    same1X2ProbabilityRate: rows.length ? Number((sameProbabilities / rows.length * 100).toFixed(2)) : null,
+    sameTopPick,
+    sameTopPickRate: rows.length ? Number((sameTopPick / rows.length * 100).toFixed(2)) : null,
+    meanAbsoluteProbabilityDelta: comparisons ? Number((totalAbsoluteProbabilityDelta / comparisons).toFixed(6)) : null,
+    maxAbsoluteProbabilityDelta: maxAbsoluteProbabilityDelta || 0,
+  };
+}
+
 function marketSummary(report, modelKey) {
   const model = report[modelKey];
   const market = model?.markets?.["1X2"];
@@ -79,13 +113,13 @@ async function runRollingHistoricalBacktest({ now = new Date(), load = loadHisto
       last30Days: {
         from: oneMonthFrom, to: dateOffset(asOf, -1),
         candidates: monthly.candidates, evaluated: monthly.evaluated, skipped: monthly.skipped,
-        baselineModel: marketSummary(monthly, "baseline"), currentModel: marketSummary(monthly, "stats"),
+        baselineModel: marketSummary(monthly, "baseline"), currentModel: marketSummary(monthly, "stats"), modelComparison: compareModelOutputs(monthly),
         evaluation: monthly.evaluation, coverage: monthlyCoverage, datasetHash: monthly.datasetHash, pairedSampleHash: monthly.pairedSampleHash,
       },
       last365Days: {
         from: oneYearFrom, to: dateOffset(asOf, -1),
         candidates: yearly.candidates, evaluated: yearly.evaluated, skipped: yearly.skipped,
-        baselineModel: marketSummary(yearly, "baseline"), currentModel: marketSummary(yearly, "stats"),
+        baselineModel: marketSummary(yearly, "baseline"), currentModel: marketSummary(yearly, "stats"), modelComparison: compareModelOutputs(yearly),
         evaluation: yearly.evaluation, coverage: yearlyCoverage, datasetHash: yearly.datasetHash, pairedSampleHash: yearly.pairedSampleHash,
       },
     },
@@ -123,4 +157,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { LEAGUES, SEASONS, loadHistoricalFixtures, marketSummary, runRollingHistoricalBacktest };
+module.exports = { LEAGUES, SEASONS, loadHistoricalFixtures, marketSummary, compareModelOutputs, runRollingHistoricalBacktest };
