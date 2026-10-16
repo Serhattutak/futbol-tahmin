@@ -9,6 +9,10 @@ on:
       - "backend/scripts/buildHistoricalFeatureArchive.js"
       - "backend/scripts/discoverHistoricalRules.js"
       - "backend/services/featureDiscovery.js"
+      - "backend/services/walkForwardFeatureDiscovery.js"
+      - "backend/scripts/discoverHistoricalRulesWalkForward.js"
+      - "backend/test/walkForwardFeatureDiscovery.test.js"
+      - "backend/test/discoverHistoricalRulesWalkForward.test.js"
   workflow_dispatch:
     inputs:
       from_season:
