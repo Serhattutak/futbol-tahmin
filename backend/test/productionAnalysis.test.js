@@ -278,3 +278,22 @@ test("Capture mode can retain actual 4.1 inference when the standalone 4.0 path 
   assert.equal(result.models[MODEL_4_0], null); assert.equal(result.modelVersion, MODEL_4_1); assert.ok(result.probabilities.home > 0);
   await assert.rejects(() => s.analyze("normal"), /standalone model 4.0 failed/);
 });
+
+test("Stage 13 coverage diagnostics are attached to readiness and prediction metadata", async () => {
+  const input = await realInput();
+  input.sourceMetadata = {
+    fields: { odds: "unavailable", standings: "unavailable" },
+    unavailable: { odds: "provider_not_configured", standings: "unsupported" },
+    historyAttempts: [{ provider: "football-data", status: 429, outcome: "rate_limited" }],
+  };
+  const readiness = validateInputs(input, loadArtifact().artifact, now);
+  assert.ok(readiness.coverageReport);
+  assert.equal(readiness.coverageReport.fixture.id, input.fixture.id);
+  assert.equal(readiness.coverageReport.historyCounts.home, readiness.historicalSampleSize.home);
+  assert.equal(readiness.coverageReport.fields.odds, "unavailable");
+  assert.ok(readiness.coverageReport.missingFields.includes("odds"));
+  const s = await service({ collect: async () => input });
+  const response = await s.analyze("stage13-coverage");
+  assert.ok(response.coverageReport);
+  assert.equal(response.coverageReport.fixture.id, input.fixture.id);
+});
