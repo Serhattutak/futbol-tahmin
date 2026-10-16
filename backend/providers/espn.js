@@ -92,15 +92,20 @@ async function request(path, params) {
   if (cache.size > 200) cache.delete(cache.keys().next().value);
   return promise;
 }
-async function getFixtures(date) {
+async function getLeagueFixtures(date, leagueName) {
+  const meta = LEAGUES[leagueName];
+  if (!meta) return [];
   const day = date.replace(/-/g, "");
-  const entries = Object.entries(LEAGUES);
+  const data = await request(`${meta.code}/scoreboard`, { dates: day });
+  return (data.events || []).map((event) => toFixture(event, leagueName, meta)).filter(Boolean);
+}
+async function getFixtures(date) {
+  const entries = Object.keys(LEAGUES);
   const results = new Array(entries.length);
   // ESPN is a public upstream. Avoid launching dozens of requests at once on a free instance.
-  await forEachConcurrent(entries, 5, async ([leagueName, meta], index) => {
+  await forEachConcurrent(entries, 5, async (leagueName, index) => {
     try {
-      const data = await request(`${meta.code}/scoreboard`, { dates: day });
-      results[index] = (data.events || []).map((event) => toFixture(event, leagueName, meta)).filter(Boolean);
+      results[index] = await getLeagueFixtures(date, leagueName);
     } catch {
       results[index] = [];
     }
@@ -173,4 +178,4 @@ async function getTeamForm(teamId, before, context = {}) {
 }
 async function getH2H() { return null; }
 async function getStandings() { return null; }
-module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form", "news"], getFixtures, getFixture, getTeamForm, getH2H, getStandings, getNewsForFixture, normalizeNewsForTeams, toFixture, supportsLeague: (name) => Boolean(LEAGUES[name]) };
+module.exports = { name: "espn", configured: true, enabled: true, capabilities: ["fixtures", "fixture", "result", "teamForm", "historicalResults", "form", "news"], getFixtures, getLeagueFixtures, getFixture, getTeamForm, getH2H, getStandings, getNewsForFixture, normalizeNewsForTeams, toFixture, supportsLeague: (name) => Boolean(LEAGUES[name]) };
