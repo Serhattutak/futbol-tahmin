@@ -135,7 +135,9 @@ def run(input_path, output_path, train_fraction=0.6, validation_fraction=0.2):
 
     frame = pd.DataFrame(rows)
     frame["date"] = pd.to_datetime(frame["date"], errors="coerce", utc=True).dt.tz_convert(None)
-    frame = frame.dropna(subset=["date", "outcome", "homeGoals", "awayGoals"]).sort_values("date").reset_index(drop=True)
+    frame = frame.dropna(subset=["date", "outcome", "homeGoals", "awayGoals"])
+    sort_columns = ["date"] + (["id"] if "id" in frame.columns else [])
+    frame = frame.sort_values(sort_columns, kind="stable").reset_index(drop=True)
     train, validation, test, train_boundary, test_boundary = chronological_split(
         frame, train_fraction, validation_fraction
     )
