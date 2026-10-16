@@ -54,7 +54,11 @@ function report(entries) {
     smallSample: hybridScored.length < 100,
     hitRate: hybridAverage("hybridPredictionCorrect"),
     brier: hybridAverage("hybridBrier"),
-    markets: groupMetrics(hybridScored, r => r.hybridMarket || "Unknown"),
+    markets: Object.fromEntries([...new Set(hybridScored.map(r => r.hybridMarket || "Unknown"))].map(market => {
+      const rows = hybridScored.filter(r => (r.hybridMarket || "Unknown") === market);
+      return [market, { sampleSize: rows.length, hitRate: rows.reduce((sum, r) => sum + Number(r.hybridPredictionCorrect), 0) / rows.length,
+        brier: rows.reduce((sum, r) => sum + Number(r.hybridBrier), 0) / rows.length }];
+    })),
   };
   return { source: "production_prediction_ledger", policy: "Earliest snapshot per fixture/model; paired comparison requires the same input fingerprint and kickoff. Conflicts excluded. No backtest data.", models, hybridRobot,
     comparison: { sampleSize: pairs.length, smallSample: pairs.length < 100, models: Object.fromEntries(MODELS.map((m, i) => [m, metrics(pairs.map(r => r.pair[i]))])) } };
