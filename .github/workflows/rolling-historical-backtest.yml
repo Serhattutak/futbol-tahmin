@@ -1,0 +1,38 @@
+name: ZEUS rolling historical backtest
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rolling-backtest:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'feat/rolling-historical-backtest')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Run one-month and one-year chronological backtest
+        working-directory: backend
+        env:
+          ZEUS_BACKTEST_OUTPUT: ../artifacts/rolling-historical-backtest.json
+        run: node scripts/runRollingHistoricalBacktest.js
+      - name: Upload backtest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zeus-rolling-historical-backtest
+          path: artifacts/rolling-historical-backtest.json
+          if-no-files-found: warn
+          retention-days: 30
