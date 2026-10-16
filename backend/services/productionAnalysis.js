@@ -128,7 +128,7 @@ class ProductionAnalysis {
       if (this.file) { try { fs.mkdirSync(path.dirname(this.file), { recursive: true }); const tmp = `${this.file}.${process.pid}.tmp`; fs.writeFileSync(tmp, JSON.stringify([...this.records.values()], null, 2), "utf8"); fs.renameSync(tmp, this.file); } catch (error) { this.logger({ type: "SHADOW_STORE_FAILED", fixture: fixtureId, error: error.message }); } }
     }
     if (this.ledger && recordLedger) {
-      try { response.ledger = this.ledger.recordResponse(response, collected); }
+      try { response.ledger = await this.ledger.recordResponse(response, collected); }
       catch (error) {
         this.logger({ type: "LEDGER_WRITE_FAILED", fixture: fixtureId, error: error.message });
         response.ledger = [{ saved: false, reason: "LEDGER_STORAGE_ERROR" }];
