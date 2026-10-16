@@ -23,7 +23,7 @@ test("walk-forward CLI parses three-period settings", () => {
 });
 
 test("walk-forward CLI rejects invalid periods and thresholds", () => {
-  assert.throws(() => parseArgs(["--train-fraction", "0.8", "--validation-fraction", "0.3"]), /sum to less than 1/);
+  assert.throws(() => parseArgs(["--train-fraction", "0.8", "--validation-fraction", "0.3"]), /less than 1/);
   assert.throws(() => parseArgs(["--alpha", "1"]), /between 0 and 1/);
   assert.throws(() => parseArgs(["--min-test-samples", "0"]), /positive integer/);
   assert.throws(() => parseArgs(["--unexpected"]), /Unknown argument/);
