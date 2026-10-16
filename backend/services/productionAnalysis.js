@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { buildMatchStatistics } = require("./teamStatistics");
+const { summarizeDataCoverage } = require("./modelValidation");
 const { features } = require("./model41");
 const { normalizeStatus } = require("./fixtureNormalization");
 const { MODEL_4_0, MODEL_4_1, loadArtifact, selectedModel } = require("./modelVersions");
@@ -27,7 +28,32 @@ function validateInputs(collected, artifact, now = Date.now()) {
   const day = collected.fixture.kickoff.slice(0, 10);
   const cutoff = Math.min(now, Date.parse(`${day}T00:00:00Z`));
   const profile = buildMatchStatistics(collected.fixture, { ...collected, now: cutoff });
-  const details = { statisticsQuality: profile.dataQuality, historicalSampleSize: { home: profile.home.sampleSize, away: profile.away.sampleSize } };
+  const sourceMetadata = collected.sourceMetadata || {};
+  const fields = {};
+  for (const field of ["homeHistory", "awayHistory", "h2h", "firstHalf", "odds", "standings", "xg"]) {
+    const raw = sourceMetadata.fields?.[field];
+    const unavailable = sourceMetadata.unavailable?.[field] ?? sourceMetadata.unavailable?.[field === "homeHistory" ? "homeMatches" : field === "awayHistory" ? "awayMatches" : field === "h2h" ? "h2hMatches" : field];
+    fields[field] = raw && raw !== "unavailable" ? "available" : unavailable ? (String(unavailable).toLowerCase().includes("error") || String(unavailable).toLowerCase().includes("failed") ? "error" : "unavailable") : "unavailable";
+  }
+  fields.homeHistory = profile.home.sampleSize > 0 ? "available" : "empty";
+  fields.awayHistory = profile.away.sampleSize > 0 ? "available" : "empty";
+  fields.h2h = profile.h2h ? "available" : "empty";
+  fields.firstHalf = profile.home.raw.firstHalfSample > 0 && profile.away.raw.firstHalfSample > 0 ? "available" : "empty";
+  const coverageReport = summarizeDataCoverage({
+    fixture: { id: collected.fixture.id, kickoff: collected.fixture.kickoff, kickoffPrecision: collected.fixture.kickoffPrecision, dataUpdatedAt: sourceMetadata.updatedAt || sourceMetadata.fetchedAt },
+    historyCounts: { home: profile.home.sampleSize, away: profile.away.sampleSize, h2h: profile.h2h?.sampleSize || 0 },
+    fieldStatus: fields,
+    providerAttempts: (sourceMetadata.historyAttempts || []).map(attempt => ({
+      provider: attempt.provider,
+      status: attempt.status,
+      code: attempt.code || attempt.outcome,
+      configured: attempt.configured,
+      leagueSupported: attempt.leagueSupported,
+      fixtureMatched: attempt.fixtureMatched,
+    })),
+    now,
+  });
+  const details = { statisticsQuality: profile.dataQuality, historicalSampleSize: { home: profile.home.sampleSize, away: profile.away.sampleSize }, coverageReport };
   if (collected.fixture.dataConflict) return { ready: false, reason: "FIXTURE_DATA_CONFLICT", ...details };
   if (collected.fixture.kickoffPrecision === "date") return { ready: false, reason: "UNKNOWN_KICKOFF", ...details };
   if (day <= artifact.training.selectedThrough) return { ready: false, reason: "BEFORE_MODEL_SELECTION_CUTOFF", ...details };
@@ -108,6 +134,7 @@ class ProductionAnalysis {
       fallbackReason: reason,
       historicalSampleSize: readiness.historicalSampleSize || null,
       statisticsQuality: readiness.statisticsQuality ?? null,
+      coverageReport: readiness.coverageReport || null,
       sourceMetadata: collected.sourceMetadata ? {
         fields: collected.sourceMetadata.fields || {},
         unavailable: collected.sourceMetadata.unavailable || {},
@@ -116,7 +143,7 @@ class ProductionAnalysis {
     });
     if (!base.value && !advanced) throw Object.assign(new Error("No production model available"), { code: "NO_PRODUCTION_MODEL" });
     const actual = (requested === MODEL_4_1 || !base.value) && advanced ? MODEL_4_1 : MODEL_4_0;
-    const metadata = { history: provenance(collected.homeMatches || [], collected.awayMatches || []), model41Available: Boolean(advanced), MODEL_4_1_READY: Boolean(advanced), model41FallbackReason: reason, statisticsQuality: readiness.statisticsQuality, historicalSampleSize: readiness.historicalSampleSize };
+    const metadata = { coverageReport: readiness.coverageReport || null, history: provenance(collected.homeMatches || [], collected.awayMatches || []), model41Available: Boolean(advanced), MODEL_4_1_READY: Boolean(advanced), model41FallbackReason: reason, statisticsQuality: readiness.statisticsQuality, historicalSampleSize: readiness.historicalSampleSize };
     const models = { [MODEL_4_0]: base.value ? { ...base.value, modelVersion: MODEL_4_0, ...metadata } : null, [MODEL_4_1]: advanced ? { ...advanced, modelVersion: MODEL_4_1, ...metadata } : null };
     const cache = { statisticsVersion: STATISTICS_VERSION, artifactVersion: fingerprint, inputVersion: inputHash, expiresAt: this.now() + this.ttl, inputHit: input.hit, model40Hit: base.hit, model41Hit: advancedHit };
     const response = { ...models[actual], requestedModelVersion: requested, models, cache };
