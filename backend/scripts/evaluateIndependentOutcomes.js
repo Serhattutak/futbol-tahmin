@@ -309,8 +309,8 @@ async function main() {
   }
   const trainInputs = developmentRows.filter(row => splitOf(row.date) === "train");
   const validationInputs = developmentRows.filter(row => splitOf(row.date) === "validation");
-  const trainScored = crossCheckedRows(trainInputs, targets, leagueSources, row => row.stats?.probabilities);
-  const validationScored = crossCheckedRows(validationInputs, targets, leagueSources, row => row.stats?.probabilities);
+  const trainScored = crossCheckedRows(trainInputs, targets, leagueSources, row => row.base);
+  const validationScored = crossCheckedRows(validationInputs, targets, leagueSources, row => row.base);
   const testScored = crossCheckedRows(testRows, targets, leagueSources, row => row.model40?.probabilities);
   const fittedWeight = trainScored.length >= 100 ? fitMarketWeight(trainScored) : null;
   const report = {
