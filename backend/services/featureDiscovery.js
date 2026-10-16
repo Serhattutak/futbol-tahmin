@@ -148,7 +148,7 @@ function discoverFeatureRules(rows, {
       confidenceInterval: "95% Wilson intervals; promising status requires the rule subgroup's lower bound to exceed the disjoint complement's upper bound; exploratory and not multiple-testing adjusted",
       limitations: ["Feature mining is hypothesis generation, not proof of causality", "Promising status is a conservative interval-separation screen, not a multiple-testing-adjusted significance claim", "Promising holdout rules require another untouched forward period", "Do not tune on the holdout and then report that same holdout as independent"]
     },
-    dataset: { supplied: rows.length, valid: clean.length, training: training.length, holdout: testing.length, firstDate: clean[0]?.date ?? null, splitDate: testing[0]?.date ?? null, lastDate: clean.at(-1)?.date ?? null, featureKeys: keys },
+    dataset: { supplied: rows.length, valid: clean.length, training: training.length, holdout: testing.length, firstDate: clean[0]?.date ?? null, trainingLastDate: training.at(-1)?.date ?? null, splitDate: testing[0]?.date ?? null, lastDate: clean.at(-1)?.date ?? null, featureKeys: keys },
     baseline: Object.fromEntries(markets.filter(m => OUTCOMES[m]).map(m => [m, { training: rate(training, OUTCOMES[m]), holdout: rate(testing, OUTCOMES[m]) }])),
     summary: { rulesEvaluated: findings.length, promisingHoldout: findings.filter(f => f.status === "PROMISING_HOLDOUT").length, positiveButUncertain: findings.filter(f => f.status === "POSITIVE_BUT_UNCERTAIN").length, notReplicated: findings.filter(f => f.status === "NOT_REPLICATED").length },
     findings
