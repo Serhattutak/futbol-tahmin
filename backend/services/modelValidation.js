@@ -45,12 +45,28 @@ function binaryMetrics(predictions) {
   return { total, noBet, coverage: total + noBet ? Number((total / (total + noBet)).toFixed(4)) : null, accuracy: total ? Number(((truePositive + trueNegative) / total).toFixed(4)) : null, precision, recall, f1: precision && recall ? Number((2 * precision * recall / (precision + recall)).toFixed(4)) : null, brierScore: total ? Number((brier / total).toFixed(4)) : null, logLoss: total ? Number((logLoss / total).toFixed(4)) : null, confusionMatrix: { truePositive, falsePositive, trueNegative, falseNegative } };
 }
 
-function shouldNoBet({ dataQuality, sampleSize, probabilities, calibrated = true, dataConflict = false }) {
-  const sorted = [...(probabilities || [])].filter(Number.isFinite).sort((left, right) => right - left);
-  if (dataConflict || !calibrated || dataQuality < 60 || sampleSize < 10 || sorted.length < 2) return true;
-  return sorted[0] - sorted[1] < 0.06;
+function assessPredictionEligibility({ dataQuality, sampleSize, probabilities, calibrated = false, dataConflict = false, staleData = false, unknownKickoff = false, providerConflict = false, requiredFieldsMissing = [] } = {}) {
+  const reasons = [];
+  if (!Number.isFinite(dataQuality) || dataQuality < 60 || dataQuality > 100) reasons.push("LOW_OR_UNKNOWN_DATA_QUALITY");
+  if (!Number.isFinite(sampleSize) || sampleSize < 10) reasons.push("INSUFFICIENT_HISTORY");
+  if (calibrated !== true) reasons.push("UNCALIBRATED_PROBABILITIES");
+  if (dataConflict) reasons.push("FIXTURE_DATA_CONFLICT");
+  if (providerConflict) reasons.push("PROVIDER_CONFLICT");
+  if (staleData) reasons.push("STALE_CRITICAL_DATA");
+  if (unknownKickoff) reasons.push("UNKNOWN_KICKOFF");
+  if (!Array.isArray(requiredFieldsMissing) || requiredFieldsMissing.length) reasons.push("MISSING_REQUIRED_FIELDS");
+  const validProbabilities = Array.isArray(probabilities) && probabilities.length >= 2
+    && probabilities.every(value => Number.isFinite(value) && value >= 0 && value <= 1);
+  if (!validProbabilities) reasons.push("INVALID_OR_MISSING_PROBABILITIES");
+  const sorted = validProbabilities ? [...probabilities].sort((left, right) => right - left) : [];
+  if (validProbabilities && sorted[0] - sorted[1] < 0.06) reasons.push("LOW_PROBABILITY_SEPARATION");
+  return { eligible: reasons.length === 0, reasons };
+}
+
+function shouldNoBet(options = {}) {
+  return !assessPredictionEligibility(options).eligible;
 }
 
 function oddsValue(probability, odds) { if (!Number.isFinite(probability) || !Number.isFinite(odds) || probability <= 0 || probability >= 1 || odds <= 1) return null; return { impliedProbability: 1 / odds, fairOdds: 1 / probability, value: probability * odds - 1 }; }
 
-module.exports = { bayesianSmoothedRate, binaryMetrics, calibrationSummary, dixonColesTau, oddsValue, shouldNoBet, walkForwardSplit };
+module.exports = { assessPredictionEligibility, bayesianSmoothedRate, binaryMetrics, calibrationSummary, dixonColesTau, oddsValue, shouldNoBet, walkForwardSplit };
