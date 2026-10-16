@@ -119,7 +119,7 @@ test("Ledger records and settles one hybrid recommendation without duplicating c
   assert.equal(hybridRow.hybridProbability, .8);
   assert.equal(otherRow.hybridStatus, null, "hybrid decision must not be double-counted");
   time(AFTER);
-  assert.equal(ledger.settle(hybridRow.ledgerId, final(1, 0)).saved, true);
+  assert.equal(ledger.settle(hybridRow.ledgerId, final(1, 0, "hybrid-forward")).saved, true);
   const settled = ledger.entries().find(row => row.ledgerId === hybridRow.ledgerId);
   assert.equal(settled.hybridPredictionCorrect, false);
   assert.ok(Math.abs(settled.hybridBrier - .64) < 1e-12);
