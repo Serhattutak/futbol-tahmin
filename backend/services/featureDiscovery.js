@@ -44,8 +44,7 @@ function candidatesFromTraining(training, featureKeys) {
   for (const key of featureKeys) {
     const values = training.map(row => row.features?.[key]).filter(v => v !== null && v !== undefined && (typeof v === "number" ? Number.isFinite(v) : true));
     if (values.length < 2) continue;
-    const numeric = values.every(v => typeof v === "number");
-    if (numeric) {
+    if (values.every(v => typeof v === "number")) {
       const thresholds = [...new Set([0.25, 0.5, 0.75].map(q => quantile(values, q)).filter(Number.isFinite))];
       for (const threshold of thresholds) {
         candidates.push({ key, operator: "<=", value: threshold, id: `${safeFeatureName(key)}:lte:${threshold}` });
@@ -68,15 +67,13 @@ function matches(row, rule) {
 }
 
 function evaluateRule(rows, rule, event) {
-  const subset = rows.filter(row => matches(row, rule));
-  return rate(subset, event);
+  return rate(rows.filter(row => matches(row, rule)), event);
 }
 
 /**
- * Exploratory rule discovery with a strict chronological split.
- * Input rows must contain pre-kickoff features only, a verified final outcome,
- * and a date. This function deliberately does not create or infer features from
- * the final score. Thresholds/categories are learned from training rows only.
+ * Research-only feature mining. Each row must carry pre-kickoff features and a
+ * verified final score. Thresholds are learned from the earlier chronological
+ * training slice, never from the holdout.
  */
 function discoverFeatureRules(rows, {
   trainFraction = 0.7,
@@ -88,13 +85,15 @@ function discoverFeatureRules(rows, {
 } = {}) {
   if (!Array.isArray(rows)) throw new TypeError("rows must be an array");
   if (!(trainFraction > 0 && trainFraction < 1)) throw new RangeError("trainFraction must be between 0 and 1");
-  const clean = rows.filter(row =>
-    row && typeof row.date === "string" && Number.isFinite(Date.parse(row.date)) &&
-    row.features && typeof row.features === "object" &&
-    Object.hasOwn(OUTCOMES, row.outcome) &&
-    Number.isInteger(row.homeGoals) && row.homeGoals >= 0 &&
-    Number.isInteger(row.awayGoals) && row.awayGoals >= 0
-  ).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+  const clean = rows.filter(row => {
+    if (!row || typeof row.date !== "string" || !Number.isFinite(Date.parse(row.date)) ||
+      !row.features || typeof row.features !== "object" ||
+      !["H", "D", "A"].includes(row.outcome) ||
+      !Number.isInteger(row.homeGoals) || row.homeGoals < 0 ||
+      !Number.isInteger(row.awayGoals) || row.awayGoals < 0) return false;
+    const expected = row.homeGoals > row.awayGoals ? "H" : row.homeGoals < row.awayGoals ? "A" : "D";
+    return row.outcome === expected;
+  }).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
   const splitIndex = Math.floor(clean.length * trainFraction);
   const training = clean.slice(0, splitIndex);
   const testing = clean.slice(splitIndex);
