@@ -34,13 +34,14 @@ function scoreMatches(a, b) {
       : false;
 }
 
-async function runIndependentResultCrosscheck({ now = new Date(), days = 30, leagues = LEAGUES } = {}) {
-  const to = shift(day(now), -1); const from = shift(to, -(days - 1));
-  const dates = Array.from({ length: days }, (_, i) => shift(from, i));
+async function loadEspnFinishedFixtures({ from, to, leagues = LEAGUES, concurrency = 5 } = {}) {
+  if (!from || !to || from > to) throw new Error("INVALID_ESPN_DATE_RANGE");
+  const dates = [];
+  for (let date = from; date <= to; date = shift(date, 1)) dates.push(date);
   const tasks = dates.flatMap(date => leagues.map(league => ({ date, league })));
   const rows = [];
   const failures = [];
-  await forEachConcurrent(tasks, 5, async ({ date, league }) => {
+  await forEachConcurrent(tasks, concurrency, async ({ date, league }) => {
     try {
       const fixtures = await espn.getLeagueFixtures(date, league);
       rows.push(...fixtures.filter(isFinal).map(f => ({ ...f, _queriedDate: date, _queriedLeague: league })));
@@ -48,6 +49,12 @@ async function runIndependentResultCrosscheck({ now = new Date(), days = 30, lea
       failures.push({ date, league, reason: error.category || error.code || "fetch_failed" });
     }
   });
+  return { rows, failures, dates: dates.length, leagues: [...leagues] };
+}
+
+async function runIndependentResultCrosscheck({ now = new Date(), days = 30, leagues = LEAGUES } = {}) {
+  const to = shift(day(now), -1); const from = shift(to, -(days - 1));
+  const { rows, failures } = await loadEspnFinishedFixtures({ from, to, leagues });
 
   // Current-day archive endpoints are not sufficient for a rolling window; load each season's history.
   const archiveRows = [];
@@ -100,4 +107,4 @@ if (require.main === module) {
     }
   }).catch(error => { console.error(JSON.stringify({ type: "INDEPENDENT_RESULT_CROSSCHECK_FAILED", message: error.message })); process.exitCode = 1; });
 }
-module.exports = { runIndependentResultCrosscheck, pairScore, scoreMatches, norm };
+module.exports = { runIndependentResultCrosscheck, loadEspnFinishedFixtures, pairScore, scoreMatches, norm, LEAGUES };
