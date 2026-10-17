@@ -363,7 +363,13 @@ function PerformanceCard({ performance }) {
 }
 
 function bankoPct(value) { return Number.isFinite(Number(value)) ? `%${(Number(value) * 100).toFixed(1)}` : "—"; }
-const EngineContext = createContext({ loading: true, data: null, error: "", byId: new Map() });
+const EngineContext = createContext({ loading: true, data: null, error: "", byId: new Map(), byTeams: new Map() });
+// Providers can give the same fixture different ids between requests, so fall back to the team names.
+function normTeam(name) { return String(name || "").toLocaleLowerCase("tr-TR").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, ""); }
+function teamPairKey(home, away) { return `${normTeam(home)}|${normTeam(away)}`; }
+function engineLookup(engine, match) {
+  return engine.byId?.get(String(match?.fixture?.id)) || engine.byTeams?.get(teamPairKey(match?.teams?.home?.name, match?.teams?.away?.name));
+}
 function readEngineCache(date) { try { const saved = JSON.parse(sessionStorage.getItem(`zeus-engine-${date}`) || "null"); return saved?.data?.date === date ? saved.data : null; } catch { return null; } }
 function writeEngineCache(date, data) { try { sessionStorage.setItem(`zeus-engine-${date}`, JSON.stringify({ data })); } catch { /* storage full or disabled */ } }
 function useEngine(selectedDate) {
@@ -387,7 +393,10 @@ function useEngine(selectedDate) {
     load();
     return () => { cancelled = true; clearTimeout(timer); };
   }, [selectedDate]);
-  return useMemo(() => ({ ...state, byId: new Map((state.data?.predictions || []).map(item => [String(item.fixtureId), item])) }), [state]);
+  return useMemo(() => {
+    const items = state.data?.predictions || [];
+    return { ...state, byId: new Map(items.map(item => [String(item.fixtureId), item])), byTeams: new Map(items.map(item => [teamPairKey(item.home, item.away), item])) };
+  }, [state]);
 }
 function resultText(item) {
   if (item.result === "hit") return "✓ Tuttu";
@@ -453,7 +462,7 @@ function MatchCenter({ matches, selectedDate, loading, onOpen, leagues = [], sho
   const [query, setQuery] = useState("");
   const [league, setLeague] = useState("Tümü");
   useEffect(() => { setFilter("all"); setQuery(""); setLeague("Tümü"); }, [selectedDate]);
-  const rows = useMemo(() => matches.map(match => ({ match, item: engine.byId.get(String(match?.fixture?.id)) })), [matches, engine.byId]);
+  const rows = useMemo(() => matches.map(match => ({ match, item: engineLookup(engine, match) })), [matches, engine.byId]);
   const counts = useMemo(() => ({
     all: rows.length,
     top: rows.filter(({ item }) => item?.available && TIER_RANK[item.tier] <= 1).length,
@@ -525,7 +534,7 @@ function CenterRow({ match, item, engineLoading, onOpen }) {
 
 function EngineDetailCard({ match }) {
   const engine = useContext(EngineContext);
-  const item = engine.byId.get(String(match?.fixture?.id));
+  const item = engineLookup(engine, match);
   const tiers = engine.data?.model?.tiers || {};
   const { home, away } = getTeams(match);
   const status = getStatus(match);
@@ -617,7 +626,7 @@ function MatchRow({ match, analysis, onOpen, onFavorite, favoriteIds }) {
   const { home, away } = getTeams(match);
   const status = getStatus(match);
   const engine = useContext(EngineContext);
-  const engineItem = engine.byId.get(String(match?.fixture?.id));
+  const engineItem = engineLookup(engine, match);
   const bestMarket = analysis?.recommendation?.bestMarket;
   const predictionLabel = analysis?.historical ? "Geçmiş maç analizi" : analysis?.predictionEligible === false ? "Yetersiz veri" : bestMarket?.market || "Detaylı analiz için aç";
   const confidence = analysis?.model?.confidence;
