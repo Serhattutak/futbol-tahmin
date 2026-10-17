@@ -40,11 +40,11 @@ function sameFixture(a, b, tolerance = 15 * 60 * 1000) {
   return Math.abs(Date.parse(a.kickoff) - Date.parse(b.kickoff)) <= tolerance;
 }
 
-function canonicalFixture({ provider, fixture, league, homeTeam, awayTeam, status, result }) {
+function canonicalFixture({ provider, fixture, league, homeTeam, awayTeam, status, result, live = null }) {
   const kickoff = normalizeKickoff(fixture?.kickoff || fixture?.date);
   if (!provider || !kickoff || !homeTeam?.name || !awayTeam?.name) return null;
   fixture = { ...fixture, id: fixture?.id ?? `${provider}:${kickoff}:${teamKey(homeTeam.name)}:${teamKey(awayTeam.name)}` };
-  return { provider, providerFixtureId: String(fixture.id), providerFixtureIds: { [provider]: String(fixture.id) }, canonicalFixtureId: `${kickoffKey(kickoff)}:${canonicalTeamId(homeTeam)}:${canonicalTeamId(awayTeam)}:${normalize(league?.name)}`, league: { id: league?.id ?? null, name: league?.name ?? null, country: league?.country ?? null, logo: league?.logo ?? null }, season: league?.season ?? null, kickoff, kickoffPrecision: fixture.kickoffPrecision || (/^\d{4}-\d{2}-\d{2}$/.test(fixture.date || "") ? "date" : "time"), homeTeam: { provider, providerTeamId: String(homeTeam.id ?? homeTeam.name), canonicalTeamId: canonicalTeamId(homeTeam), name: homeTeam.name, logo: homeTeam.logo || null }, awayTeam: { provider, providerTeamId: String(awayTeam.id ?? awayTeam.name), canonicalTeamId: canonicalTeamId(awayTeam), name: awayTeam.name, logo: awayTeam.logo || null }, status: normalizeStatus(status), result: result ? { ...result, status: normalizeStatus(status) } : null, sources: [provider], providerTeams: { [provider]: { home: homeTeam, away: awayTeam, league } }, dataConflict: false };
+  return { provider, providerFixtureId: String(fixture.id), providerFixtureIds: { [provider]: String(fixture.id) }, canonicalFixtureId: `${kickoffKey(kickoff)}:${canonicalTeamId(homeTeam)}:${canonicalTeamId(awayTeam)}:${normalize(league?.name)}`, league: { id: league?.id ?? null, name: league?.name ?? null, country: league?.country ?? null, logo: league?.logo ?? null }, season: league?.season ?? null, kickoff, kickoffPrecision: fixture.kickoffPrecision || (/^\d{4}-\d{2}-\d{2}$/.test(fixture.date || "") ? "date" : "time"), homeTeam: { provider, providerTeamId: String(homeTeam.id ?? homeTeam.name), canonicalTeamId: canonicalTeamId(homeTeam), name: homeTeam.name, logo: homeTeam.logo || null }, awayTeam: { provider, providerTeamId: String(awayTeam.id ?? awayTeam.name), canonicalTeamId: canonicalTeamId(awayTeam), name: awayTeam.name, logo: awayTeam.logo || null }, status: normalizeStatus(status), result: result ? { ...result, status: normalizeStatus(status) } : null, live: normalizeStatus(status) === "LIVE" ? live : null, sources: [provider], providerTeams: { [provider]: { home: homeTeam, away: awayTeam, league } }, dataConflict: false };
 }
 
 function canonicalResult(fixture) {
@@ -53,14 +53,32 @@ function canonicalResult(fixture) {
   if (status !== "FINISHED" || !Number.isInteger(homeGoals) || homeGoals < 0 || !Number.isInteger(awayGoals) || awayGoals < 0) return null;
   return { homeGoals, awayGoals, status, completedAt: fixture.fixture.date };
 }
-function toCanonicalApiFootball(fixture) { return canonicalFixture({ provider: "api-football", fixture: { id: fixture?.fixture?.id, date: fixture?.fixture?.date, kickoffPrecision: fixture?.fixture?.kickoffPrecision }, league: fixture?.league, homeTeam: fixture?.teams?.home, awayTeam: fixture?.teams?.away, status: fixture?.fixture?.status?.short, result: canonicalResult(fixture) }); }
-function toCanonicalLegacy(provider, fixture) { return canonicalFixture({ provider, fixture: { id: fixture?.fixture?.id, date: fixture?.fixture?.date, kickoffPrecision: fixture?.fixture?.kickoffPrecision }, league: fixture?.league, homeTeam: fixture?.teams?.home, awayTeam: fixture?.teams?.away, status: fixture?.fixture?.status?.short, result: canonicalResult(fixture) }); }
+// In-play score is not a settled result; it is kept separately so live score
+// display never feeds settlement or model evaluation.
+function canonicalLive(fixture) {
+  if (normalizeStatus(fixture?.fixture?.status?.short) !== "LIVE") return null;
+  const homeGoals = fixture?.goals?.home, awayGoals = fixture?.goals?.away;
+  const elapsed = fixture?.fixture?.status?.elapsed;
+  const score = Number.isInteger(homeGoals) && homeGoals >= 0 && Number.isInteger(awayGoals) && awayGoals >= 0;
+  if (!score && elapsed == null) return null;
+  return { homeGoals: score ? homeGoals : null, awayGoals: score ? awayGoals : null, elapsed: elapsed ?? null };
+}
+function toCanonicalApiFootball(fixture) { return canonicalFixture({ provider: "api-football", fixture: { id: fixture?.fixture?.id, date: fixture?.fixture?.date, kickoffPrecision: fixture?.fixture?.kickoffPrecision }, league: fixture?.league, homeTeam: fixture?.teams?.home, awayTeam: fixture?.teams?.away, status: fixture?.fixture?.status?.short, result: canonicalResult(fixture), live: canonicalLive(fixture) }); }
+function toCanonicalLegacy(provider, fixture) { return canonicalFixture({ provider, fixture: { id: fixture?.fixture?.id, date: fixture?.fixture?.date, kickoffPrecision: fixture?.fixture?.kickoffPrecision }, league: fixture?.league, homeTeam: fixture?.teams?.home, awayTeam: fixture?.teams?.away, status: fixture?.fixture?.status?.short, result: canonicalResult(fixture), live: canonicalLive(fixture) }); }
 
+const STATUS_PROGRESS = { UNKNOWN: 0, SCHEDULED: 1, POSTPONED: 2, CANCELLED: 2, LIVE: 3, FINISHED: 4 };
+// When two providers describe the same fixture, keep the most advanced state:
+// a feed that already reports the final score must not be hidden by a stale one.
+function adoptProgress(target, incoming) {
+  if ((STATUS_PROGRESS[incoming.status] ?? 0) <= (STATUS_PROGRESS[target.status] ?? 0)) return;
+  if (incoming.status === "FINISHED" && !incoming.result) return;
+  target.status = incoming.status; target.result = incoming.result || null; target.live = incoming.live || null;
+}
 function reconcileFixtures(fixtures) {
   const merged = new Map();
   for (const fixture of fixtures.filter(Boolean)) {
     const existing = [...merged.values()].find((item) => sameFixture(item, fixture));
-    if (existing) { existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
+    if (existing) { adoptProgress(existing, fixture); existing.sources = [...new Set([...existing.sources, ...fixture.sources])]; existing.providerTeams = { ...existing.providerTeams, ...fixture.providerTeams }; existing.providerFixtureIds = { ...existing.providerFixtureIds, ...fixture.providerFixtureIds }; if (existing.kickoffPrecision === "date" && fixture.kickoffPrecision !== "date") { existing.kickoff = fixture.kickoff; existing.kickoffPrecision = fixture.kickoffPrecision; existing.canonicalFixtureId = fixture.canonicalFixtureId; } if (existing.result && fixture.result && (existing.result.homeGoals !== fixture.result.homeGoals || existing.result.awayGoals !== fixture.result.awayGoals)) existing.dataConflict = true; continue; }
     // Canonical IDs predate country-aware league matching. Keep distinct countries separate internally without changing persisted public IDs.
     const mergeKey = `${normalize(fixture.league?.country)}:${fixture.canonicalFixtureId || `${fixture.provider}:${fixture.providerFixtureId}`}`;
     merged.set(mergeKey, { ...fixture });
@@ -78,6 +96,7 @@ function reconcileFixtures(fixtures) {
     if (!sameDay) { reconciled.push({ ...fixture }); continue; }
     const kickoffConflict = kickoffKey(sameDay.kickoff) !== kickoffKey(fixture.kickoff);
     if (kickoffConflict) sameDay.dataConflict = true;
+    adoptProgress(sameDay, fixture);
     sameDay.sources = [...new Set([...(sameDay.sources || []), ...(fixture.sources || [])])];
     sameDay.providerTeams = { ...(sameDay.providerTeams || {}), ...(fixture.providerTeams || {}) };
     sameDay.providerFixtureIds = { ...(sameDay.providerFixtureIds || {}), ...(fixture.providerFixtureIds || {}) };
@@ -115,7 +134,7 @@ function numericAgreement(values, tolerance = 0.15) {
 }
 
 function toFrontendFixture(fixture) {
-  return { source: fixture.provider, provider: fixture.provider, providers: fixture.sources, providerFixtureIds: fixture.providerFixtureIds, dataConflict: fixture.dataConflict, canonicalFixtureId: fixture.canonicalFixtureId, fixture: { id: fixture.providerFixtureId, date: fixture.kickoffPrecision === "date" ? fixture.kickoff.slice(0, 10) : fixture.kickoff, kickoffPrecision: fixture.kickoffPrecision, status: { short: fixture.status } }, league: { ...fixture.league, season: fixture.season }, teams: { home: { id: fixture.homeTeam.canonicalTeamId, name: fixture.homeTeam.name, logo: fixture.homeTeam.logo || null }, away: { id: fixture.awayTeam.canonicalTeamId, name: fixture.awayTeam.name, logo: fixture.awayTeam.logo || null } }, goals: fixture.result ? { home: fixture.result.homeGoals, away: fixture.result.awayGoals } : { home: null, away: null } };
+  return { source: fixture.provider, provider: fixture.provider, providers: fixture.sources, providerFixtureIds: fixture.providerFixtureIds, dataConflict: fixture.dataConflict, canonicalFixtureId: fixture.canonicalFixtureId, fixture: { id: fixture.providerFixtureId, date: fixture.kickoffPrecision === "date" ? fixture.kickoff.slice(0, 10) : fixture.kickoff, kickoffPrecision: fixture.kickoffPrecision, status: { short: fixture.status, elapsed: fixture.live?.elapsed ?? null } }, league: { ...fixture.league, season: fixture.season }, teams: { home: { id: fixture.homeTeam.canonicalTeamId, name: fixture.homeTeam.name, logo: fixture.homeTeam.logo || null }, away: { id: fixture.awayTeam.canonicalTeamId, name: fixture.awayTeam.name, logo: fixture.awayTeam.logo || null } }, goals: fixture.result ? { home: fixture.result.homeGoals, away: fixture.result.awayGoals } : fixture.live && fixture.status === "LIVE" ? { home: fixture.live.homeGoals, away: fixture.live.awayGoals } : { home: null, away: null } };
 }
 
 function createApiFootballAdapter(get, configured = true) {
@@ -137,7 +156,7 @@ function createLegacyAdapter(provider) {
 }
 
 class MultiProviderRegistry {
-  constructor(providers, { cacheLimit = 200, now = () => Date.now(), fixtureCacheFile, historicalCacheFile } = {}) { this.providers = providers; this.cacheLimit = cacheLimit; this.now = now; this.cache = new Map(); this.known = new Map(); this.status = new Map(providers.map((provider) => [provider.name, { name: provider.name, configured: provider.configured !== false, enabled: provider.enabled, available: null, supportedCapabilities: provider.capabilities || [], lastSuccessfulRequest: null, lastRetrievedAt: null, errorCategory: null, quotaStatus: "unknown", cachedDataCount: 0 }])); this.fixtureDiscovery = new FixtureDiscovery(this, { file: fixtureCacheFile, reconcile: reconcileFixtures }); this.historicalData = new HistoryCacheV2((team, before, options) => this.loadHistoricalForm(options.fixture, options.side), { now, file: historicalCacheFile ? historicalCacheFile.replace(/\.json$/, ".v2.json") : undefined }); }
+  constructor(providers, { cacheLimit = 200, now = () => Date.now(), fixtureCacheFile, historicalCacheFile, fixtureTtlMs } = {}) { this.providers = providers; this.cacheLimit = cacheLimit; this.now = now; this.cache = new Map(); this.known = new Map(); this.status = new Map(providers.map((provider) => [provider.name, { name: provider.name, configured: provider.configured !== false, enabled: provider.enabled, available: null, supportedCapabilities: provider.capabilities || [], lastSuccessfulRequest: null, lastRetrievedAt: null, errorCategory: null, quotaStatus: "unknown", cachedDataCount: 0 }])); this.fixtureDiscovery = new FixtureDiscovery(this, { file: fixtureCacheFile, reconcile: reconcileFixtures, ...(fixtureTtlMs ? { ttl: fixtureTtlMs } : {}) }); this.historicalData = new HistoryCacheV2((team, before, options) => this.loadHistoricalForm(options.fixture, options.side), { now, file: historicalCacheFile ? historicalCacheFile.replace(/\.json$/, ".v2.json") : undefined }); }
   async getFixturesByDate(date) { return this.fixtureDiscovery.getFixturesByDate(date); }
   async getFixtures(date) { return (await this.getFixturesByDate(date)).fixtures; }
   remember(fixture) {

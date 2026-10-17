@@ -32,21 +32,26 @@ const MARKET_GROUPS = [
   { id: "value", label: "Value Fırsatları" },
 ];
 
-function formatTime(date) { return date ? new Date(date).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "--:--"; }
-function formatDate(date) { return date ? new Date(date).toLocaleDateString("tr-TR", { day: "2-digit", month: "short" }) : "--"; }
+function formatTime(date) { return date && !/^\d{4}-\d{2}-\d{2}$/.test(String(date)) ? new Date(date).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", timeZone: PRODUCT_TIMEZONE }) : "--:--"; }
+function formatDate(date) { return date ? new Date(date).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", timeZone: PRODUCT_TIMEZONE }) : "--"; }
 function dateKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
 function parseDateKey(value) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? null : date; }
-function todayKey() { return dateKey(new Date()); }
+const PRODUCT_TIMEZONE = "Europe/Istanbul";
+const istanbulDay = new Intl.DateTimeFormat("en-CA", { timeZone: PRODUCT_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+function todayKey() { return istanbulDay.format(new Date()); }
 function initialSelectedDate() {
-  const today = new Date();
   const value = new URLSearchParams(window.location.search).get("date");
   const parsed = value ? parseDateKey(value) : null;
-  if (!parsed) return dateKey(today);
+  if (!parsed) return todayKey();
   return dateKey(parsed);
 }
 function pct(value) { if (value == null || value === "") return "—"; const number = Number(value); return Number.isFinite(number) ? `${number.toFixed(2)}%` : "—"; }
 function fairOdds(value) { const number = Number(value); return Number.isFinite(number) && number > 0 ? (100 / number).toFixed(2) : "—"; }
 function getStatus(match) { const status = match?.fixture?.status ?? match?.status; const short = typeof status === "string" ? status : status?.short; return ["1H", "2H", "HT", "ET", "P", "LIVE", "IN_PLAY", "PAUSED"].includes(short) ? "live" : ["FINISHED", "FT", "AET", "PEN"].includes(short) ? "finished" : "upcoming"; }
+function rawStatus(match) { const status = match?.fixture?.status ?? match?.status; return String(typeof status === "string" ? status : status?.short || "").toUpperCase(); }
+function liveMinuteLabel(match) { const elapsed = match?.fixture?.status?.elapsed; return elapsed === "HT" ? "İY" : Number.isFinite(Number(elapsed)) && elapsed !== null ? `${elapsed}'` : ""; }
+function statusText(match) { const status = getStatus(match); const raw = rawStatus(match); if (status === "finished") return "MS"; if (status === "live") return `CANLI ${liveMinuteLabel(match)}`.trim(); if (["POSTPONED", "PST"].includes(raw)) return "ERTELENDİ"; if (["CANCELLED", "CANCELED", "ABD"].includes(raw)) return "İPTAL"; return "BAŞLAYACAK"; }
+function scoreText(match, separator = " : ") { return `${match?.goals?.home ?? "—"}${separator}${match?.goals?.away ?? "—"}`; }
 function getTeams(match) { return { home: match?.teams?.home?.name || "Ev sahibi", away: match?.teams?.away?.name || "Deplasman" }; }
 function initialFavoriteState() { try { const saved = JSON.parse(localStorage.getItem("futbol-analiz-favorites")) || {}; return { matches: Array.isArray(saved.matches) ? saved.matches.map(String) : [], teams: [], leagues: [], savedMatches: saved.savedMatches || {} }; } catch { return { matches: [], teams: [], leagues: [], savedMatches: {} }; } }
 function archivedAnalysis(record) {
@@ -138,6 +143,23 @@ function App() {
     loadMatches();
     return () => { cancelled = true; };
   }, [selectedDate]);
+
+  // Keep scores fresh: re-read today's fixtures (and any day with a live match) every minute.
+  const hasLiveMatch = matches.some(match => getStatus(match) === "live");
+  useEffect(() => {
+    if (selectedDate !== todayKey() && !hasLiveMatch) return undefined;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const data = await readFrontendJson(`${API_BASE}/api/football-test?date=${selectedDate}`);
+        if (cancelled || !Array.isArray(data?.matches) || !data.matches.length || (data.date && data.date !== selectedDate)) return;
+        fixtureCache.current.set(selectedDate, { matches: data.matches, savedAt: Date.now(), stale: data.stale });
+        setMatches(data.matches);
+      } catch { /* Keep the last real list; the next tick retries. */ }
+    };
+    const timer = setInterval(() => { if (!document.hidden) refresh(); }, 65_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [selectedDate, hasLiveMatch]);
 
   useEffect(() => {
     let cancelled = false; setBestPredictions([]);
@@ -293,7 +315,7 @@ function MatchCard({ match, analysis, summary, onOpen, onFavorite, favoriteIds =
   const expectedGoals = summary?.expectedGoals || analysis?.expectedGoals;
   return <article className={featured ? "match-card featured-card" : "match-card"}>
     <div className="card-meta"><span className="league-pill">{match?.league?.name || "Lig"}</span><span>{formatDate(match?.fixture?.date)} · {formatTime(match?.fixture?.date)}</span></div>
-    <div className="teams-row"><div className="team-name"><span className="team-crest">{home.slice(0, 1)}</span><strong>{home}</strong></div><span className="versus">{getStatus(match) === "finished" ? `${match.goals?.home ?? "—"} - ${match.goals?.away ?? "—"}` : "VS"}</span><div className="team-name away"><strong>{away}</strong><span className="team-crest">{away.slice(0, 1)}</span></div></div>
+    <div className="teams-row"><div className="team-name"><span className="team-crest">{home.slice(0, 1)}</span><strong>{home}</strong></div><span className={getStatus(match) === "live" ? "versus live-score" : "versus"}>{getStatus(match) === "upcoming" ? "VS" : <>{scoreText(match, " - ")}<small>{statusText(match)}</small></>}</span><div className="team-name away"><strong>{away}</strong><span className="team-crest">{away.slice(0, 1)}</span></div></div>
     <div className="prediction-strip"><div><span className="field-label">{summary?.historical || analysis?.historical ? "GEÇMİŞ MAÇ DURUMU" : "EN GÜÇLÜ TAHMİN"}</span><strong>{prediction}</strong><small>{summary?.historical || analysis?.historical ? "Maç öncesi yayımlanmış tahmin kaydı değildir." : "Olasılık (Probability): " + pct(bestMarket?.probability)}</small></div><div><span className="field-label">MODEL GÜVENİ</span><ConfidenceBadge confidence={summary?.confidence ?? analysis?.model?.confidence} /></div></div>
     {(summary?.historical || analysis?.historical) && <div className="quality-note">Geçmiş maç incelemesi: gerçek skor ve mevcut tarihsel veriler gösterilir; tahmin veya oran uydurulmaz.</div>}
     {oneXTwo && <div className="one-x-two-strip" aria-label="1X2 tahmin olasılıkları"><div><span>1 · {home}</span><b>{pct(oneXTwo.home)}</b></div><div><span>X · Beraberlik</span><b>{pct(oneXTwo.draw)}</b></div><div><span>2 · {away}</span><b>{pct(oneXTwo.away)}</b></div></div>}
@@ -318,6 +340,57 @@ function PerformanceCard({ performance }) {
   return <section className="performance-card"><div><span className="eyebrow">📊 MODEL PERFORMANSI</span><h3>{completed ? `Son ${Math.min(completed, 100)} gerçek sonuç` : "Henüz yeterli tamamlanmış tahmin bulunmuyor."}</h3><p>{completed ? "Tamamlanmış gerçek fixture sonuçlarından hesaplanır." : "Arşivde sonuçlanan tahminler oluştuğunda performans burada hesaplanacak."}</p></div><strong>{completed && Number.isFinite(archive.successRate) ? `%${archive.successRate}` : "—"}</strong></section>;
 }
 
+function bankoPct(value) { return Number.isFinite(Number(value)) ? `%${(Number(value) * 100).toFixed(1)}` : "—"; }
+function BankoPanel({ selectedDate }) {
+  const [state, setState] = useState({ loading: true, data: null, error: "" });
+  useEffect(() => {
+    let cancelled = false; let timer = null;
+    setState({ loading: true, data: null, error: "" });
+    const load = async (attempt = 0) => {
+      try {
+        const response = await fetch(`${API_BASE}/api/banko?date=${selectedDate}`);
+        const data = await response.json();
+        if (cancelled) return;
+        if (response.status === 202 || data.pending) { if (attempt < 8) timer = setTimeout(() => load(attempt + 1), 15_000); else setState({ loading: false, data: null, error: "Robot geçmiş verileri hazırlıyor; birkaç dakika sonra yenileyin." }); return; }
+        if (!response.ok || data.success === false) throw new Error(data.error || "Banko robotu yanıt vermedi.");
+        setState({ loading: false, data, error: "" });
+        if (selectedDate === todayKey()) timer = setTimeout(() => load(0), 5 * 60_000);
+      } catch (error) { if (!cancelled) setState({ loading: false, data: null, error: error.message || "Banko robotu yanıt vermedi." }); }
+    };
+    load();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [selectedDate]);
+  const { loading, data, error } = state;
+  const banko = data?.model?.markets?.["1X"];
+  const picks = data?.picks || [];
+  const settled = data?.summary?.settled || 0;
+  const check = data?.seasonCheck;
+  return <section className="banko-panel" aria-label="ZEUS Banko Robotu">
+    <div className="banko-head">
+      <div><span className="eyebrow accent">ZEUS BANKO ROBOTU</span><h2>Yalnızca en emin olduğu maçlar</h2>
+        <p>Robot her maça tahmin vermez. Sadece geçmiş verilerde gerçekten tutmuş güven seviyesine ulaşan maçları seçer; diğerlerinde susar.</p></div>
+      {banko && <div className="banko-proof" title={`Kilitli test dönemi ${banko.testPeriod?.[0]} – ${banko.testPeriod?.[1]}`}>
+        <strong>{bankoPct(banko.testHitRate)}</strong><span>BANKO isabeti</span><small>{banko.testPicks} geçmiş seçimde · {banko.testPeriod?.[0]?.slice(0, 4)}–{banko.testPeriod?.[1]?.slice(0, 4)}</small></div>}
+    </div>
+    {loading ? <p className="muted-note">Robot geçmiş maçları tarıyor…</p> : error ? <p className="muted-note">{error}</p> : <>
+      <div className="banko-stats">
+        <span>Taranan maç <b>{data.summary.covered}</b>/<b>{data.summary.fixtures}</b></span>
+        <span>Seçim <b>{data.summary.picks}</b></span>
+        {settled > 0 && <span>Bugün tutan <b>{data.summary.hits}/{settled}</b></span>}
+        {check?.picks > 0 && <span>Bu sezon canlı kontrol <b>{check.hits}/{check.picks}</b> ({bankoPct(check.hitRate)})</span>}
+      </div>
+      {picks.length ? <div className="banko-list">{picks.map(pick => <article key={`${pick.fixtureId}-${pick.market}`} className={`banko-pick ${pick.tier} ${pick.result}`}>
+        <div className="banko-time">{formatTime(pick.kickoff)}<small>{pick.league}</small></div>
+        <div className="banko-teams"><b>{pick.home}</b><b>{pick.away}</b></div>
+        <div className="banko-market"><span className={`banko-tier ${pick.tier}`}>{pick.tier === "banko" ? "BANKO" : "GÜÇLÜ"}</span><strong>{pick.short}</strong><small>Model %{pick.probability} · geçmişte {`%${pick.historicalHitRate}`}</small></div>
+        <div className="banko-result">{pick.score ? <strong>{pick.score.home} - {pick.score.away}</strong> : <strong>—</strong>}
+          <span>{pick.result === "hit" ? "✓ Tuttu" : pick.result === "miss" ? "✕ Tutmadı" : pick.result === "live" ? `● Canlı ${pick.elapsed ? (pick.elapsed === "HT" ? "İY" : `${pick.elapsed}'`) : ""}` : pick.result === "void" ? "Ertelendi" : "Bekliyor"}</span></div>
+      </article>)}</div> : <EmptyState icon="◎" title="Bugün robotun emin olduğu maç yok" text="Güven eşiğini geçen maç bulunamadı. Robot bu durumda bilerek tahmin vermez." />}
+      <p className="banko-note">BANKO = 1X (ev sahibi kaybetmez): 2010–2021 maçlarıyla eğitildi, eşik 2021–2023 ile seçildi, isabet 2023–2026 arası hiç görmediği {banko?.testPicks} maçta ölçüldü. GÜÇLÜ seçimler daha fazla maç kapsar; her birinin kendi geçmiş isabeti (%80–92) kartta yazar. Kapsam: Avrupa'nın OpenFootball verisi olan ligleri. Hiçbir tahmin garanti değildir.</p>
+    </>}
+  </section>;
+}
+
 function HomeView({ loading, matches, selectedDate, bestPredictions, predictionDiagnostics, analysisCache, onOpen, onFavorite, onShowMatches, favoriteIds }) {
   const strongest = bestPredictions
     .filter((item) => item.eligible === true && Number.isFinite(Number(item.dataQuality?.score)) && Number(item.dataQuality.score) >= 45 && Number.isFinite(Number(item.confidence)) && Number(item.confidence) >= 50 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market))
@@ -332,6 +405,8 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, predictionD
       <p>Günün maçları, model olasılıkları ve veri kalitesi tek ekranda. Tahmin yalnızca gerçek analiz verisi mevcut olduğunda gösterilir.</p>
       <div className="home-hero-meta"><span>{selectedLabel}</span><span>{loading ? "Maçlar yükleniyor…" : `${matches.length} maç listelendi`}</span></div>
     </section>
+
+    <BankoPanel selectedDate={selectedDate} />
 
     <section className="home-quick-actions" aria-label="Hızlı erişim">
       <button type="button" className="home-quick-action primary" onClick={onShowMatches}><span className="home-quick-icon">▦</span><span><strong>Seçili günün tüm maçları</strong><small>{loading ? "Fikstür yükleniyor…" : `${matches.length} karşılaşma · tarih ve lig filtresi`}</small></span><b>→</b></button>
@@ -378,17 +453,21 @@ function PerformanceBar({ label, stats = {} }) { return <div className="performa
 
 function PredictionsView({ matches, analysisCache, market, setMarket, minConfidence, setMinConfidence, onOpen }) { const visible = matches.filter((match) => { const data = analysisCache[match.fixture?.id]; if (!data && market !== "all") return false; return !data || Number(data.model?.confidence || 0) >= Number(minConfidence); }); return <div className="view-stack"><SectionHeading eyebrow="AI MOTORU" title="Tahmin merkezinde" action={<span className="live-dot-label">● CANLI VERİ</span>} /><div className="filter-scroll">{MARKET_GROUPS.map((item) => <button key={item.id} className={market === item.id ? "filter-chip selected" : "filter-chip"} type="button" onClick={() => setMarket(item.id)}>{item.label}</button>)}</div><div className="filter-row"><label>Minimum güven <select value={minConfidence} onChange={(event) => setMinConfidence(event.target.value)}><option value="0">Tümü</option><option value="60">%60+</option><option value="75">%75+</option></select></label><span>{visible.length} maç</span></div>{visible.length ? <div className="card-list">{visible.map((match) => <MatchCard key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div> : <EmptyState icon="✦" title="Tahminleri görmek için maç seç" text="Maç detayını açtığında model tüm marketleri hesaplar." />}<HistoryPanel /></div>; }
 
-function MatchesView({ selectedDate, groups, openLeagues, setOpenLeagues, search, setSearch, league, setLeague, leagues, onOpen, onFavorite, favoriteIds, loading, analysisCache }) { return <div className="view-stack"><SectionHeading eyebrow="FİKSTÜR" title="Günün maçları" action={<span className="date-chip">{formatDate(parseDateKey(selectedDate))}</span>} /><div className="toolbar"><div className="search-box"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Takım veya lig ara" /></div><select value={league} onChange={(event) => setLeague(event.target.value)}>{leagues.map((item) => <option key={item}>{item}</option>)}</select></div>{loading ? <EmptyState title="Maçlar yükleniyor" text="API-Football fikstürü getiriliyor." /> : Object.keys(groups).length ? Object.entries(groups).map(([name, leagueMatches]) => <section className="league-group" key={name}><button className="league-heading" type="button" onClick={() => setOpenLeagues((current) => ({ ...current, [name]: current[name] === false }))}><span><b>{name}</b><small>{leagueMatches[0]?.league?.country || "Uluslararası"} · {leagueMatches.length} maç</small></span><span>{openLeagues[name] === false ? "+" : "−"}</span></button>{openLeagues[name] !== false && <div className="league-matches">{leagueMatches.map((match) => <MatchRow key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div>}</section>) : <EmptyState title="Maç bulunamadı" text="Filtreleri değiştirerek tekrar deneyin." />}</div>; }
+function MatchesView({ selectedDate, groups, openLeagues, setOpenLeagues, search, setSearch, league, setLeague, leagues, onOpen, onFavorite, favoriteIds, loading, analysisCache }) {
+  const [byLeague, setByLeague] = useState(false);
+  const timeline = Object.values(groups).flat().sort((a, b) => (Date.parse(a?.fixture?.date) || 0) - (Date.parse(b?.fixture?.date) || 0));
+  return <div className="view-stack"><SectionHeading eyebrow="FİKSTÜR" title="Günün maçları" action={<span className="date-chip">{formatDate(`${selectedDate}T12:00:00Z`)}</span>} /><div className="toolbar"><div className="search-box"><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Takım veya lig ara" /></div><select value={league} onChange={(event) => setLeague(event.target.value)}>{leagues.map((item) => <option key={item}>{item}</option>)}</select></div><div className="filter-scroll" role="group" aria-label="Sıralama"><button type="button" className={!byLeague ? "filter-chip selected" : "filter-chip"} aria-pressed={!byLeague} onClick={() => setByLeague(false)}>Saate göre</button><button type="button" className={byLeague ? "filter-chip selected" : "filter-chip"} aria-pressed={byLeague} onClick={() => setByLeague(true)}>Lige göre</button></div>{loading ? <EmptyState title="Maçlar yükleniyor" text="Fikstür getiriliyor." /> : !byLeague ? (timeline.length ? <div className="match-list">{timeline.map((match) => <MatchRow key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div> : <EmptyState title="Maç bulunamadı" text="Filtreleri değiştirerek tekrar deneyin." />) : Object.keys(groups).length ? Object.entries(groups).map(([name, leagueMatches]) => <section className="league-group" key={name}><button className="league-heading" type="button" onClick={() => setOpenLeagues((current) => ({ ...current, [name]: current[name] === false }))}><span><b>{name}</b><small>{leagueMatches[0]?.league?.country || "Uluslararası"} · {leagueMatches.length} maç</small></span><span>{openLeagues[name] === false ? "+" : "−"}</span></button>{openLeagues[name] !== false && <div className="league-matches">{leagueMatches.map((match) => <MatchRow key={match.fixture?.id} match={match} analysis={analysisCache[match.fixture?.id]} onOpen={onOpen} onFavorite={onFavorite} favoriteIds={favoriteIds} />)}</div>}</section>) : <EmptyState title="Maç bulunamadı" text="Filtreleri değiştirerek tekrar deneyin." />}</div>;
+}
 function MatchRow({ match, analysis, onOpen, onFavorite, favoriteIds }) {
   const { home, away } = getTeams(match);
   const status = getStatus(match);
   const bestMarket = analysis?.recommendation?.bestMarket;
   const predictionLabel = analysis?.historical ? "Geçmiş maç analizi" : analysis?.predictionEligible === false ? "Yetersiz veri" : bestMarket?.market || "Detaylı analiz için aç";
   const confidence = analysis?.model?.confidence;
-  const statusLabel = status === "finished" ? "TAMAMLANDI" : status === "live" ? "CANLI" : "BAŞLAYACAK";
-  const score = status === "finished" || status === "live" ? String(match?.goals?.home ?? "—") + " : " + String(match?.goals?.away ?? "—") : formatTime(match?.fixture?.date);
+  const statusLabel = statusText(match);
+  const score = status === "finished" || status === "live" ? scoreText(match) : formatTime(match?.fixture?.date);
   return <button className="match-row" type="button" onClick={() => onOpen(match)} aria-label={home + " - " + away + ", " + statusLabel + ", maç analizini aç"}>
-    <span className="row-time"><small>{statusLabel}</small><b>{score}</b></span>
+    <span className={status === "live" ? "row-time live" : "row-time"}><small>{statusLabel}</small><b>{score}</b>{status !== "upcoming" && <small>{formatTime(match?.fixture?.date)}</small>}</span>
     <span className="row-teams"><b>{home}</b><b>{away}</b><small>{match?.league?.name || "Lig bilgisi yok"}</small></span>
     <span className="row-prediction">{analysis?.historical ? "GEÇMİŞ" : Number.isFinite(confidence) ? "%" + confidence : "AI"}<br /><strong>{predictionLabel}</strong></span>
     <span className={favoriteIds.includes(String(match?.fixture?.id)) ? "row-heart saved" : "row-heart"} onClick={(event) => { event.stopPropagation(); onFavorite(match); }}>♥</span><span className="row-arrow">›</span>

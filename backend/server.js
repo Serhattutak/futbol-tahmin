@@ -22,6 +22,7 @@ const footballData = require("./providers/footballData");
 const espn = require("./providers/espn");
 const { normalizeStatus } = require("./services/fixtureNormalization");
 const { MultiProviderRegistry, createLegacyAdapter, toFrontendFixture } = require("./services/multiProviderRegistry");
+const { getLocalDayFixtures, todayKey: localTodayKey } = require("./services/localDayFixtures");
 
 const app = express();
 const isProduction = process.env.NODE_ENV === "production";
@@ -64,7 +65,7 @@ const api = axios.create({ baseURL: API_URL, timeout: 10000, headers: { "x-apisp
 // Ücretli api-football sağlayıcısı tamamen devre dışı bırakıldı (disabled: true).
 // Yalnızca ücretsiz kaynaklar (OpenFootball, football-data.org ücretsiz tier, TheSportsDB) kullanılır.
 const upstream = new ApiFootballClient({ client: api, apiKey: process.env.API_FOOTBALL_KEY, dailyBudget: process.env.API_FOOTBALL_DAILY_BUDGET || 100, cacheLimit: process.env.API_FOOTBALL_CACHE_LIMIT || 500, disabled: true });
-const predictionStorePath = path.join(__dirname, "data", "predictions.json");
+const predictionStorePath = process.env.ZEUS_PREDICTION_STORE || path.join(__dirname, "data", "predictions.json");
 
 function readPredictionStore() {
   try {
@@ -114,7 +115,7 @@ const providerRegistry = new MultiProviderRegistry([
   createLegacyAdapter(openFootballText),
   createLegacyAdapter(theSportsDb),
   createLegacyAdapter(espn),
-], { fixtureCacheFile: path.join(__dirname, "data", "fixture-cache.json"), historicalCacheFile: path.join(__dirname, "data", "historical-cache.json") });
+], { fixtureCacheFile: path.join(__dirname, "data", "fixture-cache.json"), historicalCacheFile: path.join(__dirname, "data", "historical-cache.json"), fixtureTtlMs: 90_000 });
 
 async function optionalApiGet(pathname, params) {
   try {
@@ -192,7 +193,8 @@ function isValidDateKey(value) {
 
 function getRequestedDate(value) {
   if (typeof value === "string" && isValidDateKey(value)) return value;
-  return getDateString(new Date());
+  // "Today" is the product's local day (Europe/Istanbul), not the server's UTC day.
+  return localTodayKey();
 }
 
 // --------------------------------------------------
@@ -206,8 +208,8 @@ app.get("/api/football-test", async (req, res) => {
     }
     const dateString = getRequestedDate(req.query.date);
     console.log(`Maçlar çekiliyor: ${dateString}`);
-    const discovery = await providerRegistry.getFixturesByDate(dateString);
-    const matches = discovery.fixtures.map(toFrontendFixture);
+    const discovery = await getLocalDayFixtures(providerRegistry, dateString, toFrontendFixture);
+    const matches = discovery.matches;
 
     res.json({
       success: true,
@@ -218,6 +220,7 @@ app.get("/api/football-test", async (req, res) => {
       stale: discovery.stale,
       providerError: discovery.providerError,
       matches,
+      timeZone: discovery.timeZone,
       dailyResults: [{ date: dateString, results: matches.length }],
     });
   } catch (error) {
@@ -599,27 +602,66 @@ function isFinishedFixture(fixture) {
   return normalizeStatus(fixture.fixture?.status?.short) === "FINISHED";
 }
 
+const SETTLEMENT_GIVE_UP_MS = 3 * 24 * 60 * 60 * 1000;
+
+// Fallback when the provider that issued the fixture id cannot be queried any more
+// (e.g. the removed api-football feed): find the same match in the merged daily
+// fixture list (same teams, kickoff within 20 minutes) and use its final score
+// only if it is FINISHED and the providers do not disagree on the score.
+async function findFinishedByTeams(record) {
+  const kickoff = Date.parse(record.date);
+  if (!Number.isFinite(kickoff)) return null;
+  const { localDateKey, similarTeam } = require("./services/localDayFixtures");
+  const day = localDateKey(record.date);
+  const { matches } = await getLocalDayFixtures(providerRegistry, day, toFrontendFixture);
+  return matches.find(match => isFinishedFixture(match) && !match.dataConflict
+    && Number.isInteger(match.goals?.home) && Number.isInteger(match.goals?.away)
+    && Math.abs(Date.parse(match.fixture?.date) - kickoff) <= 20 * 60 * 1000
+    && similarTeam(match.teams?.home?.name, record.homeTeam || record.home)
+    && similarTeam(match.teams?.away?.name, record.awayTeam || record.away)) || null;
+}
+
+function settleRecord(record, fixture, source) {
+  const successful = evaluatePredictionMarket(record, fixture);
+  record.resultVerificationStatus = "verified";
+  record.resultSource = source;
+  record.status = successful === null ? "no_data" : successful ? "won" : "lost";
+  record.result = `${fixture.goals?.home ?? "—"}-${fixture.goals?.away ?? "—"}`;
+  record.resultStatus = fixture.fixture?.status?.short;
+  record.completedAt = new Date().toISOString();
+}
+
 async function checkPendingPredictions(limit = 10) {
   const records = readPredictionStore();
   const pending = records.filter((record) => record.status === "pending").slice(0, limit);
   let changed = false;
 
   for (const record of pending) {
+    let failure = null;
     try {
       const fixtures = await providerRegistry.getResults(record.providerFixtureIds || { "api-football": String(record.fixtureId) });
       const settlement = reconciledSettlement(fixtures);
-      if (!settlement || settlement.resultVerificationStatus !== "verified") continue;
-      const fixture = toFrontendFixture(fixtures[0]);
-      record.resultVerificationStatus = "verified";
-      if (!fixture || !isFinishedFixture(fixture)) continue;
-      const successful = evaluatePredictionMarket(record, fixture);
-      record.status = successful === null ? "no_data" : successful ? "won" : "lost";
-      record.result = `${fixture.goals?.home ?? "â€”"}-${fixture.goals?.away ?? "â€”"}`;
-      record.resultStatus = fixture.fixture?.status?.short;
+      const fixture = settlement?.resultVerificationStatus === "verified" ? toFrontendFixture(fixtures[0]) : null;
+      if (fixture && isFinishedFixture(fixture)) { settleRecord(record, fixture, "provider-fixture-id"); changed = true; continue; }
+    } catch (error) {
+      failure = error.category || "provider_unavailable";
+    }
+    if (Date.parse(record.date) > Date.now() - 2 * 60 * 60 * 1000) continue; // not over yet
+    try {
+      const match = await findFinishedByTeams(record);
+      if (match) { settleRecord(record, match, `fixture-list:${(match.providers || [match.provider]).join("+")}`); changed = true; continue; }
+    } catch (error) { failure ||= error.category || "provider_unavailable"; }
+    if (Date.parse(record.date) < Date.now() - SETTLEMENT_GIVE_UP_MS) {
+      // Never guess a result: after three days without a verifiable score the record is
+      // closed as unverifiable and excluded from success-rate statistics.
+      record.status = "unverifiable";
+      record.resultVerificationStatus = "unverifiable";
+      record.unverifiableReason = failure || "result_not_found";
       record.completedAt = new Date().toISOString();
       changed = true;
-    } catch (error) {
-      console.warn(`Tahmin sonucu kontrol edilemedi: ${record.fixtureId}`);
+      console.warn(JSON.stringify({ type: "SETTLEMENT_UNVERIFIABLE", fixtureId: record.fixtureId, reason: record.unverifiableReason }));
+    } else if (failure) {
+      console.warn(JSON.stringify({ type: "SETTLEMENT_RETRY", fixtureId: record.fixtureId, reason: failure }));
     }
   }
 
@@ -1280,7 +1322,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
   }
 
   try {
-    const pool = (await providerRegistry.getFixtures(requestedDate)).map(toFrontendFixture);
+    const pool = (await getLocalDayFixtures(providerRegistry, requestedDate, toFrontendFixture)).matches;
 
     const candidates = [...new Map(
       pool
@@ -1399,6 +1441,27 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
   }
 });
 
+// ZEUS Banko robot: selective high-confidence picks with measured hit rates.
+const { BankoRobot } = require("./services/bankoRobot");
+const bankoRobot = new BankoRobot({
+  recentResults: async (day) => (await providerRegistry.getFixturesByDate(day)).fixtures.map(toFrontendFixture),
+});
+const loadDayMatches = async (day) => (await getLocalDayFixtures(providerRegistry, day, toFrontendFixture)).matches;
+
+app.get("/api/banko", heavyLimiter, concurrencyGuard(3), async (req, res) => {
+  const date = getRequestedDate(req.query.date);
+  try {
+    const work = bankoRobot.cachedPicks(date, loadDayMatches, localTodayKey());
+    const timeout = new Promise(resolve => setTimeout(() => resolve(null), 25_000).unref());
+    const result = await Promise.race([work, timeout]);
+    if (!result) return res.status(202).json({ success: true, pending: true, date, retryAfterSeconds: 15 });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.warn(JSON.stringify({ type: "BANKO_FAILED", date, error: error.message }));
+    res.status(503).json({ success: false, error: "Banko robotu şu an hesaplanamadı.", date });
+  }
+});
+
 app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   if (isProduction) return res.status(404).json({ success: false, error: "Endpoint bulunamadı." });
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
@@ -1485,6 +1548,12 @@ if (require.main === module) {
     resultCheckTimer.unref();
   }
 
+  // Warm the Banko cache (history download + today's picks) so the first visitor does not wait.
+  const warmBanko = () => bankoRobot.cachedPicks(localTodayKey(), loadDayMatches, localTodayKey())
+    .then(result => console.log(JSON.stringify({ type: "BANKO_READY", date: result.date, picks: result.summary.picks, covered: result.summary.covered, seasonCheck: result.seasonCheck })))
+    .catch(error => console.warn(JSON.stringify({ type: "BANKO_WARM_FAILED", error: error.message })));
+  if (process.env.NODE_ENV !== "test") { setTimeout(warmBanko, 5_000).unref(); setInterval(warmBanko, 10 * 60 * 1000).unref(); }
+
   app.listen(PORT, () => {
     console.log(
       `Futbol Analiz AI backend çalışıyor: http://localhost:${PORT}`
@@ -1497,6 +1566,6 @@ if (require.main === module) {
 // dışa aktarımlar (testlerin ve diğer modüllerin kullandığı) fonksiyona özellik
 // olarak eklenerek korunur; hiçbir mevcut import kırılmaz.
 module.exports = app;
-Object.assign(module.exports, { app, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
+Object.assign(module.exports, { app, checkPendingPredictions, analyzeFixture, analyzeCollectedFixture, providerRegistry, upstream, productionAnalysis, forwardCapture, predictionLedger });
 
 

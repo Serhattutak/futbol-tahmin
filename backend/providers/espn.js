@@ -67,6 +67,12 @@ const STATUS_MAP = {
   STATUS_SUSPENDED: "LIVE",
   STATUS_DELAYED: "SCHEDULED",
 };
+function liveMinute(status, statusName) {
+  if (statusName === "STATUS_HALFTIME") return "HT";
+  if ((STATUS_MAP[statusName] || "") !== "LIVE") return null;
+  const minute = Number.parseInt(String(status?.displayClock || ""), 10);
+  return Number.isFinite(minute) && minute > 0 ? minute : null;
+}
 function toFixture(event, leagueName, meta) {
   const competition = event?.competitions?.[0];
   if (!competition) return null;
@@ -78,7 +84,7 @@ function toFixture(event, leagueName, meta) {
   return {
     provider: "espn",
     providers: ["espn"],
-    fixture: { id: `espn-${event.id}`, date: normalizeKickoff(event.date), kickoffPrecision: "time", status: { short: STATUS_MAP[statusName] || normalizeStatus(statusName) } },
+    fixture: { id: `espn-${event.id}`, date: normalizeKickoff(event.date), kickoffPrecision: "time", status: { short: STATUS_MAP[statusName] || normalizeStatus(statusName), elapsed: liveMinute(competition.status, statusName) } },
     league: { id: meta.code, name: leagueName, country: meta.country },
     teams: { home: { id: `espn-team-${home.team.id}`, name: home.team.displayName }, away: { id: `espn-team-${away.team.id}`, name: away.team.displayName } },
     goals: { home: score(home), away: score(away) },
