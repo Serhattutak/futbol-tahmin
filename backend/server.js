@@ -1444,6 +1444,7 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
 // ZEUS Banko robot: selective high-confidence picks with measured hit rates.
 const { BankoRobot } = require("./services/bankoRobot");
 const bankoRobot = new BankoRobot({
+  cacheFile: path.join(__dirname, "data", "engine-day-cache.json"),
   recentResults: async (day) => (await providerRegistry.getFixturesByDate(day)).fixtures.map(toFrontendFixture),
 });
 const loadDayMatches = async (day) => (await getLocalDayFixtures(providerRegistry, day, toFrontendFixture)).matches;

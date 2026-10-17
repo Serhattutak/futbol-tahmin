@@ -97,9 +97,11 @@ function collapseDuplicates(matches, timeZone = DEFAULT_TIMEZONE) {
 }
 
 function sortByKickoff(matches) {
+  // Fixtures with only a date (no kickoff time) go after every timed fixture of the day.
+  const time = match => isDateOnly(match) ? Infinity : Date.parse(kickoffOf(match));
   return [...matches].sort((a, b) => {
-    const left = Date.parse(kickoffOf(a)), right = Date.parse(kickoffOf(b));
-    return (Number.isFinite(left) ? left : Infinity) - (Number.isFinite(right) ? right : Infinity)
+    const left = time(a), right = time(b);
+    return ((Number.isFinite(left) ? left : Infinity) - (Number.isFinite(right) ? right : Infinity) || 0)
       || String(a?.league?.name || "").localeCompare(String(b?.league?.name || ""))
       || String(a?.teams?.home?.name || "").localeCompare(String(b?.teams?.home?.name || ""));
   });

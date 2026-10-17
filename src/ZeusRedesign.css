@@ -400,3 +400,12 @@ input,select{border-radius:10px!important;border-color:var(--line)!important;bac
 .banko-pick.hit .banko-result span{color:var(--green)}.banko-pick.miss .banko-result span{color:var(--red)}.banko-pick.live .banko-result span{color:var(--yellow)}
 .banko-note{margin:0;color:var(--muted);font-size:11px;line-height:1.55}
 @media (max-width:560px){.banko-pick{grid-template-columns:52px minmax(0,1fr) 70px;grid-template-areas:"time teams result" "market market market"}.banko-time{grid-area:time}.banko-teams{grid-area:teams}.banko-result{grid-area:result}.banko-market{grid-area:market;grid-auto-flow:column;justify-content:start;align-items:center;gap:8px}.banko-proof{justify-items:start;width:100%}}
+.banko-subhead{margin:6px 0 0;font-size:14px;letter-spacing:-.2px}
+.banko-ms{display:block;margin-top:2px;color:var(--muted);font-size:10px;font-weight:400}
+.tier-legend{display:flex;flex-wrap:wrap;gap:8px}
+.tier-chip{padding:5px 10px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--muted)}
+.tier-chip b{margin-right:4px;color:var(--text)}.tier-chip.banko b{color:var(--green)}.tier-chip.guclu b{color:var(--yellow)}
+.banko-tier.orta{background:rgba(138,186,255,.16);color:var(--blue)}.banko-tier.zayif{background:rgba(158,175,192,.14);color:var(--muted)}
+.row-prediction.engine{line-height:1.5}.row-prediction.engine .banko-tier{font-size:8px;padding:1px 5px}
+.row-prediction.engine.hit strong{color:var(--green)}.row-prediction.engine.miss strong{color:var(--red)}
+.row-result{font-weight:800}.row-prediction.engine.hit .row-result{color:var(--green)}.row-prediction.engine.miss .row-result{color:var(--red)}

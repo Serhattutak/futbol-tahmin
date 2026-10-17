@@ -20,3 +20,5 @@ backend/data/prediction-ledger/
 # Generated locally (rebuild with npm run archive:historical); too large for git
 backend/data/historical-feature-archive/
 backend/data/historical-cache.v2.json
+backend/data/engine-day-cache.json
+__pycache__/
