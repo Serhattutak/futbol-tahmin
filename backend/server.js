@@ -1553,7 +1553,25 @@ if (require.main === module) {
   const warmBanko = () => bankoRobot.cachedPicks(localTodayKey(), loadDayMatches, localTodayKey())
     .then(result => console.log(JSON.stringify({ type: "BANKO_READY", date: result.date, picks: result.summary.picks, covered: result.summary.covered, seasonCheck: result.seasonCheck })))
     .catch(error => console.warn(JSON.stringify({ type: "BANKO_WARM_FAILED", error: error.message })));
-  if (process.env.NODE_ENV !== "test") { setTimeout(warmBanko, 5_000).unref(); setInterval(warmBanko, 10 * 60 * 1000).unref(); }
+  // Also keep the 7 days before and after today ready, one day at a time.
+  const { shiftDateKey } = require("./services/localDayFixtures");
+  let warmingWeek = false;
+  const warmWeek = async () => {
+    if (warmingWeek) return; warmingWeek = true;
+    const today = localTodayKey();
+    try {
+      for (const offset of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7]) {
+        const day = shiftDateKey(today, offset);
+        await bankoRobot.cachedPicks(day, loadDayMatches, today).catch(error => console.warn(JSON.stringify({ type: "BANKO_WEEK_WARM_FAILED", day, error: error.message })));
+      }
+      console.log(JSON.stringify({ type: "BANKO_WEEK_READY", today }));
+    } finally { warmingWeek = false; }
+  };
+  if (process.env.NODE_ENV !== "test") {
+    setTimeout(() => warmBanko().then(warmWeek), 5_000).unref();
+    setInterval(warmBanko, 10 * 60 * 1000).unref();
+    setInterval(warmWeek, 30 * 60 * 1000).unref();
+  }
 
   app.listen(PORT, () => {
     console.log(
