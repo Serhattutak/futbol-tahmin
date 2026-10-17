@@ -351,7 +351,7 @@ function BankoPanel({ selectedDate }) {
         const response = await fetch(`${API_BASE}/api/banko?date=${selectedDate}`);
         const data = await response.json();
         if (cancelled) return;
-        if (response.status === 202 || data.pending) { if (attempt < 8) timer = setTimeout(() => load(attempt + 1), 15_000); else setState({ loading: false, data: null, error: "Robot geçmiş verileri hazırlıyor; birkaç dakika sonra yenileyin." }); return; }
+        if (response.status === 202 || data.pending) { if (attempt < 40) { setState({ loading: true, data: null, error: "" }); timer = setTimeout(() => load(attempt + 1), 15_000); } else setState({ loading: false, data: null, error: "Robot geçmiş verileri hazırlıyor; birkaç dakika sonra yenileyin." }); return; }
         if (!response.ok || data.success === false) throw new Error(data.error || "Banko robotu yanıt vermedi.");
         setState({ loading: false, data, error: "" });
         if (selectedDate === todayKey()) timer = setTimeout(() => load(0), 5 * 60_000);
@@ -372,7 +372,7 @@ function BankoPanel({ selectedDate }) {
       {banko && <div className="banko-proof" title={`Kilitli test dönemi ${banko.testPeriod?.[0]} – ${banko.testPeriod?.[1]}`}>
         <strong>{bankoPct(banko.testHitRate)}</strong><span>BANKO isabeti</span><small>{banko.testPicks} geçmiş seçimde · {banko.testPeriod?.[0]?.slice(0, 4)}–{banko.testPeriod?.[1]?.slice(0, 4)}</small></div>}
     </div>
-    {loading ? <p className="muted-note">Robot geçmiş maçları tarıyor…</p> : error ? <p className="muted-note">{error}</p> : <>
+    {loading ? <p className="muted-note">Robot geçmiş maçları tarıyor… (sunucu yeni başladıysa birkaç dakika sürebilir)</p> : error ? <p className="muted-note">{error}</p> : <>
       <div className="banko-stats">
         <span>Taranan maç <b>{data.summary.covered}</b>/<b>{data.summary.fixtures}</b></span>
         <span>Seçim <b>{data.summary.picks}</b></span>
