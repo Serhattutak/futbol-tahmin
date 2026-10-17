@@ -340,6 +340,57 @@ function PerformanceCard({ performance }) {
   return <section className="performance-card"><div><span className="eyebrow">📊 MODEL PERFORMANSI</span><h3>{completed ? `Son ${Math.min(completed, 100)} gerçek sonuç` : "Henüz yeterli tamamlanmış tahmin bulunmuyor."}</h3><p>{completed ? "Tamamlanmış gerçek fixture sonuçlarından hesaplanır." : "Arşivde sonuçlanan tahminler oluştuğunda performans burada hesaplanacak."}</p></div><strong>{completed && Number.isFinite(archive.successRate) ? `%${archive.successRate}` : "—"}</strong></section>;
 }
 
+function bankoPct(value) { return Number.isFinite(Number(value)) ? `%${(Number(value) * 100).toFixed(1)}` : "—"; }
+function BankoPanel({ selectedDate }) {
+  const [state, setState] = useState({ loading: true, data: null, error: "" });
+  useEffect(() => {
+    let cancelled = false; let timer = null;
+    setState({ loading: true, data: null, error: "" });
+    const load = async (attempt = 0) => {
+      try {
+        const response = await fetch(`${API_BASE}/api/banko?date=${selectedDate}`);
+        const data = await response.json();
+        if (cancelled) return;
+        if (response.status === 202 || data.pending) { if (attempt < 8) timer = setTimeout(() => load(attempt + 1), 15_000); else setState({ loading: false, data: null, error: "Robot geçmiş verileri hazırlıyor; birkaç dakika sonra yenileyin." }); return; }
+        if (!response.ok || data.success === false) throw new Error(data.error || "Banko robotu yanıt vermedi.");
+        setState({ loading: false, data, error: "" });
+        if (selectedDate === todayKey()) timer = setTimeout(() => load(0), 5 * 60_000);
+      } catch (error) { if (!cancelled) setState({ loading: false, data: null, error: error.message || "Banko robotu yanıt vermedi." }); }
+    };
+    load();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [selectedDate]);
+  const { loading, data, error } = state;
+  const banko = data?.model?.markets?.["1X"];
+  const picks = data?.picks || [];
+  const settled = data?.summary?.settled || 0;
+  const check = data?.seasonCheck;
+  return <section className="banko-panel" aria-label="ZEUS Banko Robotu">
+    <div className="banko-head">
+      <div><span className="eyebrow accent">ZEUS BANKO ROBOTU</span><h2>Yalnızca en emin olduğu maçlar</h2>
+        <p>Robot her maça tahmin vermez. Sadece geçmiş verilerde gerçekten tutmuş güven seviyesine ulaşan maçları seçer; diğerlerinde susar.</p></div>
+      {banko && <div className="banko-proof" title={`Kilitli test dönemi ${banko.testPeriod?.[0]} – ${banko.testPeriod?.[1]}`}>
+        <strong>{bankoPct(banko.testHitRate)}</strong><span>BANKO isabeti</span><small>{banko.testPicks} geçmiş seçimde · {banko.testPeriod?.[0]?.slice(0, 4)}–{banko.testPeriod?.[1]?.slice(0, 4)}</small></div>}
+    </div>
+    {loading ? <p className="muted-note">Robot geçmiş maçları tarıyor…</p> : error ? <p className="muted-note">{error}</p> : <>
+      <div className="banko-stats">
+        <span>Taranan maç <b>{data.summary.covered}</b>/<b>{data.summary.fixtures}</b></span>
+        <span>Seçim <b>{data.summary.picks}</b></span>
+        {settled > 0 && <span>Bugün tutan <b>{data.summary.hits}/{settled}</b></span>}
+        {check?.picks > 0 && <span>Bu sezon canlı kontrol <b>{check.hits}/{check.picks}</b> ({bankoPct(check.hitRate)})</span>}
+      </div>
+      {picks.length ? <div className="banko-list">{picks.map(pick => <article key={`${pick.fixtureId}-${pick.market}`} className={`banko-pick ${pick.tier} ${pick.result}`}>
+        <div className="banko-time">{formatTime(pick.kickoff)}<small>{pick.league}</small></div>
+        <div className="banko-teams"><b>{pick.home}</b><b>{pick.away}</b></div>
+        <div className="banko-market"><span className={`banko-tier ${pick.tier}`}>{pick.tier === "banko" ? "BANKO" : "GÜÇLÜ"}</span><strong>{pick.short}</strong><small>Model %{pick.probability} · geçmişte {`%${pick.historicalHitRate}`}</small></div>
+        <div className="banko-result">{pick.score ? <strong>{pick.score.home} - {pick.score.away}</strong> : <strong>—</strong>}
+          <span>{pick.result === "hit" ? "✓ Tuttu" : pick.result === "miss" ? "✕ Tutmadı" : pick.result === "live" ? `● Canlı ${pick.elapsed ? (pick.elapsed === "HT" ? "İY" : `${pick.elapsed}'`) : ""}` : pick.result === "void" ? "Ertelendi" : "Bekliyor"}</span></div>
+      </article>)}</div> : <EmptyState icon="◎" title="Bugün robotun emin olduğu maç yok" text="Güven eşiğini geçen maç bulunamadı. Robot bu durumda bilerek tahmin vermez." />}
+      <p className="banko-note">BANKO = 1X (ev sahibi kaybetmez): 2010–2021 maçlarıyla eğitildi, eşik 2021–2023 ile seçildi, isabet 2023–2026 arası hiç görmediği {banko?.testPicks} maçta ölçüldü. GÜÇLÜ seçimler daha fazla maç kapsar; her birinin kendi geçmiş isabeti (%80–92) kartta yazar. Kapsam: Avrupa'nın OpenFootball verisi olan ligleri. Hiçbir tahmin garanti değildir.</p>
+    </>}
+  </section>;
+}
+
 function HomeView({ loading, matches, selectedDate, bestPredictions, predictionDiagnostics, analysisCache, onOpen, onFavorite, onShowMatches, favoriteIds }) {
   const strongest = bestPredictions
     .filter((item) => item.eligible === true && Number.isFinite(Number(item.dataQuality?.score)) && Number(item.dataQuality.score) >= 45 && Number.isFinite(Number(item.confidence)) && Number(item.confidence) >= 50 && item.prediction?.market && !["NO_BET", "NO BET"].includes(item.prediction.market))
@@ -354,6 +405,8 @@ function HomeView({ loading, matches, selectedDate, bestPredictions, predictionD
       <p>Günün maçları, model olasılıkları ve veri kalitesi tek ekranda. Tahmin yalnızca gerçek analiz verisi mevcut olduğunda gösterilir.</p>
       <div className="home-hero-meta"><span>{selectedLabel}</span><span>{loading ? "Maçlar yükleniyor…" : `${matches.length} maç listelendi`}</span></div>
     </section>
+
+    <BankoPanel selectedDate={selectedDate} />
 
     <section className="home-quick-actions" aria-label="Hızlı erişim">
       <button type="button" className="home-quick-action primary" onClick={onShowMatches}><span className="home-quick-icon">▦</span><span><strong>Seçili günün tüm maçları</strong><small>{loading ? "Fikstür yükleniyor…" : `${matches.length} karşılaşma · tarih ve lig filtresi`}</small></span><b>→</b></button>

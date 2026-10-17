@@ -1,0 +1,456 @@
+{
+  "split": {
+    "train": {
+      "from": "2010-08-07",
+      "to": "2021-05-30",
+      "matches": 49660
+    },
+    "validation": {
+      "from": "2021-07-23",
+      "to": "2023-06-11",
+      "matches": 6895
+    },
+    "test": {
+      "from": "2023-07-28",
+      "to": "2026-05-24",
+      "matches": 14548
+    }
+  },
+  "target": 0.9,
+  "markets": {
+    "1X": {
+      "gate": 0.878064504162367,
+      "validationPicks": 276,
+      "validationHitRate": 0.927536231884058,
+      "testPicks": 457,
+      "testHits": 422,
+      "testHitRate": 0.9234135667396062,
+      "testWilson95": [
+        0.8953484504494841,
+        0.9444194871672588
+      ],
+      "testCoverage": 0.031413252680780865,
+      "testBaseRate": 0.694528457519934,
+      "tier": "banko",
+      "kept": true,
+      "testByLeague": {
+        "2. Bundesliga": {
+          "picks": 4,
+          "hitRate": 0.5
+        },
+        "Austrian Bundesliga": {
+          "picks": 12,
+          "hitRate": 0.9166666666666666
+        },
+        "Bundesliga": {
+          "picks": 49,
+          "hitRate": 0.9387755102040817
+        },
+        "Championship": {
+          "picks": 29,
+          "hitRate": 0.8620689655172413
+        },
+        "Eredivisie": {
+          "picks": 69,
+          "hitRate": 0.9710144927536232
+        },
+        "La Liga": {
+          "picks": 49,
+          "hitRate": 0.9387755102040817
+        },
+        "League One": {
+          "picks": 9,
+          "hitRate": 0.8888888888888888
+        },
+        "League Two": {
+          "picks": 3,
+          "hitRate": 0.6666666666666666
+        },
+        "Ligue 1": {
+          "picks": 26,
+          "hitRate": 0.9230769230769231
+        },
+        "Ligue 2": {
+          "picks": 8,
+          "hitRate": 0.75
+        },
+        "Premier League": {
+          "picks": 38,
+          "hitRate": 0.9210526315789473
+        },
+        "Primeira Liga": {
+          "picks": 59,
+          "hitRate": 0.9830508474576272
+        },
+        "Pro League": {
+          "picks": 14,
+          "hitRate": 1.0
+        },
+        "Scottish Premiership": {
+          "picks": 19,
+          "hitRate": 0.9473684210526315
+        },
+        "Segunda Divisi\u00f3n": {
+          "picks": 4,
+          "hitRate": 1.0
+        },
+        "Serie A": {
+          "picks": 33,
+          "hitRate": 0.8181818181818182
+        },
+        "Serie B": {
+          "picks": 10,
+          "hitRate": 0.9
+        },
+        "Super League Greece": {
+          "picks": 6,
+          "hitRate": 1.0
+        },
+        "S\u00fcper Lig": {
+          "picks": 16,
+          "hitRate": 0.875
+        }
+      }
+    },
+    "U4.5": {
+      "gate": 0.9110530301989728,
+      "validationPicks": 345,
+      "validationHitRate": 0.8956521739130435,
+      "testPicks": 856,
+      "testHits": 785,
+      "testHitRate": 0.9170560747663551,
+      "testWilson95": [
+        0.8966640790010657,
+        0.933721424561451
+      ],
+      "testCoverage": 0.058839703051965904,
+      "testBaseRate": 0.8613555127852626,
+      "tier": "strong",
+      "kept": true,
+      "testByLeague": {
+        "2. Bundesliga": {
+          "picks": 2,
+          "hitRate": 1.0
+        },
+        "Austrian Bundesliga": {
+          "picks": 29,
+          "hitRate": 0.896551724137931
+        },
+        "Bundesliga": {
+          "picks": 3,
+          "hitRate": 1.0
+        },
+        "Championship": {
+          "picks": 128,
+          "hitRate": 0.9375
+        },
+        "La Liga": {
+          "picks": 78,
+          "hitRate": 0.9358974358974359
+        },
+        "League One": {
+          "picks": 39,
+          "hitRate": 0.8974358974358975
+        },
+        "League Two": {
+          "picks": 98,
+          "hitRate": 0.9183673469387755
+        },
+        "Ligue 1": {
+          "picks": 15,
+          "hitRate": 0.9333333333333333
+        },
+        "Ligue 2": {
+          "picks": 37,
+          "hitRate": 0.9459459459459459
+        },
+        "Premier League": {
+          "picks": 5,
+          "hitRate": 1.0
+        },
+        "Primeira Liga": {
+          "picks": 30,
+          "hitRate": 1.0
+        },
+        "Pro League": {
+          "picks": 13,
+          "hitRate": 0.8461538461538461
+        },
+        "Scottish Premiership": {
+          "picks": 6,
+          "hitRate": 0.8333333333333334
+        },
+        "Segunda Divisi\u00f3n": {
+          "picks": 81,
+          "hitRate": 0.9135802469135802
+        },
+        "Serie A": {
+          "picks": 130,
+          "hitRate": 0.8923076923076924
+        },
+        "Serie B": {
+          "picks": 86,
+          "hitRate": 0.8953488372093024
+        },
+        "Super League Greece": {
+          "picks": 70,
+          "hitRate": 0.9
+        },
+        "S\u00fcper Lig": {
+          "picks": 6,
+          "hitRate": 1.0
+        }
+      }
+    },
+    "X2": {
+      "gate": 0.8045719713435365,
+      "validationPicks": 207,
+      "validationHitRate": 0.8502415458937198,
+      "testPicks": 322,
+      "testHits": 281,
+      "testHitRate": 0.8726708074534162,
+      "testWilson95": [
+        0.8318169436214511,
+        0.9047372594023495
+      ],
+      "testCoverage": 0.022133626615342315,
+      "testBaseRate": 0.5661946659334617,
+      "tier": "strong",
+      "kept": true,
+      "testByLeague": {
+        "2. Bundesliga": {
+          "picks": 12,
+          "hitRate": 0.6666666666666666
+        },
+        "Austrian Bundesliga": {
+          "picks": 8,
+          "hitRate": 0.875
+        },
+        "Bundesliga": {
+          "picks": 42,
+          "hitRate": 0.9285714285714286
+        },
+        "Championship": {
+          "picks": 8,
+          "hitRate": 1.0
+        },
+        "Eredivisie": {
+          "picks": 58,
+          "hitRate": 0.8793103448275862
+        },
+        "La Liga": {
+          "picks": 15,
+          "hitRate": 0.6666666666666666
+        },
+        "League One": {
+          "picks": 1,
+          "hitRate": 1.0
+        },
+        "League Two": {
+          "picks": 2,
+          "hitRate": 1.0
+        },
+        "Ligue 1": {
+          "picks": 13,
+          "hitRate": 0.9230769230769231
+        },
+        "Ligue 2": {
+          "picks": 2,
+          "hitRate": 1.0
+        },
+        "Premier League": {
+          "picks": 34,
+          "hitRate": 0.8529411764705882
+        },
+        "Primeira Liga": {
+          "picks": 49,
+          "hitRate": 0.8979591836734694
+        },
+        "Pro League": {
+          "picks": 12,
+          "hitRate": 0.8333333333333334
+        },
+        "Scottish Premiership": {
+          "picks": 14,
+          "hitRate": 0.8571428571428571
+        },
+        "Segunda Divisi\u00f3n": {
+          "picks": 2,
+          "hitRate": 0.5
+        },
+        "Serie A": {
+          "picks": 31,
+          "hitRate": 0.9354838709677419
+        },
+        "Serie B": {
+          "picks": 1,
+          "hitRate": 1.0
+        },
+        "Super League Greece": {
+          "picks": 6,
+          "hitRate": 0.6666666666666666
+        },
+        "S\u00fcper Lig": {
+          "picks": 12,
+          "hitRate": 0.9166666666666666
+        }
+      }
+    },
+    "O1.5": {
+      "gate": 0.8472274518941745,
+      "validationPicks": 138,
+      "validationHitRate": 0.8188405797101449,
+      "testPicks": 345,
+      "testHits": 299,
+      "testHitRate": 0.8666666666666667,
+      "testWilson95": [
+        0.8267281538644072,
+        0.8985293842273799
+      ],
+      "testCoverage": 0.023714599945009622,
+      "testBaseRate": 0.7578361286774814,
+      "tier": "strong",
+      "kept": true,
+      "testByLeague": {
+        "2. Bundesliga": {
+          "picks": 30,
+          "hitRate": 0.8
+        },
+        "Austrian Bundesliga": {
+          "picks": 2,
+          "hitRate": 0.0
+        },
+        "Bundesliga": {
+          "picks": 119,
+          "hitRate": 0.8571428571428571
+        },
+        "Eredivisie": {
+          "picks": 87,
+          "hitRate": 0.9310344827586207
+        },
+        "La Liga": {
+          "picks": 2,
+          "hitRate": 1.0
+        },
+        "Ligue 1": {
+          "picks": 17,
+          "hitRate": 0.7647058823529411
+        },
+        "Premier League": {
+          "picks": 52,
+          "hitRate": 0.8461538461538461
+        },
+        "Primeira Liga": {
+          "picks": 17,
+          "hitRate": 0.9411764705882353
+        },
+        "Pro League": {
+          "picks": 4,
+          "hitRate": 0.75
+        },
+        "Scottish Premiership": {
+          "picks": 14,
+          "hitRate": 0.9285714285714286
+        },
+        "S\u00fcper Lig": {
+          "picks": 1,
+          "hitRate": 1.0
+        }
+      }
+    },
+    "1": {
+      "gate": 0.719019344585678,
+      "validationPicks": 207,
+      "validationHitRate": 0.8164251207729468,
+      "testPicks": 329,
+      "testHits": 264,
+      "testHitRate": 0.8024316109422492,
+      "testWilson95": [
+        0.7560228286693178,
+        0.8418591668504729
+      ],
+      "testCoverage": 0.02261479241132802,
+      "testBaseRate": 0.4338053340665384,
+      "tier": "strong",
+      "kept": true,
+      "testByLeague": {
+        "2. Bundesliga": {
+          "picks": 2,
+          "hitRate": 0.5
+        },
+        "Austrian Bundesliga": {
+          "picks": 8,
+          "hitRate": 0.75
+        },
+        "Bundesliga": {
+          "picks": 46,
+          "hitRate": 0.8043478260869565
+        },
+        "Championship": {
+          "picks": 13,
+          "hitRate": 0.6923076923076923
+        },
+        "Eredivisie": {
+          "picks": 64,
+          "hitRate": 0.84375
+        },
+        "La Liga": {
+          "picks": 26,
+          "hitRate": 0.9230769230769231
+        },
+        "League One": {
+          "picks": 4,
+          "hitRate": 0.75
+        },
+        "League Two": {
+          "picks": 1,
+          "hitRate": 1.0
+        },
+        "Ligue 1": {
+          "picks": 23,
+          "hitRate": 0.6521739130434783
+        },
+        "Ligue 2": {
+          "picks": 1,
+          "hitRate": 1.0
+        },
+        "Premier League": {
+          "picks": 34,
+          "hitRate": 0.8529411764705882
+        },
+        "Primeira Liga": {
+          "picks": 47,
+          "hitRate": 0.851063829787234
+        },
+        "Pro League": {
+          "picks": 8,
+          "hitRate": 0.875
+        },
+        "Scottish Premiership": {
+          "picks": 20,
+          "hitRate": 0.85
+        },
+        "Segunda Divisi\u00f3n": {
+          "picks": 3,
+          "hitRate": 0.3333333333333333
+        },
+        "Serie A": {
+          "picks": 17,
+          "hitRate": 0.5882352941176471
+        },
+        "Serie B": {
+          "picks": 4,
+          "hitRate": 0.75
+        },
+        "Super League Greece": {
+          "picks": 1,
+          "hitRate": 0.0
+        },
+        "S\u00fcper Lig": {
+          "picks": 7,
+          "hitRate": 0.8571428571428571
+        }
+      }
+    }
+  }
+}

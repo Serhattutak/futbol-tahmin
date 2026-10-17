@@ -248,4 +248,4 @@ async function main(argv = process.argv.slice(2)) {
 
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1; });
 
-module.exports = { LEAGUES, seasonRange, parseScore, normalizeMatches, buildFeatureRows, fetchSeason, fetchArchive, writeArchive, argsFrom };
+module.exports = { LEAGUES, seasonRange, parseScore, normalizeMatches, makeFeatures, teamRecord, buildFeatureRows, fetchSeason, fetchArchive, writeArchive, argsFrom };

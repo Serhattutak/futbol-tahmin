@@ -1441,6 +1441,27 @@ app.get("/api/best-predictions", heavyLimiter, concurrencyGuard(3), async (req, 
   }
 });
 
+// ZEUS Banko robot: selective high-confidence picks with measured hit rates.
+const { BankoRobot } = require("./services/bankoRobot");
+const bankoRobot = new BankoRobot({
+  recentResults: async (day) => (await providerRegistry.getFixturesByDate(day)).fixtures.map(toFrontendFixture),
+});
+const loadDayMatches = async (day) => (await getLocalDayFixtures(providerRegistry, day, toFrontendFixture)).matches;
+
+app.get("/api/banko", heavyLimiter, concurrencyGuard(3), async (req, res) => {
+  const date = getRequestedDate(req.query.date);
+  try {
+    const work = bankoRobot.cachedPicks(date, loadDayMatches, localTodayKey());
+    const timeout = new Promise(resolve => setTimeout(() => resolve(null), 25_000).unref());
+    const result = await Promise.race([work, timeout]);
+    if (!result) return res.status(202).json({ success: true, pending: true, date, retryAfterSeconds: 15 });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.warn(JSON.stringify({ type: "BANKO_FAILED", date, error: error.message }));
+    res.status(503).json({ success: false, error: "Banko robotu şu an hesaplanamadı.", date });
+  }
+});
+
 app.get("/api/data-diagnostics", heavyLimiter, concurrencyGuard(3), async (req, res) => {
   if (isProduction) return res.status(404).json({ success: false, error: "Endpoint bulunamadı." });
   if (req.query.date !== undefined && !isValidDateKey(req.query.date)) {
@@ -1526,6 +1547,12 @@ if (require.main === module) {
     }, 15 * 60 * 1000);
     resultCheckTimer.unref();
   }
+
+  // Warm the Banko cache (history download + today's picks) so the first visitor does not wait.
+  const warmBanko = () => bankoRobot.cachedPicks(localTodayKey(), loadDayMatches, localTodayKey())
+    .then(result => console.log(JSON.stringify({ type: "BANKO_READY", date: result.date, picks: result.summary.picks, covered: result.summary.covered, seasonCheck: result.seasonCheck })))
+    .catch(error => console.warn(JSON.stringify({ type: "BANKO_WARM_FAILED", error: error.message })));
+  if (process.env.NODE_ENV !== "test") { setTimeout(warmBanko, 5_000).unref(); setInterval(warmBanko, 10 * 60 * 1000).unref(); }
 
   app.listen(PORT, () => {
     console.log(

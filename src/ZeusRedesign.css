@@ -376,3 +376,27 @@ input,select{border-radius:10px!important;border-color:var(--line)!important;bac
 .versus.live-score, .versus.live-score small { color: var(--red, #ed737f); border-color: rgba(237,115,127,.45); }
 .row-time.live small, .row-time.live b { color: var(--red, #ed737f); }
 .row-time small + b + small { margin-top: 2px; opacity: .75; }
+
+/* ZEUS Banko robot */
+.banko-panel{grid-column:1/-1;display:grid;gap:14px;padding:clamp(18px,4vw,28px);border:1px solid rgba(101,228,176,.35);border-radius:22px;background:linear-gradient(135deg,rgba(18,44,40,.96),rgba(12,28,34,.94))}
+.banko-head{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.banko-head h2{margin:6px 0 6px;font-size:clamp(20px,4.6vw,28px);letter-spacing:-.6px}
+.banko-head p{margin:0;max-width:560px;color:var(--muted);font-size:13px;line-height:1.55}
+.banko-proof{display:grid;justify-items:end;min-width:150px;padding:12px 14px;border:1px solid rgba(101,228,176,.4);border-radius:16px;background:rgba(101,228,176,.08)}
+.banko-proof strong{font-size:32px;line-height:1;color:var(--green);font-variant-numeric:tabular-nums}
+.banko-proof span{margin-top:4px;font-size:11px;font-weight:700;letter-spacing:.06em}
+.banko-proof small{margin-top:2px;color:var(--muted);font-size:10px}
+.banko-stats{display:flex;flex-wrap:wrap;gap:8px 16px;color:var(--muted);font-size:12px}
+.banko-stats b{color:var(--text);font-variant-numeric:tabular-nums}
+.banko-list{display:grid;gap:8px}
+.banko-pick{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,auto) 86px;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(8,19,31,.55)}
+.banko-pick.hit{border-color:rgba(101,228,176,.6)}.banko-pick.miss{border-color:rgba(255,135,149,.6)}
+.banko-time{font-weight:700;font-variant-numeric:tabular-nums}.banko-time small{display:block;margin-top:2px;color:var(--muted);font-size:10px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.banko-teams{display:grid;gap:3px;min-width:0}.banko-teams b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.banko-market{display:grid;justify-items:start;gap:3px}.banko-market strong{font-size:15px}.banko-market small{color:var(--muted);font-size:10px}
+.banko-tier{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.08em}
+.banko-tier.banko{background:var(--green);color:#06221a}.banko-tier.strong{background:rgba(244,207,119,.18);color:var(--yellow)}
+.banko-result{display:grid;justify-items:end;gap:3px;font-variant-numeric:tabular-nums}.banko-result span{font-size:11px;color:var(--muted)}
+.banko-pick.hit .banko-result span{color:var(--green)}.banko-pick.miss .banko-result span{color:var(--red)}.banko-pick.live .banko-result span{color:var(--yellow)}
+.banko-note{margin:0;color:var(--muted);font-size:11px;line-height:1.55}
+@media (max-width:560px){.banko-pick{grid-template-columns:52px minmax(0,1fr) 70px;grid-template-areas:"time teams result" "market market market"}.banko-time{grid-area:time}.banko-teams{grid-area:teams}.banko-result{grid-area:result}.banko-market{grid-area:market;grid-auto-flow:column;justify-content:start;align-items:center;gap:8px}.banko-proof{justify-items:start;width:100%}}
