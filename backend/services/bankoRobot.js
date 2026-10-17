@@ -14,7 +14,7 @@
 const path = require("node:path");
 const fs = require("node:fs");
 const { LEAGUES, fetchSeason, makeFeatures, teamRecord } = require("../scripts/buildHistoricalFeatureArchive");
-const { similarTeam } = require("./localDayFixtures");
+const { fuzzyTeamKey } = require("./localDayFixtures");
 const { teamKey, normalizeStatus } = require("./fixtureNormalization");
 
 const MODEL_PATH = path.join(__dirname, "..", "data", "engine-v2.json");
@@ -61,6 +61,33 @@ function previousSeason(season, back) {
 }
 function shiftDate(dateKey, days) { return new Date(Date.parse(`${dateKey}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10); }
 const sigmoid = value => 1 / (1 + Math.exp(-value));
+// Yield to the event loop so HTTP requests keep being served during long work
+// (Render's free instance has a fraction of one CPU).
+const yieldToLoop = () => new Promise(resolve => setImmediate(resolve));
+
+// Team-name normalisation is regex heavy; memoise it.
+const keyMemo = new Map(), fuzzyMemo = new Map();
+function cachedKey(name) { let value = keyMemo.get(name); if (value === undefined) { value = teamKey(name); if (keyMemo.size > 50_000) keyMemo.clear(); keyMemo.set(name, value); } return value; }
+function cachedFuzzy(name) { let value = fuzzyMemo.get(name); if (value === undefined) { value = fuzzyTeamKey(name); if (fuzzyMemo.size > 50_000) fuzzyMemo.clear(); fuzzyMemo.set(name, value); } return value; }
+function fuzzyMatch(left, right) {
+  if (!left || !right) return false;
+  if (left === right) return true;
+  const [shorter, longer] = left.length <= right.length ? [left, right] : [right, left];
+  return shorter.length >= 4 && longer.includes(shorter);
+}
+// Per-league team index, rebuilt only when the league's match list grows.
+const indexCache = new WeakMap();
+function teamIndex(matches) {
+  const hit = indexCache.get(matches);
+  if (hit && hit.length === matches.length) return hit.index;
+  const names = new Set();
+  for (const match of matches) { names.add(match.home); names.add(match.away); }
+  const byKey = new Map(), fuzzy = [];
+  for (const name of names) { const key = cachedKey(name); if (!byKey.has(key)) byKey.set(key, name); fuzzy.push([cachedFuzzy(name), name]); }
+  const index = { names, byKey, fuzzy };
+  indexCache.set(matches, { length: matches.length, index });
+  return index;
+}
 
 function vectorize(model, features) {
   return model.columns.map((column, index) => {
@@ -104,10 +131,12 @@ function leagueState(matches, beforeDate, eloParams = { k: 20, home: 60, init: 1
   for (const match of prior) {
     const home = { ...teamRecord(match, match.home, "home"), venue: "home" };
     const away = { ...teamRecord(match, match.away, "away"), venue: "away" };
-    histories.set(match.home, [...(histories.get(match.home) || []), home]);
-    histories.set(match.away, [...(histories.get(match.away) || []), away]);
-    const pair = [match.home, match.away].sort().join("::");
-    meetings.set(pair, [...(meetings.get(pair) || []), match]);
+    if (!histories.has(match.home)) histories.set(match.home, []);
+    if (!histories.has(match.away)) histories.set(match.away, []);
+    histories.get(match.home).push(home); histories.get(match.away).push(away);
+    const pair = match.home < match.away ? `${match.home}::${match.away}` : `${match.away}::${match.home}`;
+    if (!meetings.has(pair)) meetings.set(pair, []);
+    meetings.get(pair).push(match);
     league.push(match);
     // Elo: a day's matches never see each other's results because they are all < beforeDate
     // and the target day is excluded; updating sequentially inside a past day is harmless.
@@ -121,7 +150,7 @@ function leagueState(matches, beforeDate, eloParams = { k: 20, home: 60, init: 1
 }
 
 function featuresFor(state, home, away) {
-  const pair = [home, away].sort().join("::");
+  const pair = home < away ? `${home}::${away}` : `${away}::${home}`;
   const features = makeFeatures({ home, away }, state.histories.get(home) || [], state.histories.get(away) || [], state.meetings.get(pair) || [], state.league);
   const eh = state.elo.get(home) ?? state.eloParams.init, ea = state.elo.get(away) ?? state.eloParams.init;
   return { ...features, elo_home: eh, elo_away: ea, elo_diff: eh - ea + state.eloParams.home };
@@ -227,6 +256,7 @@ class BankoRobot {
     for (let offset = SUPPLEMENT_DAYS; offset >= 1; offset -= 3) {
       const days = [offset, offset - 1, offset - 2].filter(value => value >= 1).map(value => shiftDate(dateKey, -value));
       const lists = await Promise.all(days.map(day => this.resultsForDay(day)));
+      await yieldToLoop();
       for (const match of lists.flat()) {
         if (!match.date || match.date >= dateKey) continue;
         const resolved = BankoRobot.resolve(archiveLeagues, match.home, match.away);
@@ -253,15 +283,26 @@ class BankoRobot {
   // Find league + history team names for a fixture. Archive leagues first (fuzzy
   // names), then dynamic provider leagues (exact provider names, same league).
   static resolve(historyByLeague, homeName, awayName, leagueName = null, country = null) {
+    if (!homeName || !awayName) return null;
+    const homeKey = cachedKey(homeName), awayKey = cachedKey(awayName);
+    const homeFuzzy = cachedFuzzy(homeName), awayFuzzy = cachedFuzzy(awayName);
     let best = null;
     for (const [league, matches] of historyByLeague) {
       const dynamicLeague = league.startsWith("dyn:");
       if (dynamicLeague && leagueName && league !== `dyn:${country || ""}|${leagueName}`) continue;
-      const teams = [...new Set(matches.flatMap(match => [match.home, match.away]))];
-      const find = name => teams.find(team => team === name) || teams.find(team => teamKey(team) === teamKey(name)) || (dynamicLeague ? null : teams.find(team => similarTeam(team, name)));
-      const home = find(homeName), away = find(awayName);
-      if (!home || !away || home === away) continue;
-      const exact = Number(teamKey(home) === teamKey(homeName)) + Number(teamKey(away) === teamKey(awayName)) + (dynamicLeague ? 0 : 0.5);
+      const index = teamIndex(matches);
+      const find = (name, key, fuzzy) => {
+        if (index.names.has(name)) return name;
+        if (index.byKey.has(key)) return index.byKey.get(key);
+        if (dynamicLeague) return null;
+        const found = index.fuzzy.find(([candidate]) => fuzzyMatch(candidate, fuzzy));
+        return found ? found[1] : null;
+      };
+      const home = find(homeName, homeKey, homeFuzzy);
+      if (!home) continue;
+      const away = find(awayName, awayKey, awayFuzzy);
+      if (!away || home === away) continue;
+      const exact = Number(cachedKey(home) === homeKey) + Number(cachedKey(away) === awayKey) + (dynamicLeague ? 0 : 0.5);
       if (!best || exact > best.exact) best = { league, home, away, exact, validated: !dynamicLeague };
     }
     return best;
@@ -287,7 +328,8 @@ class BankoRobot {
     const states = new Map();
     const predictions = [];
     let covered = 0;
-    for (const match of dayMatches) {
+    for (const [position, match] of dayMatches.entries()) {
+      if (position % 10 === 0) await yieldToLoop();
       const resolved = BankoRobot.resolve(history, match?.teams?.home?.name, match?.teams?.away?.name, match?.league?.name, match?.league?.country);
       if (!resolved) { predictions.push(noPrediction(match, "Bu takımlar için yeterli geçmiş maç verisi bulunamadı.")); continue; }
       covered += 1;
@@ -326,6 +368,7 @@ class BankoRobot {
     const perTier = Object.fromEntries(TIER_ORDER.map(tier => [tier, { picks: 0, hits: 0 }]));
     let picks = 0, hits = 0;
     for (const [league, matches] of history) {
+      await yieldToLoop();
       const validated = !league.startsWith("dyn:");
       const targets = matches.filter(match => match.date >= from && match.date < dateKey);
       const byDate = new Map();

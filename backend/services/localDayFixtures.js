@@ -128,4 +128,4 @@ async function getLocalDayFixtures(registry, date, toFrontendFixture, { timeZone
   };
 }
 
-module.exports = { DEFAULT_TIMEZONE, localDateKey, todayKey, shiftDateKey, similarTeam, collapseDuplicates, sortByKickoff, selectLocalDay, getLocalDayFixtures };
+module.exports = { DEFAULT_TIMEZONE, localDateKey, todayKey, shiftDateKey, similarTeam, fuzzyTeamKey, collapseDuplicates, sortByKickoff, selectLocalDay, getLocalDayFixtures };
